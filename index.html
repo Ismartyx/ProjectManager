@@ -8,11 +8,18 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- صفحه ورود -->
+<!-- صفحه ورود -->
     <div id="login-screen" class="screen active">
         <div class="container login-container">
             <h2>ورود به سیستم</h2>
-            <input type="text" id="username" placeholder="نام کاربری خود را وارد کنید (مثلا ali)">
+            <!-- لیست کاربران به صورت کشویی -->
+            <select id="username">
+                <option value="" disabled selected>انتخاب کاربر...</option>
+                <option value="ali">علی</option>
+                <option value="reza">رضا</option>
+                <option value="sara">سارا</option>
+                <option value="mohammad">محمد</option>
+            </select>
             <button onclick="login()">ورود</button>
         </div>
     </div>
@@ -89,8 +96,19 @@
         <div class="modal-content">
             <h3>ایجاد تسک جدید</h3>
             <input type="text" id="new-task-title" placeholder="عنوان تسک">
-            <input type="text" id="new-task-tag" placeholder="تگ (مثلا خرید، فنی، اداری)">
-            <input type="text" id="new-task-assignee" placeholder="نام کاربری شخص مسئول">
+            <select id="new-task-tag">
+                <option value="فنی">فنی</option>
+                <option value="خرید">خرید</option>
+                <option value="اداری">اداری</option>
+                <option value="عمومی">عمومی</option>
+            </select>
+            <select id="new-task-assignee">
+                <option value="" disabled selected>انتخاب شخص مسئول...</option>
+                <option value="ali">علی</option>
+                <option value="reza">رضا</option>
+                <option value="sara">سارا</option>
+                <option value="mohammad">محمد</option>
+            </select>
             <div class="modal-actions">
                 <button onclick="addTask()">ذخیره تسک</button>
                 <button class="cancel-btn" onclick="closeModal('task-modal')">انصراف</button>
