@@ -1,0 +1,75 @@
+:root {
+    --primary-color: #2c3e50;
+    --accent-color: #3498db;
+    --success-color: #27ae60;
+    --bg-color: #f4f7f6;
+    --card-bg: #ffffff;
+    --text-color: #333333;
+    --border-radius: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: Tahoma, Arial, sans-serif; }
+
+body { background-color: var(--bg-color); color: var(--text-color); }
+
+.screen { display: none; }
+.screen.active { display: block; }
+
+.container { padding: 20px; max-width: 600px; margin: 0 auto; }
+
+header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+input, textarea {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius);
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:disabled { background-color: #95a5a6; cursor: not-allowed; }
+
+.icon-btn { width: auto; padding: 8px 12px; background: rgba(255,255,255,0.2); }
+
+.task-card {
+    background: var(--card-bg);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    margin-bottom: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.tag {
+    background: var(--accent-color);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.report-item {
+    background: #eef2f5;
+    padding: 10px;
+    border-radius: var(--border-radius);
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+.report-time { font-size: 11px; color: #7f8c8d; display: block; margin-top: 5px; }
