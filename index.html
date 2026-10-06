@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت پروژه و تسک</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- صفحه ورود -->
+    <div id="login-screen" class="screen active">
+        <div class="container">
+            <h2>ورود به سیستم</h2>
+            <input type="text" id="username" placeholder="نام کاربری">
+            <input type="password" id="password" placeholder="رمز عبور">
+            <button onclick="login()">ورود</button>
+        </div>
+    </div>
+
+    <!-- داشبورد پروژه‌ها -->
+    <div id="dashboard-screen" class="screen">
+        <header>
+            <h2>پروژه‌های من</h2>
+            <button class="icon-btn" onclick="syncData()">🔄 سینک</button>
+        </header>
+        <div class="container" id="project-list">
+            <!-- لیست پروژه‌ها اینجا لود می‌شود -->
+        </div>
+    </div>
+
+    <!-- صفحه تسک‌ها و گزارش‌ها -->
+    <div id="task-screen" class="screen">
+        <header>
+            <button class="icon-btn" onclick="showScreen('dashboard-screen')">🔙 برگشت</button>
+            <h2 id="task-title">جزئیات تسک</h2>
+        </header>
+        <div class="container">
+            <div class="task-details">
+                <span class="tag" id="task-tag">خرید</span>
+                <p>مسئول: <strong id="task-assignee">---</strong></p>
+                <div class="status-toggle">
+                    <label>وضعیت تسک:</label>
+                    <button id="complete-btn" onclick="completeTask()" disabled>تایید نهایی (مخصوص مسئول)</button>
+                </div>
+            </div>
+            
+            <div class="reports-section">
+                <h3>گزارش‌ها</h3>
+                <div id="reports-list"></div>
+                
+                <div class="add-report">
+                    <textarea id="report-text" placeholder="گزارش خود را بنویسید... (پشتیبانی از لینک)"></textarea>
+                    <input type="file" id="report-file" accept="image/*">
+                    <button onclick="addReport()">ثبت گزارش</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
