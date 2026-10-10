@@ -83,6 +83,58 @@
 
     </main>
 
+    <!-- دکمه شناور (+) فقط برای مدیر نمایش داده می‌شود -->
+        <button id="fabAdd" class="fab" style="display: none;">+</button>
+
+        <!-- پنجره پاپ‌آپ ایجاد آیتم جدید -->
+        <div id="addModal" class="modal-overlay">
+            <div class="modal-content card">
+                
+                <div class="modal-header">
+                    <h2>ایجاد آیتم جدید</h2>
+                    <button id="btnCloseModal" class="icon-btn" style="color: var(--danger);">✕</button>
+                </div>
+                
+                <div class="modal-tabs">
+                    <button id="tabProject" class="tab-btn active">پروژه جدید</button>
+                    <button id="tabTask" class="tab-btn">تسک جدید</button>
+                </div>
+
+                <!-- فرم تعریف پروژه -->
+                <div id="formProject">
+                    <input type="text" id="projTitle" placeholder="عنوان پروژه (مثلاً ساخت دستگاه پرس)" />
+                    <textarea id="projDesc" placeholder="توضیحات و اهداف پروژه..."></textarea>
+                    <button id="btnSaveProject" class="btn btn-primary">ثبت پروژه</button>
+                </div>
+
+                <!-- فرم تعریف تسک (در ابتدا مخفی است) -->
+                <div id="formTask" style="display: none;">
+                    
+                    <select id="taskProjectSelect">
+                        <option value="" disabled selected>انتخاب پروژه مرتبط...</option>
+                        <!-- پروژه‌ها اینجا لود می‌شوند -->
+                    </select>
+                    
+                    <input type="text" id="taskTitle" placeholder="عنوان کار (مثلاً خرید ورق آهن)" />
+                    
+                    <select id="taskAssigneeSelect">
+                        <option value="" disabled selected>مسئول انجام کار...</option>
+                        <!-- پرسنل اینجا لود می‌شوند -->
+                    </select>
+
+                    <select id="taskTag">
+                        <option value="" disabled selected>دسته‌بندی (تگ)...</option>
+                        <option value="خرید / مالی">خرید / مالی</option>
+                        <option value="فنی / ساخت">فنی / ساخت</option>
+                        <option value="بررسی / تایید">بررسی / تایید</option>
+                        <option value="ارسال / تحویل">ارسال / تحویل</option>
+                    </select>
+
+                    <button id="btnSaveTask" class="btn btn-primary">ثبت تسک جدید</button>
+                </div>
+            </div>
+        </div>
+
     <div id="toast-container"></div>
 
     <script src="js/config.js"></script>
