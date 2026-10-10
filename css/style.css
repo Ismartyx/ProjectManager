@@ -237,3 +237,88 @@ textarea {
     color: var(--text-muted);
     padding: 30px 10px;
 }
+
+/* دکمه شناور (FAB) */
+.fab {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), #6d28d9);
+    color: white;
+    font-size: 2.2rem;
+    border: none;
+    box-shadow: 0 5px 20px rgba(139, 92, 246, 0.5);
+    cursor: pointer;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, background 0.3s;
+}
+.fab:active { transform: scale(0.9); }
+
+/* پنجره پاپ‌آپ (Modal) */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+.modal-content {
+    width: 100%;
+    max-width: 450px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateY(30px) scale(0.95);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.modal-overlay.active .modal-content {
+    transform: translateY(0) scale(1);
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.modal-header h2 { margin: 0; font-size: 1.3rem; }
+
+/* تب‌های داخل پاپ‌آپ */
+.modal-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 5px;
+}
+.tab-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.tab-btn.active {
+    background: var(--secondary);
+    color: white;
+    font-weight: bold;
+}
