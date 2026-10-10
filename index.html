@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>مدیریت تسک‌ها</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- کتابخانه PouchDB برای دیتابیس آفلاین -->
+    <script src="https://cdn.jsdelivr.net/npm/pouchdb@8.0.1/dist/pouchdb.min.js"></script>
+</head>
+<body data-theme="dark">
+
+    <header class="app-header">
+        <h1 id="header-title">مدیریت پروژه‌ها</h1>
+        <button id="btnLogout" style="display: none;" class="btn btn-secondary" style="width: auto; padding: 5px 15px;">خروج</button>
+    </header>
+
+    <main id="app-container">
+        <!-- بخش ورود -->
+        <div id="login-view" class="view-section">
+            <div class="card login-card">
+                <h2>ورود به سیستم</h2>
+                <input type="text" id="usernameInput" placeholder="نام کاربری خود را وارد کنید (مثلا ali)" />
+                <button id="btnLogin" class="btn btn-primary">ورود</button>
+            </div>
+        </div>
+
+        <!-- بخش تسک‌ها -->
+        <div id="task-view" class="view-section" style="display: none;">
+            <div class="card task-details">
+                <span class="tag">فنی / اجرا</span>
+                <h2 id="task-title">ساخت نمونه اولیه</h2>
+                <p>مسئول: <span id="task-assignee">ali</span></p>
+            </div>
+
+            <!-- فرم ثبت گزارش -->
+            <div class="report-form card">
+                <textarea id="reportText" placeholder="متن گزارش یا نظر خود را بنویسید..."></textarea>
+                <div class="action-buttons">
+                    <button id="btnSubmitComment" class="btn btn-secondary">ارسال نظر</button>
+                    <button id="btnSubmitFinal" class="btn btn-success" style="display: none;">ثبت گزارش نهایی</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ترتیب فراخوانی فایل‌های جاوااسکریپت شما -->
+    <script src="js/config.js"></script>
+    <script src="js/db/adapter-pouch.js"></script>
+    <script src="js/db/adapter-fire.js"></script>
+    <script src="js/db/db-manager.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/task-logic.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
