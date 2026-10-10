@@ -104,20 +104,34 @@
                 <textarea id="projDesc" placeholder="توضیحات..."></textarea>
                 <button id="btnSaveProject" class="btn btn-primary">ثبت پروژه</button>
             </div>
-            <div id="formTask" style="display: none;">
-                <select id="taskProjectSelect"><option value="" disabled selected>پروژه مرتبط...</option></select>
-                <input type="text" id="taskTitle" placeholder="عنوان کار..." />
+           <div id="formTask" style="display: none;">
+                <select id="taskProjectSelect"><option value="" disabled selected>انتخاب پروژه مرتبط...</option></select>
+                <input type="text" id="taskTitle" placeholder="عنوان کار (مثلاً خرید قطعات)..." />
+                
                 <div id="advancedTaskOptions">
-                    <select id="taskAssigneeSelect"><option value="" disabled selected>مسئول انجام...</option></select>
-                    <select id="taskFinalizerSelect"><option value="" disabled selected>مسئول نهایی کردن...</option></select>
+                    <select id="taskAssigneeSelect"><option value="" disabled selected>مسئول انجام کار...</option></select>
+                    <select id="taskFinalizerSelect"><option value="" disabled selected>مسئول نهایی کردن و تایید...</option></select>
                 </div>
-                <select id="taskTag">
+                
+                <!-- بخش جدید تگ‌ها -->
+                <select id="taskTagSelect">
                     <option value="" disabled selected>دسته‌بندی (تگ)...</option>
-                    <option value="خرید / مالی">خرید / مالی</option>
-                    <option value="فنی / ساخت">فنی / ساخت</option>
-                    <option value="بررسی / تایید">بررسی / تایید</option>
+                    <!-- تگ‌ها از دیتابیس لود می‌شوند -->
                 </select>
-                <button id="btnSaveTask" class="btn btn-primary">ثبت تسک</button>
+
+                <!-- فرم افزودن تگ جدید -->
+                <div class="add-tag-wrapper">
+                    <input type="text" id="newTagInput" placeholder="تگ دلخواه جدید..." />
+                    <button id="btnAddCustomTag" class="btn btn-secondary">افزودن تگ</button>
+                </div>
+                
+                <!-- گزینه مدیر برای سراسری کردن تگ -->
+                <label id="globalTagLabel" style="display: none; align-items: center; gap: 10px; margin-bottom: 15px; font-size: 0.9rem; color: var(--text-muted);">
+                    <input type="checkbox" id="chkGlobalTag" style="width: auto; margin: 0;">
+                    این تگ به عنوان پیش‌فرض برای همه نمایش داده شود
+                </label>
+
+                <button id="btnSaveTask" class="btn btn-primary" style="margin-top: 10px;">ثبت تسک</button>
             </div>
         </div>
     </div>
