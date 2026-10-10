@@ -16,43 +16,53 @@
 
     <main id="app-container">
         
-        <!-- فرم ورود کاملا اپلیکیشنی (بدون دراپ‌داون) -->
+        <!-- فرم ورود -->
         <div id="login-view" class="view-section">
             <div class="card login-card">
                 <h2>ورود به حساب کاربری</h2>
                 <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">برای اولین بار با نام کاربری admin و رمز admin وارد شوید.</p>
                 
-                <input type="text" id="personnelCodeInput" placeholder="کد پرسنلی (مثبت 1001)" inputmode="numeric" />
-                <input type="password" id="nationalCodeInput" placeholder="کد ملی (رمز عبور)" inputmode="numeric" />
+                <input type="text" id="personnelCodeInput" placeholder="کد پرسنلی" inputmode="numeric" />
+                <input type="password" id="nationalCodeInput" placeholder="کد ملی (رمز عبور)" />
                 
                 <button id="btnLogin" class="btn btn-primary">ورود</button>
             </div>
         </div>
 
-        <!-- پنل مدیریت کاربران (فقط برای مدیر) -->
+        <!-- پنل مدیریت (فقط برای مدیر) -->
         <div id="admin-view" class="view-section" style="display: none;">
+            
             <div class="card">
                 <h2>تعریف پرسنل جدید</h2>
                 <input type="text" id="newUserName" placeholder="نام و نام خانوادگی" />
                 <input type="text" id="newUserCode" placeholder="کد پرسنلی" inputmode="numeric" />
-                <input type="text" id="newUserNatCode" placeholder="کد ملی" inputmode="numeric" />
+                <input type="password" id="newUserNatCode" placeholder="کد ملی (به عنوان رمز اولیه)" inputmode="numeric" />
                 <button id="btnAddUser" class="btn btn-success">ثبت کاربر در سیستم</button>
+            </div>
+
+            <div class="card">
+                <h2>تغییر رمز پرسنل</h2>
+                <p style="color: var(--text-muted); font-size: 0.8rem;">مدیر می‌تواند رمز هر کاربری را بازنشانی کند.</p>
+                <input type="text" id="targetUserCode" placeholder="کد پرسنلی شخص مورد نظر" inputmode="numeric" />
+                <input type="password" id="targetNewPassword" placeholder="رمز عبور جدید" />
+                <button id="btnAdminChangePass" class="btn btn-secondary">تغییر رمز کاربر</button>
             </div>
         </div>
 
-        <!-- بخش تسک‌ها (برای تست) -->
+        <!-- داشبورد کاربری (تغییر رمز شخصی) -->
         <div id="task-view" class="view-section" style="display: none;">
             <div class="card">
-                <span class="tag">تست</span>
-                <h2 id="task-title">شما با موفقیت وارد شدید!</h2>
-                <p>نام شما: <span id="welcomeName" class="highlight"></span></p>
-                <!-- این بخش در مرحله بعد با لیست پروژه‌ها جایگزین می‌شود -->
+                <h2 id="task-title">خوش آمدید، <span id="welcomeName" class="highlight"></span></h2>
+                <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
+                
+                <h3>تغییر رمز عبور من</h3>
+                <input type="password" id="myNewPassword" placeholder="رمز عبور جدید خود را وارد کنید..." />
+                <button id="btnChangeMyPass" class="btn btn-primary">ثبت رمز جدید</button>
             </div>
         </div>
 
     </main>
 
-    <!-- کانتینر پیام‌های شناور -->
     <div id="toast-container"></div>
 
     <script src="js/config.js"></script>
