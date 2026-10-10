@@ -2,21 +2,25 @@ const DBManager = {
     adapter: null,
 
     init: function() {
-        // بر اساس تنظیمات، آداپتور مورد نظر را لود می‌کنیم
-        if (AppConfig.ACTIVE_DB === 'pouchdb') {
-            this.adapter = PouchAdapter;
-        } else {
-            this.adapter = FirebaseAdapter;
-        }
+        this.adapter = PouchAdapter; // فعلاً روی حالت PouchDB (آفلاین) تنظیم است
         this.adapter.init();
     },
 
-    // توابع عمومی که UI صدا می‌زند
-    saveTask: function(taskData) {
-        return this.adapter.saveTask(taskData);
+    saveProject: function(data) {
+        data.type = 'project';
+        return this.adapter.saveItem(data);
     },
-
-    getTasks: function(projectId) {
-        return this.adapter.getTasks(projectId);
+    getProjects: function() {
+        return this.adapter.getItemsByType('project');
+    },
+    
+    saveTask: function(data) {
+        data.type = 'task';
+        data.status = 'pending';
+        data.reports = []; // آرایه خالی برای گزارش‌های آینده
+        return this.adapter.saveItem(data);
+    },
+    getTasks: function() {
+        return this.adapter.getItemsByType('task');
     }
 };
