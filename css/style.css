@@ -207,3 +207,33 @@ textarea {
     0% { opacity: 1; }
     100% { opacity: 0; }
 }
+
+/* تنظیمات دکمه‌های هدر */
+.header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: background 0.3s;
+}
+
+.icon-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 30px 10px;
+}
