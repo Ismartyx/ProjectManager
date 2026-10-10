@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ProjectManager - مکاو</title>
+    <title>مدیریت کارهای مکاو</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/pouchdb@8.0.1/dist/pouchdb.min.js"></script>
 </head>
@@ -11,67 +11,53 @@
     <header class="app-header">
         <h1 id="header-title">مدیریت کارهای مکاو</h1>
         <div class="header-actions" id="headerActions" style="display: none;">
-            <button id="btnSettings" class="icon-btn" title="تنظیمات">
-                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-            </button>
-            <button id="btnLogout" class="btn btn-secondary btn-small" style="margin-bottom: 0;">خروج</button>
+            <button id="btnSettings" class="icon-btn">⚙️</button>
+            <button id="btnLogout" class="btn btn-secondary btn-small" style="margin: 0;">خروج</button>
         </div>
     </header>
 
     <main id="app-container">
         <!-- فرم ورود -->
         <div id="login-view" class="view-section">
-            <div class="card login-card">
-                <h2>ورود به حساب کاربری</h2>
+            <div class="card">
+                <h2>ورود به حساب</h2>
                 <input type="text" id="personnelCodeInput" placeholder="کد پرسنلی" inputmode="numeric" />
                 <input type="password" id="nationalCodeInput" placeholder="رمز عبور" />
                 <button id="btnLogin" class="btn btn-primary">ورود</button>
             </div>
         </div>
 
-        <!-- داشبورد اصلی (درختواره پروژه‌ها) -->
+        <!-- داشبورد -->
         <div id="dashboard-view" class="view-section" style="display: none;">
-            <div class="card">
-                <h2>خوش آمدید، <span id="welcomeName" class="highlight"></span></h2>
-            </div>
-            
-            <div id="admin-notifications" class="card" style="display: none; border: 1px solid var(--danger);">
-                <h3 style="color: var(--danger); margin-top: 0; font-size: 1.1rem;">⚠️ درخواست‌های ارجاع تسک</h3>
+            <div id="admin-notifications" class="card" style="display: none; border-color: var(--danger);">
+                <h3 style="color: var(--danger); margin:0 0 10px 0;">⚠️ درخواست‌های ارجاع</h3>
                 <div id="transfer-requests-list"></div>
             </div>
-            
-            <!-- اینجا پروژه‌ها و تسک‌هایشان لود می‌شوند -->
             <div id="tasks-list-container"></div>
         </div>
 
-        <!-- صفحه تنظیمات -->
+        <!-- تنظیمات -->
         <div id="settings-view" class="view-section" style="display: none;">
-            <button id="btnBackToDashboard" class="btn btn-secondary" style="width: auto; margin-bottom: 20px;">➔ بازگشت به داشبورد</button>
-            
+            <button id="btnBackToDashboard" class="btn btn-secondary btn-small" style="margin-bottom: 15px;">بازگشت ➔</button>
             <div class="card">
-                <h3>تغییر رمز عبور من</h3>
+                <h3>تغییر رمز من</h3>
                 <input type="password" id="myNewPassword" placeholder="رمز جدید..." />
-                <button id="btnChangeMyPass" class="btn btn-primary">ثبت رمز جدید</button>
+                <button id="btnChangeMyPass" class="btn btn-primary">ثبت</button>
             </div>
-
             <div id="admin-settings-section" style="display: none;">
-                <!-- لیست پرسنل سیستم -->
                 <div class="card">
-                    <h2>لیست پرسنل سیستم</h2>
-                    <div id="admin-users-list-container" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; margin-bottom: 15px;">
-                        <!-- لیست توسط جاوااسکریپت پر می‌شود -->
-                    </div>
+                    <h2>پرسنل سیستم</h2>
+                    <div id="admin-users-list-container" style="max-height: 150px; overflow-y: auto; font-size: 0.9rem;"></div>
                 </div>
-
                 <div class="card">
-                    <h2>تعریف پرسنل جدید</h2>
-                    <input type="text" id="newUserName" placeholder="نام و نام خانوادگی" />
+                    <h2>تعریف کاربر جدید</h2>
+                    <input type="text" id="newUserName" placeholder="نام کامل" />
                     <input type="text" id="newUserCode" placeholder="کد پرسنلی" inputmode="numeric" />
                     <input type="password" id="newUserNatCode" placeholder="رمز اولیه" inputmode="numeric" />
-                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; color: var(--text-muted); font-size:0.9rem;">
-                        <input type="checkbox" id="newUserCanAssign" style="width: auto; margin: 0;"> این شخص بتواند تسک ارجاع دهد
+                    <label style="display: flex; gap: 8px; font-size: 0.85rem; color: #94a3b8; margin-bottom: 10px;">
+                        <input type="checkbox" id="newUserCanAssign"> این شخص بتواند تسک ارجاع دهد
                     </label>
-                    <button id="btnAddUser" class="btn btn-success">ثبت کاربر</button>
+                    <button id="btnAddUser" class="btn btn-success">ثبت</button>
                 </div>
             </div>
         </div>
@@ -79,16 +65,16 @@
 
     <button id="fabAdd" class="fab" style="display: none;">+</button>
 
-    <!-- مودال افزودن -->
-<div id="addModal" class="modal-overlay">
+    <!-- مودال ایجاد -->
+    <div id="addModal" class="modal-overlay">
         <div class="modal-content card">
-            <div class="modal-header">
-                <h2>ایجاد آیتم جدید</h2>
-                <button id="btnCloseModal" class="icon-btn" style="color: var(--danger);">✕</button>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                <h2 style="margin:0;">آیتم جدید</h2>
+                <button id="btnCloseModal" class="icon-btn" style="color:red;">✕</button>
             </div>
             <div class="modal-tabs">
-                <button id="tabProject" class="tab-btn active">پروژه جدید</button>
-                <button id="tabTask" class="tab-btn">تسک جدید</button>
+                <button id="tabProject" class="tab-btn active">پروژه</button>
+                <button id="tabTask" class="tab-btn">تسک</button>
             </div>
             <div id="formProject">
                 <input type="text" id="projTitle" placeholder="عنوان پروژه..." />
@@ -96,93 +82,71 @@
                 <button id="btnSaveProject" class="btn btn-primary">ثبت پروژه</button>
             </div>
             <div id="formTask" style="display: none;">
-                
-                <!-- دراپ‌داون سفارشی پروژه -->
                 <div class="custom-select-wrapper" id="taskProjectSelectWrapper">
-                    <div class="custom-select"><span class="select-text">انتخاب پروژه مرتبط...</span><i class="custom-select-arrow"></i></div>
+                    <div class="custom-select"><span class="select-text">پروژه...</span><span style="font-size: 0.7rem;">▼</span></div>
                     <div class="custom-options"></div>
                 </div>
-                
-                <input type="text" id="taskTitle" placeholder="عنوان کار..." />
-                
+                <input type="text" id="taskTitle" placeholder="عنوان تسک..." />
                 <div id="advancedTaskOptions">
                     <div class="custom-select-wrapper" id="taskAssigneeSelectWrapper">
-                        <div class="custom-select"><span class="select-text">مسئول انجام کار...</span><i class="custom-select-arrow"></i></div>
+                        <div class="custom-select"><span class="select-text">مسئول انجام...</span><span style="font-size: 0.7rem;">▼</span></div>
                         <div class="custom-options"></div>
                     </div>
                     <div class="custom-select-wrapper" id="taskFinalizerSelectWrapper">
-                        <div class="custom-select"><span class="select-text">مسئول نهایی کردن و تایید...</span><i class="custom-select-arrow"></i></div>
+                        <div class="custom-select"><span class="select-text">مسئول نهایی...</span><span style="font-size: 0.7rem;">▼</span></div>
                         <div class="custom-options"></div>
                     </div>
                 </div>
-                
                 <div class="custom-select-wrapper" id="taskTagSelectWrapper">
-                    <div class="custom-select"><span class="select-text">دسته‌بندی (تگ)...</span><i class="custom-select-arrow"></i></div>
+                    <div class="custom-select"><span class="select-text">تگ...</span><span style="font-size: 0.7rem;">▼</span></div>
                     <div class="custom-options"></div>
                 </div>
-                
-                <div class="add-tag-wrapper">
-                    <input type="text" id="newTagInput" placeholder="تگ دلخواه جدید..." />
-                    <button id="btnAddCustomTag" class="btn btn-secondary">افزودن تگ</button>
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <input type="text" id="newTagInput" placeholder="تگ جدید..." style="margin:0;" />
+                    <button id="btnAddCustomTag" class="btn btn-secondary btn-small">افزودن</button>
                 </div>
-                <label id="globalTagLabel" style="display: none; align-items: center; gap: 10px; margin-bottom: 15px; font-size: 0.9rem; color: var(--text-muted);">
-                    <input type="checkbox" id="chkGlobalTag" style="width: auto; margin: 0;"> تگ عمومی برای همه
+                <label id="globalTagLabel" style="display: none; gap: 8px; font-size: 0.85rem; color: #94a3b8; margin-bottom: 15px;">
+                    <input type="checkbox" id="chkGlobalTag"> تگ برای همه
                 </label>
                 <button id="btnSaveTask" class="btn btn-primary">ثبت تسک</button>
             </div>
         </div>
     </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- مودال جزئیات تسک (محل ثبت گزارش و نظرات) -->
-   <div id="taskDetailModal" class="modal-overlay">
+    <!-- مودال جزئیات و چت -->
+    <div id="taskDetailModal" class="modal-overlay">
         <div class="modal-content card">
-            <div class="modal-header">
-                <h2 id="td-title">جزئیات تسک</h2>
-                <button id="btnCloseTaskDetail" class="icon-btn" style="color: var(--danger);">✕</button>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <h2 id="td-title" style="margin:0; font-size: 1.1rem;"></h2>
+                <button id="btnCloseTaskDetail" class="icon-btn" style="color:red;">✕</button>
             </div>
-            <div class="task-info-row"><span>وضعیت:</span> <span id="td-status" class="highlight"></span></div>
-            <div class="task-info-row"><span>مسئول فعلی:</span> <span id="td-assignee"></span></div>
-            <div class="task-info-row"><span>مسئول نهایی:</span> <span id="td-finalizer"></span></div>
-            
-            <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-                <div id="td-reports-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;"></div>
-                
-                <div id="td-action-form">
-                    <!-- تولبار گزارش (آپلود عکس) -->
-                    <div class="report-tools">
-                        <!-- دکمه مخفی آپلود فایل -->
-                        <input type="file" id="reportImageInput" accept="image/*" style="display: none;" />
-                        <button class="tool-btn" id="btnAttachImage" title="ضمیمه عکس">📷</button>
-                    </div>
-                    
-                    <!-- پیش‌نمایش عکس انتخاب شده -->
-                    <div id="reportAttachmentPreview" class="report-attachment-preview"></div>
-
-                    <textarea id="td-new-report" placeholder="متن گزارش کار یا لینک خود را اینجا بنویسید..." style="min-height: 80px;"></textarea>
-                    
-                    <div class="action-buttons">
-                        <button id="btnSubmitComment" class="btn btn-secondary">ثبت نظر</button>
-                        <button id="btnSubmitFinal" class="btn btn-success" style="display: none;">تایید نهایی و بستن تسک</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-                
-                <!-- پیام در انتظار تایید ارجاع -->
-                <div id="td-pending-transfer-msg" style="display:none; color: var(--accent); font-size: 0.9rem; text-align: center; padding: 10px; background: rgba(14, 165, 233, 0.1); border-radius: 8px;">
-                    این تسک در انتظار تایید مدیر برای ارجاع به شخص دیگری است و فعلاً قفل می‌باشد.
-                </div>
+            <div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 15px; display:flex; justify-content:space-between;">
+                <span id="td-status"></span>
+                <span>مسئول: <b id="td-assignee" style="color:white;"></b></span>
             </div>
             
-            <!-- بخش درخواست ارجاع -->
-            <div id="transferSection" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); display: none;">
-                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">ارجاع کار به شخص دیگر:</p>
-                <select id="transferUserSelect"><option value="" disabled selected>انتخاب شخص جدید...</option></select>
-                <button id="btnRequestTransfer" class="btn btn-secondary btn-small" style="margin-top: 10px; width: 100%;">ارسال درخواست ارجاع به مدیر</button>
+            <div id="td-reports-list" class="chat-container"></div>
+            
+            <div id="td-action-form">
+                <input type="file" id="reportImageInput" accept="image/*" style="display: none;" />
+                <div id="reportAttachmentPreview" style="margin-bottom: 8px;"></div>
+                
+                <textarea id="td-new-report" placeholder="پیام، گزارش یا لینک..." style="min-height: 60px; margin-bottom: 8px;"></textarea>
+                
+                <div style="display: flex; gap: 8px;">
+                    <button id="btnAttachImage" class="btn btn-secondary" style="width: 45px; margin:0;" title="عکس">📷</button>
+                    <button id="btnSubmitComment" class="btn btn-primary" style="margin:0;">ارسال</button>
+                </div>
+                <button id="btnSubmitFinal" class="btn btn-success" style="display: none; margin-top: 8px;">تایید نهایی و بستن تسک</button>
+            </div>
+            
+            <div id="transferSection" style="display: none; margin-top: 15px; border-top: 1px solid #333; padding-top: 10px;">
+                <p style="font-size: 0.85rem; color:#94a3b8; margin: 0 0 8px 0;">ارجاع به:</p>
+                <div class="custom-select-wrapper" id="transferUserSelectWrapper">
+                    <div class="custom-select"><span class="select-text">شخص جدید...</span><span style="font-size: 0.7rem;">▼</span></div>
+                    <div class="custom-options"></div>
+                </div>
+                <button id="btnRequestTransfer" class="btn btn-secondary btn-small" style="width: 100%;">درخواست ارجاع</button>
             </div>
         </div>
     </div>
