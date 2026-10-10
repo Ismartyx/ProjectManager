@@ -23,19 +23,30 @@ document.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus();
 
     // رویداد دکمه ورود
-    const userSelect = document.getElementById('userSelect'); // تغییر یافته
+    const pinInput = document.getElementById('pinInput');
 
     btnLogin.addEventListener('click', () => {
-        let username = userSelect.value; // گرفتن مقدار از لیست کشویی
+        let userId = userSelect.value;
+        let pin = pinInput.value.trim();
         
-        if(username) {
-            AuthManager.login(username, username); 
-            checkLoginStatus();
-        } else {
+        if(!userId) {
             alert("لطفاً نام خود را از لیست انتخاب کنید.");
+            return;
+        }
+        if(!pin) {
+            alert("لطفاً پین‌کد خود را وارد کنید.");
+            return;
+        }
+
+        try {
+            // فراخوانی تابع لاگین جدید که پین را چک می‌کند
+            AuthManager.login(userId, pin); 
+            pinInput.value = ''; // پاک کردن فیلد پین بعد از ورود موفق
+            checkLoginStatus();
+        } catch (error) {
+            alert(error.message); // نمایش خطای "پین اشتباه است"
         }
     });
-
     // رویداد دکمه خروج
     btnLogout.addEventListener('click', () => {
         AuthManager.logout();
