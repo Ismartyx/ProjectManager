@@ -156,4 +156,109 @@ document.addEventListener('DOMContentLoaded', () => {
             loginView.style.display = 'block';
         }
     }
+    // ==========================================
+    // منطق مربوط به دکمه شناور و مودال افزودن
+    // ==========================================
+    
+    const fabAdd = document.getElementById('fabAdd');
+    const addModal = document.getElementById('addModal');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    
+    const tabProject = document.getElementById('tabProject');
+    const tabTask = document.getElementById('tabTask');
+    const formProject = document.getElementById('formProject');
+    const formTask = document.getElementById('formTask');
+
+    const taskProjectSelect = document.getElementById('taskProjectSelect');
+    const taskAssigneeSelect = document.getElementById('taskAssigneeSelect');
+
+    // باز کردن مودال (و لود کردن پویای لیست پروژه‌ها و پرسنل)
+    fabAdd.addEventListener('click', async () => {
+        addModal.classList.add('active');
+        
+        // ۱. پر کردن لیست پرسنل از AuthManager
+        taskAssigneeSelect.innerHTML = '<option value="" disabled selected>مسئول انجام کار...</option>';
+        AuthManager.usersList.forEach(u => {
+            let opt = document.createElement('option');
+            opt.value = u.id;
+            opt.innerText = `${u.name} (${u.id})`;
+            taskAssigneeSelect.appendChild(opt);
+        });
+
+        // ۲. پر کردن لیست پروژه‌ها از دیتابیس
+        taskProjectSelect.innerHTML = '<option value="" disabled selected>انتخاب پروژه مرتبط...</option>';
+        let projects = await DBManager.getProjects();
+        projects.forEach(p => {
+            let opt = document.createElement('option');
+            opt.value = p._id;
+            opt.innerText = p.title;
+            taskProjectSelect.appendChild(opt);
+        });
+    });
+
+    // بستن مودال
+    btnCloseModal.addEventListener('click', () => {
+        addModal.classList.remove('active');
+    });
+
+    // تغییر تب بین پروژه و تسک
+    tabProject.addEventListener('click', () => {
+        tabProject.classList.add('active');
+        tabTask.classList.remove('active');
+        formProject.style.display = 'block';
+        formTask.style.display = 'none';
+    });
+
+    tabTask.addEventListener('click', () => {
+        tabTask.classList.add('active');
+        tabProject.classList.remove('active');
+        formTask.style.display = 'block';
+        formProject.style.display = 'none';
+    });
+
+    // ثبت پروژه در دیتابیس
+    document.getElementById('btnSaveProject').addEventListener('click', async () => {
+        let title = document.getElementById('projTitle').value.trim();
+        let desc = document.getElementById('projDesc').value.trim();
+
+        if(!title) return showToast('عنوان پروژه الزامی است!', 'error');
+
+        try {
+            await DBManager.saveProject({ title: title, description: desc, createdBy: AuthManager.getCurrentUser().id });
+            document.getElementById('projTitle').value = '';
+            document.getElementById('projDesc').value = '';
+            showToast('پروژه با موفقیت ایجاد شد.');
+            btnCloseModal.click();
+        } catch (err) {
+            showToast('خطا در ثبت پروژه', 'error');
+        }
+    });
+
+    // ثبت تسک در دیتابیس
+    document.getElementById('btnSaveTask').addEventListener('click', async () => {
+        let projId = taskProjectSelect.value;
+        let title = document.getElementById('taskTitle').value.trim();
+        let assignee = taskAssigneeSelect.value;
+        let tag = document.getElementById('taskTag').value;
+
+        if(!projId || !title || !assignee || !tag) {
+            return showToast('لطفاً تمام فیلدها را پر کنید.', 'error');
+        }
+
+        try {
+            await DBManager.saveTask({
+                projectId: projId,
+                title: title,
+                assigneeId: assignee,
+                tag: tag,
+                creatorId: AuthManager.getCurrentUser().id
+            });
+            
+            document.getElementById('taskTitle').value = '';
+            showToast('تسک جدید با موفقیت ارجاع داده شد.');
+            btnCloseModal.click();
+        } catch (err) {
+            showToast('خطا در ثبت تسک', 'error');
+        }
+    });
 });
