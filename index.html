@@ -8,22 +8,17 @@
     <script src="https://cdn.jsdelivr.net/npm/pouchdb@8.0.1/dist/pouchdb.min.js"></script>
 </head>
 <body>
-
     <header class="app-header">
         <h1 id="header-title">مدیریت کارهای مکاو</h1>
         <div class="header-actions" id="headerActions" style="display: none;">
             <button id="btnSettings" class="icon-btn" title="تنظیمات">
-                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
+                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             </button>
             <button id="btnLogout" class="btn btn-secondary btn-small" style="margin-bottom: 0;">خروج</button>
         </div>
     </header>
 
     <main id="app-container">
-        
         <!-- فرم ورود -->
         <div id="login-view" class="view-section">
             <div class="card login-card">
@@ -34,22 +29,19 @@
             </div>
         </div>
 
-        <!-- داشبورد اصلی (لیست تسک‌ها و هشدارها) -->
+        <!-- داشبورد اصلی (درختواره پروژه‌ها) -->
         <div id="dashboard-view" class="view-section" style="display: none;">
-            
             <div class="card">
                 <h2>خوش آمدید، <span id="welcomeName" class="highlight"></span></h2>
             </div>
             
-            <!-- باکس هشدار مدیر (درخواست‌های ارجاع) -->
             <div id="admin-notifications" class="card" style="display: none; border: 1px solid var(--danger);">
                 <h3 style="color: var(--danger); margin-top: 0; font-size: 1.1rem;">⚠️ درخواست‌های ارجاع تسک</h3>
                 <div id="transfer-requests-list"></div>
             </div>
             
-            <div id="tasks-list-container">
-                <!-- تسک‌ها توسط جاوااسکریپت اینجا ساخته می‌شوند -->
-            </div>
+            <!-- اینجا پروژه‌ها و تسک‌هایشان لود می‌شوند -->
+            <div id="tasks-list-container"></div>
         </div>
 
         <!-- صفحه تنظیمات -->
@@ -63,32 +55,31 @@
             </div>
 
             <div id="admin-settings-section" style="display: none;">
+                <!-- لیست پرسنل سیستم -->
+                <div class="card">
+                    <h2>لیست پرسنل سیستم</h2>
+                    <div id="admin-users-list-container" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; margin-bottom: 15px;">
+                        <!-- لیست توسط جاوااسکریپت پر می‌شود -->
+                    </div>
+                </div>
+
                 <div class="card">
                     <h2>تعریف پرسنل جدید</h2>
                     <input type="text" id="newUserName" placeholder="نام و نام خانوادگی" />
                     <input type="text" id="newUserCode" placeholder="کد پرسنلی" inputmode="numeric" />
                     <input type="password" id="newUserNatCode" placeholder="رمز اولیه" inputmode="numeric" />
-                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; color: var(--text-muted);">
-                        <input type="checkbox" id="newUserCanAssign" style="width: auto; margin: 0;">
-                        این شخص بتواند برای دیگران تسک تعریف کند
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; color: var(--text-muted); font-size:0.9rem;">
+                        <input type="checkbox" id="newUserCanAssign" style="width: auto; margin: 0;"> این شخص بتواند تسک ارجاع دهد
                     </label>
                     <button id="btnAddUser" class="btn btn-success">ثبت کاربر</button>
-                </div>
-
-                <div class="card">
-                    <h2>تغییر رمز پرسنل</h2>
-                    <input type="text" id="targetUserCode" placeholder="کد پرسنلی شخص" inputmode="numeric" />
-                    <input type="password" id="targetNewPassword" placeholder="رمز جدید" />
-                    <button id="btnAdminChangePass" class="btn btn-secondary">تغییر رمز</button>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- دکمه شناور (+) -->
     <button id="fabAdd" class="fab" style="display: none;">+</button>
 
-    <!-- مودال 1: ایجاد آیتم جدید (پروژه/تسک) -->
+    <!-- مودال افزودن -->
     <div id="addModal" class="modal-overlay">
         <div class="modal-content card">
             <div class="modal-header">
@@ -104,71 +95,76 @@
                 <textarea id="projDesc" placeholder="توضیحات..."></textarea>
                 <button id="btnSaveProject" class="btn btn-primary">ثبت پروژه</button>
             </div>
-           <div id="formTask" style="display: none;">
+            <div id="formTask" style="display: none;">
                 <select id="taskProjectSelect"><option value="" disabled selected>انتخاب پروژه مرتبط...</option></select>
-                <input type="text" id="taskTitle" placeholder="عنوان کار (مثلاً خرید قطعات)..." />
-                
+                <input type="text" id="taskTitle" placeholder="عنوان کار..." />
                 <div id="advancedTaskOptions">
-                    <select id="taskAssigneeSelect"><option value="" disabled selected>مسئول انجام کار...</option></select>
-                    <select id="taskFinalizerSelect"><option value="" disabled selected>مسئول نهایی کردن و تایید...</option></select>
+                    <select id="taskAssigneeSelect"><option value="" disabled selected>مسئول انجام...</option></select>
+                    <select id="taskFinalizerSelect"><option value="" disabled selected>مسئول نهایی کردن...</option></select>
                 </div>
+                <select id="taskTagSelect"><option value="" disabled selected>دسته‌بندی (تگ)...</option></select>
                 
-                <!-- بخش جدید تگ‌ها -->
-                <select id="taskTagSelect">
-                    <option value="" disabled selected>دسته‌بندی (تگ)...</option>
-                    <!-- تگ‌ها از دیتابیس لود می‌شوند -->
-                </select>
-
-                <!-- فرم افزودن تگ جدید -->
                 <div class="add-tag-wrapper">
                     <input type="text" id="newTagInput" placeholder="تگ دلخواه جدید..." />
                     <button id="btnAddCustomTag" class="btn btn-secondary">افزودن تگ</button>
                 </div>
-                
-                <!-- گزینه مدیر برای سراسری کردن تگ -->
                 <label id="globalTagLabel" style="display: none; align-items: center; gap: 10px; margin-bottom: 15px; font-size: 0.9rem; color: var(--text-muted);">
-                    <input type="checkbox" id="chkGlobalTag" style="width: auto; margin: 0;">
-                    این تگ به عنوان پیش‌فرض برای همه نمایش داده شود
+                    <input type="checkbox" id="chkGlobalTag" style="width: auto; margin: 0;"> تگ عمومی برای همه
                 </label>
-
-                <button id="btnSaveTask" class="btn btn-primary" style="margin-top: 10px;">ثبت تسک</button>
+                <button id="btnSaveTask" class="btn btn-primary">ثبت تسک</button>
             </div>
         </div>
     </div>
 
-    <!-- مودال 2: جزئیات تسک و درخواست ارجاع -->
+    <!-- مودال جزئیات تسک (محل ثبت گزارش و نظرات) -->
     <div id="taskDetailModal" class="modal-overlay">
         <div class="modal-content card">
             <div class="modal-header">
                 <h2 id="td-title">جزئیات تسک</h2>
                 <button id="btnCloseTaskDetail" class="icon-btn" style="color: var(--danger);">✕</button>
             </div>
-            <div class="task-info-row">
-                <span>مسئول فعلی:</span> <span id="td-assignee" class="highlight"></span>
-            </div>
-            <div class="task-info-row">
-                <span>ناظر / نهایی‌کننده:</span> <span id="td-finalizer"></span>
+            <div class="task-info-row"><span>وضعیت:</span> <span id="td-status" class="highlight"></span></div>
+            <div class="task-info-row"><span>مسئول فعلی:</span> <span id="td-assignee"></span></div>
+            <div class="task-info-row"><span>مسئول نهایی:</span> <span id="td-finalizer"></span></div>
+            
+            <!-- لیست گزارش‌ها و کامنت‌ها -->
+            <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                <h3 style="font-size: 1rem; margin-top:0;">گزارش کار و نظرات</h3>
+                <div id="td-reports-list" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;">
+                    <!-- گزارش‌ها اینجا لود می‌شوند -->
+                </div>
+                
+                <!-- فرم ارسال گزارش (اگر تسک در حال انتقال باشد، این بخش مخفی می‌شود) -->
+                <div id="td-action-form">
+                    <textarea id="td-new-report" placeholder="متن گزارش کار یا نظر خود را بنویسید..." style="min-height: 80px;"></textarea>
+                    <div class="action-buttons">
+                        <button id="btnSubmitComment" class="btn btn-secondary">ثبت نظر</button>
+                        <!-- این دکمه فقط برای شخص نهایی‌کننده است -->
+                        <button id="btnSubmitFinal" class="btn btn-success" style="display: none;">تایید نهایی و بستن تسک</button>
+                    </div>
+                </div>
+                
+                <!-- پیام در انتظار تایید ارجاع -->
+                <div id="td-pending-transfer-msg" style="display:none; color: var(--accent); font-size: 0.9rem; text-align: center; padding: 10px; background: rgba(14, 165, 233, 0.1); border-radius: 8px;">
+                    این تسک در انتظار تایید مدیر برای ارجاع به شخص دیگری است و فعلاً قفل می‌باشد.
+                </div>
             </div>
             
             <!-- بخش درخواست ارجاع -->
             <div id="transferSection" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); display: none;">
-                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">آیا می‌خواهید این کار را به شخص دیگری بسپارید؟</p>
-                <select id="transferUserSelect">
-                    <option value="" disabled selected>انتخاب شخص جدید...</option>
-                </select>
-                <button id="btnRequestTransfer" class="btn btn-secondary btn-small" style="margin-top: 10px;">ارسال درخواست به مدیر</button>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">ارجاع کار به شخص دیگر:</p>
+                <select id="transferUserSelect"><option value="" disabled selected>انتخاب شخص جدید...</option></select>
+                <button id="btnRequestTransfer" class="btn btn-secondary btn-small" style="margin-top: 10px; width: 100%;">ارسال درخواست ارجاع به مدیر</button>
             </div>
         </div>
     </div>
 
     <div id="toast-container"></div>
-
     <script src="js/config.js"></script>
     <script src="js/db/adapter-pouch.js"></script>
     <script src="js/db/adapter-fire.js"></script>
     <script src="js/db/db-manager.js"></script>
     <script src="js/auth.js"></script>
-    <script src="js/task-logic.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
