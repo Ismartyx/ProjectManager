@@ -23,13 +23,16 @@ document.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus();
 
     // رویداد دکمه ورود
+    const userSelect = document.getElementById('userSelect'); // تغییر یافته
+
     btnLogin.addEventListener('click', () => {
-        let username = usernameInput.value.trim().toLowerCase();
+        let username = userSelect.value; // گرفتن مقدار از لیست کشویی
+        
         if(username) {
             AuthManager.login(username, username); 
             checkLoginStatus();
         } else {
-            alert("لطفاً نام کاربری را وارد کنید.");
+            alert("لطفاً نام خود را از لیست انتخاب کنید.");
         }
     });
 
