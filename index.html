@@ -69,9 +69,14 @@
                     <input type="text" id="newUserName" placeholder="نام و نام خانوادگی" />
                     <input type="text" id="newUserCode" placeholder="کد پرسنلی" inputmode="numeric" />
                     <input type="password" id="newUserNatCode" placeholder="رمز اولیه" inputmode="numeric" />
+                    
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; color: var(--text-muted);">
+                        <input type="checkbox" id="newUserCanAssign" style="width: auto; margin: 0;">
+                        این شخص بتواند برای دیگران تسک تعریف کند
+                    </label>
+                    
                     <button id="btnAddUser" class="btn btn-success">ثبت کاربر در سیستم</button>
                 </div>
-
                 <div class="card">
                     <h2>تغییر رمز پرسنل</h2>
                     <input type="text" id="targetUserCode" placeholder="کد پرسنلی شخص مورد نظر" inputmode="numeric" />
@@ -109,28 +114,31 @@
 
                 <!-- فرم تعریف تسک (در ابتدا مخفی است) -->
                 <div id="formTask" style="display: none;">
-                    
                     <select id="taskProjectSelect">
                         <option value="" disabled selected>انتخاب پروژه مرتبط...</option>
-                        <!-- پروژه‌ها اینجا لود می‌شوند -->
                     </select>
                     
-                    <input type="text" id="taskTitle" placeholder="عنوان کار (مثلاً خرید ورق آهن)" />
+                    <input type="text" id="taskTitle" placeholder="عنوان کار (مثلاً خرید قطعات)" />
                     
-                    <select id="taskAssigneeSelect">
-                        <option value="" disabled selected>مسئول انجام کار...</option>
-                        <!-- پرسنل اینجا لود می‌شوند -->
-                    </select>
+                    <!-- این فیلدها برای کاربران عادی مخفی خواهند شد -->
+                    <div id="advancedTaskOptions">
+                        <select id="taskAssigneeSelect">
+                            <option value="" disabled selected>مسئول انجام کار...</option>
+                        </select>
+
+                        <select id="taskFinalizerSelect">
+                            <option value="" disabled selected>مسئول نهایی کردن و تایید تسک...</option>
+                        </select>
+                    </div>
 
                     <select id="taskTag">
                         <option value="" disabled selected>دسته‌بندی (تگ)...</option>
                         <option value="خرید / مالی">خرید / مالی</option>
                         <option value="فنی / ساخت">فنی / ساخت</option>
                         <option value="بررسی / تایید">بررسی / تایید</option>
-                        <option value="ارسال / تحویل">ارسال / تحویل</option>
                     </select>
 
-                    <button id="btnSaveTask" class="btn btn-primary">ثبت تسک جدید</button>
+                    <button id="btnSaveTask" class="btn btn-primary">ثبت تسک</button>
                 </div>
             </div>
         </div>
