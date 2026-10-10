@@ -1,21 +1,37 @@
 const AuthManager = {
     currentUser: null,
 
-    // تابع ورود به سیستم (فعلاً ساده و با ذخیره در حافظه لوکال)
-    login: function(userId, userName) {
-        this.currentUser = { id: userId, name: userName };
-        // ذخیره در گوشی تا با بستن برنامه خارج نشود
+    // لیست کاربرانی که مدیر سیستم تعریف کرده است
+    usersList: [
+        { id: 'ali', name: 'علی', pin: '1234', role: 'admin' },   // مدیر سیستم
+        { id: 'reza', name: 'رضا', pin: '1111', role: 'user' },    // کاربر عادی
+        { id: 'milad', name: 'میلاد', pin: '2222', role: 'user' }  // کاربر عادی
+    ],
+
+    // تابع لاگین با بررسی پین‌کد
+    login: function(userId, enteredPin) {
+        // پیدا کردن کاربر از لیست
+        let user = this.usersList.find(u => u.id === userId);
+        
+        if (!user) {
+            throw new Error("کاربر یافت نشد!");
+        }
+        
+        if (user.pin !== enteredPin) {
+            throw new Error("پین‌کد اشتباه است!");
+        }
+
+        // اگر پین درست بود، اطلاعات را ذخیره کن
+        this.currentUser = { id: user.id, name: user.name, role: user.role };
         localStorage.setItem('pm_currentUser', JSON.stringify(this.currentUser));
-        console.log(`${userName} وارد سیستم شد.`);
+        return true;
     },
 
-    // خروج از حساب
     logout: function() {
         this.currentUser = null;
         localStorage.removeItem('pm_currentUser');
     },
 
-    // گرفتن اطلاعات کاربری که لاگین کرده
     getCurrentUser: function() {
         if (!this.currentUser) {
             let stored = localStorage.getItem('pm_currentUser');
@@ -24,5 +40,11 @@ const AuthManager = {
             }
         }
         return this.currentUser;
+    },
+
+    // بررسی اینکه آیا کاربر فعلی مدیر است یا نه
+    isAdmin: function() {
+        let user = this.getCurrentUser();
+        return user && user.role === 'admin';
     }
 };
