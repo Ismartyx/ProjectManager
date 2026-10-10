@@ -322,3 +322,36 @@ textarea {
     color: white;
     font-weight: bold;
 }
+
+/* استایل کارت‌های تسک در داشبورد */
+.task-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.task-card:active {
+    transform: scale(0.98);
+}
+.task-card h3 {
+    margin: 10px 0 5px 0;
+    font-size: 1.1rem;
+}
+
+/* باکس درخواست ارجاع (داشبورد مدیر) */
+.transfer-req-box {
+    background: rgba(239, 68, 68, 0.1);
+    border-right: 4px solid var(--danger);
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+.btn-danger {
+    background: linear-gradient(135deg, var(--danger), #b91c1c);
+    color: white;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
