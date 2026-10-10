@@ -1,22 +1,66 @@
-// هنگام لود شدن برنامه
-document.addEventListener('deviceready', function() {
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // راه‌اندازی دیتابیس در شروع برنامه
     DBManager.init();
-});
 
-// هنگام کلیک روی دکمه ثبت تسک
-document.getElementById('btnSaveTask').addEventListener('click', async function() {
-    let newTask = {
-        projectId: 'proj_123',
-        title: document.getElementById('taskTitle').value,
-        assignee: 'user_456',
+    const loginView = document.getElementById('login-view');
+    const taskView = document.getElementById('task-view');
+    const btnLogin = document.getElementById('btnLogin');
+    const btnLogout = document.getElementById('btnLogout');
+    const usernameInput = document.getElementById('usernameInput');
+    const btnSubmitFinal = document.getElementById('btnSubmitFinal');
+
+    // یک تسک فرضی برای تست که مسئول آن "ali" است
+    let currentTask = {
+        id: 'task_1',
+        title: 'ساخت نمونه اولیه',
+        assigneeId: 'ali', 
         status: 'pending',
-        timestamp: Date.now()
+        reports: []
     };
 
-    try {
-        await DBManager.saveTask(newTask);
-        alert('تسک با موفقیت ذخیره شد (آفلاین/آنلاین)');
-    } catch (error) {
-        console.error('خطا در ذخیره:', error);
+    // بررسی اینکه آیا کسی از قبل لاگین هست یا خیر
+    checkLoginStatus();
+
+    // رویداد دکمه ورود
+    btnLogin.addEventListener('click', () => {
+        let username = usernameInput.value.trim().toLowerCase();
+        if(username) {
+            AuthManager.login(username, username); 
+            checkLoginStatus();
+        } else {
+            alert("لطفاً نام کاربری را وارد کنید.");
+        }
+    });
+
+    // رویداد دکمه خروج
+    btnLogout.addEventListener('click', () => {
+        AuthManager.logout();
+        checkLoginStatus();
+    });
+
+    function checkLoginStatus() {
+        let user = AuthManager.getCurrentUser();
+        if (user) {
+            loginView.style.display = 'none';
+            taskView.style.display = 'block';
+            btnLogout.style.display = 'block';
+            renderTaskPage(user);
+        } else {
+            loginView.style.display = 'block';
+            taskView.style.display = 'none';
+            btnLogout.style.display = 'none';
+        }
+    }
+
+    function renderTaskPage(user) {
+        // استفاده از لاجیک بررسی مسئول تسک
+        let isUserAssignee = TaskLogic.isAssignee(currentTask, user.id);
+
+        if (isUserAssignee) {
+            btnSubmitFinal.style.display = 'block'; // نمایش دکمه سبز گزارش نهایی
+        } else {
+            btnSubmitFinal.style.display = 'none'; // مخفی کردن دکمه نهایی برای سایرین
+        }
     }
 });
