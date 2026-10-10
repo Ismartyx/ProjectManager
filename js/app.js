@@ -1,80 +1,101 @@
+// سیستم پیام‌های شناور (Toast)
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `custom-toast ${type}`;
+    toast.innerText = message;
+    
+    container.appendChild(toast);
+    
+    // حذف خودکار بعد از 3 ثانیه
+    setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.4s forwards';
+        setTimeout(() => toast.remove(), 400);
+    }, 3000);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     
-    // راه‌اندازی دیتابیس در شروع برنامه
     DBManager.init();
 
     const loginView = document.getElementById('login-view');
     const taskView = document.getElementById('task-view');
+    const adminView = document.getElementById('admin-view');
+    
     const btnLogin = document.getElementById('btnLogin');
     const btnLogout = document.getElementById('btnLogout');
-    const usernameInput = document.getElementById('usernameInput');
-    const btnSubmitFinal = document.getElementById('btnSubmitFinal');
+    const btnAddUser = document.getElementById('btnAddUser');
 
-    // یک تسک فرضی برای تست که مسئول آن "ali" است
-    let currentTask = {
-        id: 'task_1',
-        title: 'ساخت نمونه اولیه',
-        assigneeId: 'ali', 
-        status: 'pending',
-        reports: []
-    };
-
-    // بررسی اینکه آیا کسی از قبل لاگین هست یا خیر
     checkLoginStatus();
 
-    // رویداد دکمه ورود
-    const pinInput = document.getElementById('pinInput');
-
+    // فرآیند ورود
     btnLogin.addEventListener('click', () => {
-        let userId = userSelect.value;
-        let pin = pinInput.value.trim();
+        let pCode = document.getElementById('personnelCodeInput').value.trim();
+        let nCode = document.getElementById('nationalCodeInput').value.trim();
         
-        if(!userId) {
-            alert("لطفاً نام خود را از لیست انتخاب کنید.");
-            return;
-        }
-        if(!pin) {
-            alert("لطفاً پین‌کد خود را وارد کنید.");
+        if(!pCode || !nCode) {
+            showToast("لطفا هر دو فیلد را پر کنید.", "error");
             return;
         }
 
         try {
-            // فراخوانی تابع لاگین جدید که پین را چک می‌کند
-            AuthManager.login(userId, pin); 
-            pinInput.value = ''; // پاک کردن فیلد پین بعد از ورود موفق
+            AuthManager.login(pCode, nCode);
+            document.getElementById('personnelCodeInput').value = '';
+            document.getElementById('nationalCodeInput').value = '';
+            showToast("با موفقیت وارد شدید.");
             checkLoginStatus();
         } catch (error) {
-            alert(error.message); // نمایش خطای "پین اشتباه است"
+            showToast(error.message, "error");
         }
     });
-    // رویداد دکمه خروج
+
+    // خروج
     btnLogout.addEventListener('click', () => {
         AuthManager.logout();
         checkLoginStatus();
     });
 
+    // ثبت کاربر توسط مدیر
+    btnAddUser.addEventListener('click', () => {
+        let name = document.getElementById('newUserName').value.trim();
+        let code = document.getElementById('newUserCode').value.trim();
+        let nat = document.getElementById('newUserNatCode').value.trim();
+
+        if(!name || !code || !nat) {
+            showToast("اطلاعات پرسنل ناقص است.", "error");
+            return;
+        }
+
+        try {
+            AuthManager.addUser(code, name, nat);
+            document.getElementById('newUserName').value = '';
+            document.getElementById('newUserCode').value = '';
+            document.getElementById('newUserNatCode').value = '';
+            showToast("کاربر جدید با موفقیت ثبت شد.");
+        } catch (error) {
+            showToast(error.message, "error");
+        }
+    });
+
     function checkLoginStatus() {
         let user = AuthManager.getCurrentUser();
+        
+        loginView.style.display = 'none';
+        taskView.style.display = 'none';
+        adminView.style.display = 'none';
+        btnLogout.style.display = 'none';
+
         if (user) {
-            loginView.style.display = 'none';
-            taskView.style.display = 'block';
             btnLogout.style.display = 'block';
-            renderTaskPage(user);
+            taskView.style.display = 'block';
+            document.getElementById('welcomeName').innerText = user.name;
+            
+            // اگر مدیر بود، پنل مدیریت را هم نشان بده
+            if(user.role === 'admin') {
+                adminView.style.display = 'block';
+            }
         } else {
             loginView.style.display = 'block';
-            taskView.style.display = 'none';
-            btnLogout.style.display = 'none';
-        }
-    }
-
-    function renderTaskPage(user) {
-        // استفاده از لاجیک بررسی مسئول تسک
-        let isUserAssignee = TaskLogic.isAssignee(currentTask, user.id);
-
-        if (isUserAssignee) {
-            btnSubmitFinal.style.display = 'block'; // نمایش دکمه سبز گزارش نهایی
-        } else {
-            btnSubmitFinal.style.display = 'none'; // مخفی کردن دکمه نهایی برای سایرین
         }
     }
 });
