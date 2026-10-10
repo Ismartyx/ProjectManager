@@ -15,11 +15,11 @@
     </header>
 
     <main id="app-container">
-        <!-- بخش ورود: حالا به جای تایپ، کاربر اسمش را انتخاب می‌کند -->
+      <!-- بخش ورود -->
         <div id="login-view" class="view-section">
             <div class="card login-card">
                 <h2>ورود به سیستم</h2>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">لطفاً نام خود را از لیست زیر انتخاب کنید:</p>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">لطفاً نام خود را انتخاب کرده و پین‌کد را وارد کنید:</p>
                 
                 <select id="userSelect">
                     <option value="" disabled selected>انتخاب کاربر...</option>
@@ -27,6 +27,9 @@
                     <option value="reza">رضا (فنی)</option>
                     <option value="milad">میلاد (تدارکات)</option>
                 </select>
+
+                <!-- فیلد جدید برای پین‌کد -->
+                <input type="password" id="pinInput" placeholder="پین‌کد ۴ رقمی..." inputmode="numeric" maxlength="4" style="text-align: center; letter-spacing: 5px; font-size: 1.2rem;" />
                 
                 <button id="btnLogin" class="btn btn-primary">ورود به حساب</button>
             </div>
