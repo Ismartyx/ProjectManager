@@ -447,3 +447,122 @@ select option {
     border-bottom: 1px solid rgba(255,255,255,0.05);
     font-size: 0.9rem;
 }
+
+/* ========================================= */
+/* استایل دراپ‌داون‌های سفارشی (مشابه عکس کاربر) */
+/* ========================================= */
+.custom-select-wrapper {
+    position: relative;
+    user-select: none;
+    width: 100%;
+    margin-bottom: 15px;
+}
+.custom-select {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #121826; /* سرمه‌ای تیره مشابه عکس */
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.custom-select.open {
+    border-color: #0ea5e9; /* آبی روشن مشابه عکس */
+    box-shadow: 0 0 0 1px #0ea5e9;
+}
+.custom-select-arrow {
+    border: solid #0ea5e9;
+    border-width: 0 2px 2px 0;
+    display: inline-block;
+    padding: 4px;
+    transform: rotate(45deg);
+    transition: transform 0.3s;
+}
+.custom-select.open .custom-select-arrow {
+    transform: rotate(-135deg); /* فلش رو به بالا در حالت باز */
+}
+.custom-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: #121826;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    margin-top: 5px;
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    flex-direction: column;
+}
+.custom-options.open {
+    display: flex;
+}
+.custom-option {
+    padding: 15px;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: background 0.2s;
+    text-align: right;
+}
+.custom-option:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+.custom-option.selected {
+    background-color: rgba(14, 165, 233, 0.15); /* هایلایت آبی */
+    color: #0ea5e9;
+}
+
+/* ========================================= */
+/* استایل‌های بخش گزارش و آپلود عکس */
+/* ========================================= */
+.report-tools {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    background: rgba(255,255,255,0.02);
+    padding: 8px;
+    border-radius: 8px;
+}
+.tool-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 5px 10px;
+    border-radius: 6px;
+    transition: 0.3s;
+}
+.tool-btn:hover { background: rgba(255,255,255,0.1); color: var(--primary); }
+.report-attachment-preview {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+.report-attachment-preview img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--primary);
+}
+/* عکس‌های داخل گزارش ثبت شده */
+.report-image-box {
+    margin-top: 10px;
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 100%;
+}
+.report-image-box img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
