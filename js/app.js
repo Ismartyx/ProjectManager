@@ -1,140 +1,151 @@
-// ==========================================
-// توابع کمکی
-// ==========================================
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     toast.className = `custom-toast ${type}`;
     toast.innerText = message;
     container.appendChild(toast);
-    setTimeout(() => {
-        toast.style.animation = 'fadeOut 0.4s forwards';
-        setTimeout(() => toast.remove(), 400);
-    }, 3000);
+    setTimeout(() => { toast.style.animation = 'fadeOut 0.3s forwards'; setTimeout(() => toast.remove(), 300); }, 2500);
 }
 
-// تابع ساخت دراپ‌داون سفارشی
-function setupCustomSelect(wrapperId, dataArray, placeholder) {
+// تابع ساخت دراپ‌داون + قابلیت اضافه کردن دکمه حذف (برای تگ‌ها)
+function setupCustomSelect(wrapperId, dataArray, placeholder, onDeleteClick = null) {
     const wrapper = document.getElementById(wrapperId);
     if(!wrapper) return;
     const selectDiv = wrapper.querySelector('.custom-select');
     const textSpan = wrapper.querySelector('.select-text');
     const optionsDiv = wrapper.querySelector('.custom-options');
     
-    // ریست کردن
-    textSpan.innerText = placeholder;
-    wrapper.dataset.value = ""; 
-    optionsDiv.innerHTML = '';
+    textSpan.innerText = placeholder; wrapper.dataset.value = ""; optionsDiv.innerHTML = '';
 
     dataArray.forEach(item => {
         let opt = document.createElement('div');
         opt.className = 'custom-option';
-        opt.innerText = item.text;
-        opt.dataset.value = item.value;
         
+        // اگر قابلیت حذف داشت و کاربر مجاز بود
+        if(onDeleteClick && item.canDelete) {
+            opt.innerHTML = `<span>${item.text}</span> <span class="delete-tag-btn" style="color:red; font-size:1.2rem;">✕</span>`;
+            opt.querySelector('.delete-tag-btn').onclick = (e) => {
+                e.stopPropagation(); // جلوگیری از انتخاب شدن
+                if(confirm(`آیا از حذف تگ "${item.text}" مطمئن هستید؟`)) onDeleteClick(item.rawId);
+            };
+        } else {
+            opt.innerText = item.text;
+        }
+
         opt.addEventListener('click', (e) => {
             e.stopPropagation();
-            textSpan.innerText = item.text;
-            wrapper.dataset.value = item.value;
+            textSpan.innerText = item.text; wrapper.dataset.value = item.value;
             optionsDiv.classList.remove('open');
-            selectDiv.classList.remove('open');
-            
-            // مدیریت کلاس selected
-            wrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
-            opt.classList.add('selected');
+            wrapper.querySelectorAll('.custom-option').forEach(o => o.style.color = '');
+            opt.style.color = 'var(--primary)';
         });
         optionsDiv.appendChild(opt);
     });
 
-    // باز و بسته شدن
     selectDiv.onclick = (e) => {
         e.stopPropagation();
-        // بستن بقیه
         document.querySelectorAll('.custom-options').forEach(el => { if(el !== optionsDiv) el.classList.remove('open'); });
-        document.querySelectorAll('.custom-select').forEach(el => { if(el !== selectDiv) el.classList.remove('open'); });
-        
         optionsDiv.classList.toggle('open');
-        selectDiv.classList.toggle('open');
     };
 }
-// بستن دراپ‌داون‌ها با کلیک بیرون
-document.addEventListener('click', () => {
-    document.querySelectorAll('.custom-options').forEach(el => el.classList.remove('open'));
-    document.querySelectorAll('.custom-select').forEach(el => el.classList.remove('open'));
-});
+document.addEventListener('click', () => document.querySelectorAll('.custom-options').forEach(el => el.classList.remove('open')));
 
-// تابع فشرده‌سازی و تبدیل عکس به Base64
+// فشرده‌سازی عکس
 function compressImageToBase64(file, callback) {
     const reader = new FileReader();
     reader.onload = function(e) {
         const img = new Image();
         img.onload = function() {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 800; // محدود کردن عرض عکس برای حجم کمتر
+            const MAX_WIDTH = 600; 
             const scaleSize = MAX_WIDTH / img.width;
-            canvas.width = MAX_WIDTH;
-            canvas.height = img.height * scaleSize;
+            canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            callback(canvas.toDataURL('image/jpeg', 0.7)); // 70% کیفیت
-        }
+            callback(canvas.toDataURL('image/jpeg', 0.6));
+        };
         img.src = e.target.result;
-    }
+    };
     reader.readAsDataURL(file);
 }
-
 
 document.addEventListener('DOMContentLoaded', async () => {
     DBManager.init();
     await DBManager.initDefaultTags();
 
+    // درخواست مجوز نوتیفیکیشن سیستم
+    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+        Notification.requestPermission();
+    }
+
     const loginView = document.getElementById('login-view');
     const dashboardView = document.getElementById('dashboard-view');
     const settingsView = document.getElementById('settings-view');
-    const btnLogin = document.getElementById('btnLogin');
-    const fabAdd = document.getElementById('fabAdd');
     
-    const addModal = document.getElementById('addModal');
-    const taskDetailModal = document.getElementById('taskDetailModal');
     let currentOpenedTask = null;
-    let pendingReportImage = null; // نگهدارنده عکسی که قرار است آپلود شود
+    let pendingReportImage = null;
 
     checkLoginStatus();
 
     // ==========================================
-    // لاگین و تنظیمات (ثابت ماند)
+    // لاگین
     // ==========================================
-    const handleEnterPress = (e) => { if (e.key === 'Enter') btnLogin.click(); };
-    document.getElementById('personnelCodeInput').addEventListener('keypress', handleEnterPress);
-    document.getElementById('nationalCodeInput').addEventListener('keypress', handleEnterPress);
-
-    btnLogin.addEventListener('click', () => {
+    document.getElementById('btnLogin').addEventListener('click', () => {
         let pCode = document.getElementById('personnelCodeInput').value.trim();
         let nCode = document.getElementById('nationalCodeInput').value.trim();
-        if(!pCode || !nCode) return showToast("لطفا فیلدها را پر کنید.", "error");
         try {
             AuthManager.login(pCode, nCode);
-            document.getElementById('personnelCodeInput').value = '';
-            document.getElementById('nationalCodeInput').value = '';
-            showToast("با موفقیت وارد شدید.");
+            showToast("وارد شدید.");
             checkLoginStatus();
-        } catch (error) { showToast(error.message, "error"); }
+        } catch (e) { showToast(e.message, "error"); }
     });
     document.getElementById('btnLogout').addEventListener('click', () => { AuthManager.logout(); checkLoginStatus(); });
+    
+    // نویگیشن
     document.getElementById('btnSettings').addEventListener('click', () => { dashboardView.style.display = 'none'; settingsView.style.display = 'block'; });
     document.getElementById('btnBackToDashboard').addEventListener('click', () => { settingsView.style.display = 'none'; dashboardView.style.display = 'block'; renderDashboard(); });
 
+    // ثبت کاربر در تنظیمات
+    document.getElementById('btnAddUser').addEventListener('click', () => {
+        let name = document.getElementById('newUserName').value, code = document.getElementById('newUserCode').value, nat = document.getElementById('newUserNatCode').value;
+        if(!name || !code || !nat) return;
+        try {
+            AuthManager.addUser(code, name, nat, 'user', document.getElementById('newUserCanAssign').checked);
+            showToast("کاربر ثبت شد."); renderAdminUserList();
+        } catch (e) { showToast(e.message, "error"); }
+    });
+
+    function renderAdminUserList() {
+        const container = document.getElementById('admin-users-list-container');
+        if(!container) return;
+        container.innerHTML = AuthManager.usersList.map(u => 
+            `<div style="padding: 5px; border-bottom: 1px solid #333;">👤 ${u.name} - کد: ${u.id} 
+            <span class="tag" style="float:left">${u.role === 'admin' ? 'مدیر' : (u.canAssignTasks ? 'سرپرست' : 'کاربر')}</span></div>`
+        ).join('');
+    }
+
     // ==========================================
-    // مودال افزودن و دراپ‌داون‌های جدید
+    // پاپ‌آپ افزودن و سیستم تگ
     // ==========================================
     async function reloadTagsInDropdown(user) {
         let tags = await DBManager.getTags(user.id);
-        let tagData = tags.map(t => ({ text: t.title, value: t.title }));
-        setupCustomSelect('taskTagSelectWrapper', tagData, 'دسته‌بندی (تگ)...');
+        let tagData = tags.map(t => ({ 
+            text: t.title, 
+            value: t.title, 
+            rawId: t._id,
+            // حق حذف: اگر خودش ساخته یا مدیر است
+            canDelete: (t.creatorId === user.id || user.role === 'admin')
+        }));
+        
+        setupCustomSelect('taskTagSelectWrapper', tagData, 'تگ...', async (tagId) => {
+            await DBManager.deleteTag(tagId);
+            showToast('تگ حذف شد.');
+            reloadTagsInDropdown(user);
+        });
     }
 
-    fabAdd.addEventListener('click', async () => {
-        addModal.classList.add('active');
+    document.getElementById('fabAdd').addEventListener('click', async () => {
+        document.getElementById('addModal').classList.add('active');
         let currentUser = AuthManager.getCurrentUser();
         
         if (currentUser.canAssignTasks || currentUser.role === 'admin') {
@@ -142,26 +153,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             let usersData = AuthManager.usersList.map(u => ({ text: u.name, value: u.id }));
             setupCustomSelect('taskAssigneeSelectWrapper', usersData, 'مسئول انجام...');
             setupCustomSelect('taskFinalizerSelectWrapper', usersData, 'مسئول نهایی...');
-        } else { 
-            document.getElementById('advancedTaskOptions').style.display = 'none'; 
-        }
+        } else { document.getElementById('advancedTaskOptions').style.display = 'none'; }
         
         document.getElementById('globalTagLabel').style.display = currentUser.role === 'admin' ? 'flex' : 'none';
         
         let projects = await DBManager.getProjects();
-        let projData = projects.map(p => ({ text: p.title, value: p._id }));
-        setupCustomSelect('taskProjectSelectWrapper', projData, 'انتخاب پروژه...');
-        
+        setupCustomSelect('taskProjectSelectWrapper', projects.map(p => ({ text: p.title, value: p._id })), 'انتخاب پروژه...');
         await reloadTagsInDropdown(currentUser);
     });
 
-    document.getElementById('btnCloseModal').addEventListener('click', () => addModal.classList.remove('active'));
+    document.getElementById('btnCloseModal').addEventListener('click', () => document.getElementById('addModal').classList.remove('active'));
     
-    // تب‌های مودال (ثابت)
     document.getElementById('tabProject').addEventListener('click', () => { document.getElementById('tabProject').classList.add('active'); document.getElementById('tabTask').classList.remove('active'); document.getElementById('formProject').style.display = 'block'; document.getElementById('formTask').style.display = 'none'; });
     document.getElementById('tabTask').addEventListener('click', () => { document.getElementById('tabTask').classList.add('active'); document.getElementById('tabProject').classList.remove('active'); document.getElementById('formTask').style.display = 'block'; document.getElementById('formProject').style.display = 'none'; });
 
-    // ثبت تگ جدید
     document.getElementById('btnAddCustomTag').addEventListener('click', async () => {
         let title = document.getElementById('newTagInput').value.trim();
         let user = AuthManager.getCurrentUser();
@@ -169,16 +174,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         await DBManager.saveTag(title, user.id, user.role === 'admin' ? document.getElementById('chkGlobalTag').checked : false);
         document.getElementById('newTagInput').value = '';
         await reloadTagsInDropdown(user);
-        
-        // تنظیم دستی دراپ‌داون روی تگ جدید
-        const wrapper = document.getElementById('taskTagSelectWrapper');
-        wrapper.dataset.value = title;
-        wrapper.querySelector('.select-text').innerText = title;
         showToast('تگ اضافه شد.');
     });
 
     document.getElementById('btnSaveProject').addEventListener('click', async () => {
-        let title = document.getElementById('projTitle').value.trim();
+        let title = document.getElementById('projTitle').value;
         if(!title) return showToast('عنوان الزامی است!', 'error');
         await DBManager.saveProject({ title: title, createdBy: AuthManager.getCurrentUser().id });
         document.getElementById('projTitle').value = ''; document.getElementById('btnCloseModal').click(); renderDashboard();
@@ -191,21 +191,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             title: document.getElementById('taskTitle').value.trim(),
             assigneeId: hasPower ? document.getElementById('taskAssigneeSelectWrapper').dataset.value : user.id,
             finalizerId: hasPower ? document.getElementById('taskFinalizerSelectWrapper').dataset.value : user.id,
-            creatorId: user.id,
-            tag: document.getElementById('taskTagSelectWrapper').dataset.value,
-            status: 'pending', transferRequest: null, reports: []
+            creatorId: user.id, tag: document.getElementById('taskTagSelectWrapper').dataset.value
         };
         
         if(!newTask.projectId || !newTask.title || !newTask.tag || (hasPower && (!newTask.assigneeId || !newTask.finalizerId))) {
             return showToast('تمام فیلدها را پر کنید.', 'error');
         }
         await DBManager.saveTask(newTask);
+        
+        // نوتیفیکیشن لوکال برای تست
+        if(Notification.permission === "granted" && newTask.assigneeId !== user.id) {
+            new Notification("تسک جدید", { body: `تسک "${newTask.title}" به شما ارجاع شد.` });
+        }
+
         document.getElementById('taskTitle').value = ''; document.getElementById('btnCloseModal').click(); renderDashboard();
     });
 
     // ==========================================
-    // رندر داشبورد (ثابت ماند)
+    // داشبورد و اکسپند/کلپس پروژه‌ها
     // ==========================================
+    window.toggleProject = function(headerElement) {
+        let container = headerElement.nextElementSibling;
+        let arrow = headerElement.querySelector('.proj-arrow');
+        container.classList.toggle('collapsed');
+        arrow.innerText = container.classList.contains('collapsed') ? '◀' : '▼';
+    };
+
     async function renderDashboard() {
         let currentUser = AuthManager.getCurrentUser();
         if (!currentUser) return;
@@ -213,31 +224,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         let allProjects = await DBManager.getProjects();
         const container = document.getElementById('tasks-list-container');
         
-        // ... (کدهای مدیریت ارجاع دقیقاً مثل قبل - برای خلاصه شدن از تکرار خودداری کردم، اما در فایل نهایی وجود دارد) ...
-        
+        let pending = allTasks.filter(t => t.transferRequest !== null);
+        let adminNotif = document.getElementById('admin-notifications');
+        if ((currentUser.role === 'admin' || currentUser.canAssignTasks) && pending.length > 0) {
+            adminNotif.style.display = 'block'; 
+            document.getElementById('transfer-requests-list').innerHTML = pending.map(t => 
+                `<div style="font-size:0.85rem; padding:8px; background:rgba(255,0,0,0.1); border-radius:6px; margin-bottom:5px;">
+                    ارجاع <b>${t.title}</b> به ${AuthManager.usersList.find(u=>u.id===t.transferRequest)?.name}.
+                    <button onclick="window.handleTransfer('${t._id}', true)" class="btn-small btn-success">تایید</button>
+                    <button onclick="window.handleTransfer('${t._id}', false)" class="btn-small btn-secondary">رد</button>
+                </div>`
+            ).join('');
+        } else { adminNotif.style.display = 'none'; }
+
         container.innerHTML = '';
         let myTasks = currentUser.role === 'admin' ? allTasks : allTasks.filter(t => t.assigneeId === currentUser.id || t.finalizerId === currentUser.id);
-        
-        if (myTasks.length === 0) {
-            container.innerHTML = '<div class="card empty-state">تسک فعالی ندارید.</div>'; return;
-        }
+        if (myTasks.length === 0) { container.innerHTML = '<div class="card">تسکی ندارید.</div>'; return; }
 
         let myProjects = allProjects.filter(p => myTasks.some(t => t.projectId === p._id));
         myProjects.forEach(proj => {
             let projTasks = myTasks.filter(t => t.projectId === proj._id);
             let projHTML = `<div class="project-group">
-                <div class="project-header">📁 ${proj.title} <span>(${projTasks.length})</span></div>
+                <div class="project-header" onclick="toggleProject(this)">
+                    <span>📁 ${proj.title} <span style="font-size:0.8rem">(${projTasks.length})</span></span>
+                    <span class="proj-arrow">▼</span>
+                </div>
                 <div class="project-tasks-container">`;
             
             projTasks.forEach(t => {
-                let statusIcon = t.status === 'completed' ? '✅' : (t.transferRequest ? '⏳' : '🔥');
+                let statusIcon = t.status === 'completed' ? '✅' : '🔥';
+                let lastRep = (t.reports && t.reports.length > 0) ? t.reports[t.reports.length - 1].text : '';
+                let repSnippet = lastRep ? `<div class="task-last-report">💬 ${lastRep.substring(0, 30)}...</div>` : '';
+                
                 projHTML += `
                     <div class="task-card" onclick="window.openTaskById('${t._id}')">
                         <span class="tag">${t.tag}</span>
-                        <h3 style="margin: 10px 0 5px 0;">${statusIcon} ${t.title}</h3>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);">
-                            مسئول: ${AuthManager.usersList.find(u=>u.id===t.assigneeId)?.name || t.assigneeId}
-                        </div>
+                        <h3>${statusIcon} ${t.title}</h3>
+                        ${repSnippet}
                     </div>`;
             });
             projHTML += `</div></div>`;
@@ -246,7 +269,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ==========================================
-    // منطق گزارش و آپلود عکس
+    // چت و گزارش‌ها (مدل واتساپ)
     // ==========================================
     window.openTaskById = async function(taskId) {
         let tasks = await DBManager.getTasks();
@@ -261,66 +284,56 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('td-title').innerText = task.title;
         document.getElementById('td-status').innerText = task.status === 'completed' ? 'تکمیل شده' : 'در حال انجام';
         document.getElementById('td-assignee').innerText = AuthManager.usersList.find(u => u.id === task.assigneeId)?.name || task.assigneeId;
-        document.getElementById('td-finalizer').innerText = AuthManager.usersList.find(u => u.id === task.finalizerId)?.name || task.finalizerId;
 
-        // رندر کردن لیست گزارش‌ها با قابلیت نمایش عکس
-        const reportsList = document.getElementById('td-reports-list');
-        reportsList.innerHTML = '';
+        const chatBox = document.getElementById('td-reports-list');
+        chatBox.innerHTML = '';
         if(task.reports && task.reports.length > 0) {
             task.reports.forEach(r => {
+                let isAssignee = (r.userId === task.assigneeId);
+                let bubbleClass = isAssignee ? 'chat-assignee' : 'chat-others';
                 let date = new Date(r.timestamp).toLocaleDateString('fa-IR', { hour: '2-digit', minute:'2-digit' });
-                
-                // اگر متن حاوی لینک بود (http)، آن را قابل کلیک کن
-                let formattedText = r.text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:var(--primary);">$1</a>');
-                
-                let imageHTML = r.image ? `<div class="report-image-box"><img src="${r.image}" /></div>` : '';
+                let text = r.text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" style="color:var(--accent)">$1</a>');
+                let imgHTML = r.image ? `<div class="chat-image"><img src="${r.image}" /></div>` : '';
 
-                reportsList.innerHTML += `
-                    <div class="report-item ${r.isFinal ? 'final' : ''}">
-                        <div class="report-meta"><span>${r.userName}</span> <span>${date}</span></div>
-                        <div>${formattedText}</div>
-                        ${imageHTML}
+                chatBox.innerHTML += `
+                    <div class="chat-bubble ${bubbleClass}">
+                        <div class="chat-meta"><span>${r.userName}</span><span>${date}</span></div>
+                        <div>${text}</div>
+                        ${imgHTML}
                     </div>`;
             });
-            // اسکرول به پایین
-            setTimeout(() => { reportsList.scrollTop = reportsList.scrollHeight; }, 100);
-        } else {
-            reportsList.innerHTML = '<div style="color:var(--text-muted); font-size:0.9rem; text-align:center;">گزارشی ثبت نشده است.</div>';
+            setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 100);
         }
 
-        // پاک کردن پیش‌نمایش عکس قبلی
         pendingReportImage = null;
         document.getElementById('reportAttachmentPreview').innerHTML = '';
-        document.getElementById('reportImageInput').value = '';
-
-        // کنترل دسترسی فرم‌ها (مشابه قبل)
+        
         let actionForm = document.getElementById('td-action-form');
         let btnFinal = document.getElementById('btnSubmitFinal');
+        let transferSec = document.getElementById('transferSection');
 
         if (task.status === 'completed' || task.transferRequest !== null) {
-            actionForm.style.display = 'none';
+            actionForm.style.display = 'none'; transferSec.style.display = 'none';
         } else {
             actionForm.style.display = 'block';
             btnFinal.style.display = (task.finalizerId === currentUser.id) ? 'inline-block' : 'none';
+            if (task.assigneeId === currentUser.id && !currentUser.canAssignTasks) {
+                transferSec.style.display = 'block';
+                let usersData = AuthManager.usersList.filter(u => u.id !== currentUser.id).map(u => ({ text: u.name, value: u.id }));
+                setupCustomSelect('transferUserSelectWrapper', usersData, 'شخص جدید...');
+            } else { transferSec.style.display = 'none'; }
         }
-        taskDetailModal.classList.add('active');
+        document.getElementById('taskDetailModal').classList.add('active');
     }
 
-    document.getElementById('btnCloseTaskDetail').addEventListener('click', () => taskDetailModal.classList.remove('active'));
+    document.getElementById('btnCloseTaskDetail').addEventListener('click', () => document.getElementById('taskDetailModal').classList.remove('active'));
 
-    // هندل کردن دکمه ضمیمه عکس
-    document.getElementById('btnAttachImage').addEventListener('click', () => {
-        document.getElementById('reportImageInput').click();
-    });
-
+    document.getElementById('btnAttachImage').addEventListener('click', () => document.getElementById('reportImageInput').click());
     document.getElementById('reportImageInput').addEventListener('change', function(e) {
-        if(e.target.files && e.target.files[0]) {
-            // فشرده‌سازی عکس
-            compressImageToBase64(e.target.files[0], (base64Image) => {
-                pendingReportImage = base64Image;
-                document.getElementById('reportAttachmentPreview').innerHTML = `<img src="${base64Image}" />`;
-            });
-        }
+        if(e.target.files[0]) compressImageToBase64(e.target.files[0], (base64) => {
+            pendingReportImage = base64;
+            document.getElementById('reportAttachmentPreview').innerHTML = `<img src="${base64}" style="width:50px; border-radius:5px; margin-bottom:5px;"/>`;
+        });
     });
 
     document.getElementById('btnSubmitComment').addEventListener('click', () => saveReport(false));
@@ -328,43 +341,47 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function saveReport(isFinal) {
         let text = document.getElementById('td-new-report').value.trim();
-        
-        // اگر نه متنی بود نه عکسی، ارور بده
-        if(!text && !pendingReportImage) return showToast('لطفاً متن یا عکسی ضمیمه کنید.', 'error');
+        if(!text && !pendingReportImage) return showToast('متن یا عکس وارد کنید.', 'error');
 
         let user = AuthManager.getCurrentUser();
-        let newRep = {
-            id: Date.now(),
-            userId: user.id,
-            userName: user.name,
-            text: text,
-            image: pendingReportImage, // ذخیره عکس در صورت وجود
-            isFinal: isFinal,
-            timestamp: Date.now()
-        };
-
         if(!currentOpenedTask.reports) currentOpenedTask.reports = [];
-        currentOpenedTask.reports.push(newRep);
+        currentOpenedTask.reports.push({
+            id: Date.now(), userId: user.id, userName: user.name, text: text, image: pendingReportImage, isFinal: isFinal, timestamp: Date.now()
+        });
+        
         if(isFinal) currentOpenedTask.status = 'completed';
-
         await DBManager.saveTask(currentOpenedTask);
+        
         document.getElementById('td-new-report').value = '';
-        showToast(isFinal ? 'تسک بسته شد.' : 'گزارش ثبت شد.');
-        openTaskDetail(currentOpenedTask);
-        renderDashboard();
+        openTaskDetail(currentOpenedTask); renderDashboard();
     }
 
-    // ==========================================
-    // کنترل دسترسی اصلی
-    // ==========================================
+    document.getElementById('btnRequestTransfer').addEventListener('click', async () => {
+        let targetId = document.getElementById('transferUserSelectWrapper').dataset.value;
+        if (!targetId) return;
+        currentOpenedTask.transferRequest = targetId;
+        await DBManager.saveTask(currentOpenedTask);
+        document.getElementById('taskDetailModal').classList.remove('active');
+        renderDashboard();
+    });
+
+    window.handleTransfer = async function(taskId, isApproved) {
+        let tasks = await DBManager.getTasks();
+        let task = tasks.find(t => t._id === taskId);
+        if (task) {
+            if (isApproved) { task.assigneeId = task.transferRequest; showToast('تایید شد.'); } 
+            task.transferRequest = null;
+            await DBManager.saveTask(task); renderDashboard();
+        }
+    };
+
     function checkLoginStatus() {
         let user = AuthManager.getCurrentUser();
         [loginView, dashboardView, settingsView, document.getElementById('headerActions'), document.getElementById('admin-settings-section'), fabAdd].forEach(el => el.style.display = 'none');
         if (user) {
             dashboardView.style.display = 'block'; document.getElementById('headerActions').style.display = 'flex';
-            document.getElementById('welcomeName').innerText = user.name;
             fabAdd.style.display = 'flex';
-            if(user.role === 'admin') { document.getElementById('admin-settings-section').style.display = 'block'; }
+            if(user.role === 'admin') { document.getElementById('admin-settings-section').style.display = 'block'; renderAdminUserList(); }
             renderDashboard();
         } else { loginView.style.display = 'block'; }
     }
