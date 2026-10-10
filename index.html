@@ -3,63 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>مدیریت پروژه‌ها</title>
+    <title>تسک منیجر مکاو</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/pouchdb@8.0.1/dist/pouchdb.min.js"></script>
 </head>
 <body>
 
     <header class="app-header">
-        <h1 id="header-title">تسک منیجر مکاو</h1>
+        <h1 id="header-title">تسک منیجر</h1>
         <button id="btnLogout" style="display: none;" class="btn btn-secondary btn-small">خروج</button>
     </header>
 
     <main id="app-container">
-      <!-- بخش ورود -->
+        
+        <!-- فرم ورود کاملا اپلیکیشنی (بدون دراپ‌داون) -->
         <div id="login-view" class="view-section">
             <div class="card login-card">
-                <h2>ورود به سیستم</h2>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">لطفاً نام خود را انتخاب کرده و پین‌کد را وارد کنید:</p>
+                <h2>ورود به حساب کاربری</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">برای اولین بار با نام کاربری admin و رمز admin وارد شوید.</p>
                 
-                <select id="userSelect">
-                    <option value="" disabled selected>انتخاب کاربر...</option>
-                    <option value="ali">علی (مدیر پروژه)</option>
-                    <option value="reza">رضا (فنی)</option>
-                    <option value="milad">میلاد (تدارکات)</option>
-                </select>
-
-                <!-- فیلد جدید برای پین‌کد -->
-                <input type="password" id="pinInput" placeholder="پین‌کد ۴ رقمی..." inputmode="numeric" maxlength="4" style="text-align: center; letter-spacing: 5px; font-size: 1.2rem;" />
+                <input type="text" id="personnelCodeInput" placeholder="کد پرسنلی (مثبت 1001)" inputmode="numeric" />
+                <input type="password" id="nationalCodeInput" placeholder="کد ملی (رمز عبور)" inputmode="numeric" />
                 
-                <button id="btnLogin" class="btn btn-primary">ورود به حساب</button>
+                <button id="btnLogin" class="btn btn-primary">ورود</button>
             </div>
         </div>
 
-        <!-- بخش جزئیات تسک -->
+        <!-- پنل مدیریت کاربران (فقط برای مدیر) -->
+        <div id="admin-view" class="view-section" style="display: none;">
+            <div class="card">
+                <h2>تعریف پرسنل جدید</h2>
+                <input type="text" id="newUserName" placeholder="نام و نام خانوادگی" />
+                <input type="text" id="newUserCode" placeholder="کد پرسنلی" inputmode="numeric" />
+                <input type="text" id="newUserNatCode" placeholder="کد ملی" inputmode="numeric" />
+                <button id="btnAddUser" class="btn btn-success">ثبت کاربر در سیستم</button>
+            </div>
+        </div>
+
+        <!-- بخش تسک‌ها (برای تست) -->
         <div id="task-view" class="view-section" style="display: none;">
-            <div class="card task-details">
-                <span class="tag">فاز اجرا / نصب</span>
-                <h2 id="task-title">ساخت و مونتاژ نمونه اولیه</h2>
-                <div class="task-info-row">
-                    <span>مسئول انجام:</span>
-                    <span id="task-assignee" class="highlight">علی</span>
-                </div>
-                <div class="task-info-row">
-                    <span>تاریخ ثبت:</span>
-                    <span>۱۴۰۵/۰۷/۱۸</span>
-                </div>
-            </div>
-
-            <!-- فرم ثبت گزارش -->
-            <div class="report-form card">
-                <textarea id="reportText" placeholder="متن گزارش کار یا نظر خود را اینجا بنویسید..."></textarea>
-                <div class="action-buttons">
-                    <button id="btnSubmitComment" class="btn btn-secondary">ثبت گزارش روزانه</button>
-                    <button id="btnSubmitFinal" class="btn btn-success" style="display: none;">تکمیل و بستن تسک</button>
-                </div>
+            <div class="card">
+                <span class="tag">تست</span>
+                <h2 id="task-title">شما با موفقیت وارد شدید!</h2>
+                <p>نام شما: <span id="welcomeName" class="highlight"></span></p>
+                <!-- این بخش در مرحله بعد با لیست پروژه‌ها جایگزین می‌شود -->
             </div>
         </div>
+
     </main>
+
+    <!-- کانتینر پیام‌های شناور -->
+    <div id="toast-container"></div>
 
     <script src="js/config.js"></script>
     <script src="js/db/adapter-pouch.js"></script>
