@@ -1,4 +1,4 @@
-@import url('https://v1.fontapi.ir/css/Vazir');
+@import url('https://v1.fontapi.ir/css/YekanBakh');
 
 :root {
     /* تم رنگی مشابه برنامه‌های قبلی شما */
@@ -16,7 +16,7 @@
 
 * {
     box-sizing: border-box;
-    font-family: 'Vazir', sans-serif;
+    font-family: 'Yekan Bakh', sans-serif;
     outline: none;
 }
 
