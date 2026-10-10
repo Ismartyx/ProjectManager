@@ -67,7 +67,17 @@ const AuthManager = {
             }
         });
         this.saveUsers();
-    }
+    },
+
+    // تغییر رمز عبور (پین‌کد)
+    changePassword: function(targetUserId, newPassword) {
+        let user = this.usersList.find(u => u.id === targetUserId);
+        if (!user) {
+            throw new Error("کاربری با این مشخصات یافت نشد.");
+        }
+        user.pin = newPassword;
+        this.saveUsers(); // ذخیره تغییرات
+    },
 };
 
 // راه‌اندازی اولیه پایگاه داده کاربران
