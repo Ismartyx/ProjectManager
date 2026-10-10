@@ -241,14 +241,17 @@ textarea {
 /* دکمه شناور (FAB) */
 .fab {
     position: fixed;
-    bottom: 25px;
-    right: 25px;
-    width: 65px;
-    height: 65px;
+    bottom: 30px;
+    left: 50%; /* وسط صفحه */
+    transform: translateX(-50%); /* تنظیم دقیق در وسط */
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--primary), #6d28d9);
     color: white;
     font-size: 2.2rem;
+    font-weight: 300;
+    line-height: 1;
     border: none;
     box-shadow: 0 5px 20px rgba(139, 92, 246, 0.5);
     cursor: pointer;
@@ -256,9 +259,12 @@ textarea {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s, background 0.3s;
+    transition: background 0.3s, transform 0.2s;
+    padding-bottom: 5px; /* تنظیم تراز علامت + در وسط دایره */
 }
-.fab:active { transform: scale(0.9); }
+.fab:active {
+    transform: translateX(-50%) scale(0.9);
+}
 
 /* پنجره پاپ‌آپ (Modal) */
 .modal-overlay {
@@ -354,4 +360,37 @@ textarea {
     background: linear-gradient(135deg, var(--danger), #b91c1c);
     color: white;
     box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: left 15px center; /* فلش سمت چپ برای راست‌چین */
+    background-size: 20px;
+    padding-left: 45px; /* فضای کافی برای فلش */
+    cursor: pointer;
+}
+
+/* رنگ گزینه‌های دراپ‌داون در حالت باز شده */
+select option {
+    background-color: var(--bg-card);
+    color: var(--text-main);
+}
+
+.add-tag-wrapper {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.add-tag-wrapper input {
+    margin-bottom: 0;
+}
+.add-tag-wrapper button {
+    width: auto;
+    white-space: nowrap;
+    margin-bottom: 0;
+    padding: 0 20px;
 }
