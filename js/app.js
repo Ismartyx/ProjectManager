@@ -1055,7 +1055,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let isUnread = !t.viewedBy || !t.viewedBy.includes(currentUser.id);
 
                 let cardClasses = 'task-card';
-                if (t.status === 'completed') cardClasses += ' task-done'; else if (overdue) cardClasses += ' task-overdue'; else if (t.isImportant) cardClasses += ' task-important';
+                if (t.status === 'completed') {
+                    cardClasses += ' task-done';
+                } else {
+                    if (isUnread) cardClasses += ' task-unread';
+                    if (overdue) cardClasses += ' task-overdue';
+                    else if (t.isImportant) cardClasses += ' task-important';
+                }
 
                 let statusTxt = t.status === 'completed' ? '✅' : (t.status === 'pending_approval' ? '⏳' : (overdue ? '🚨' : '🔥'));
                 
@@ -1063,7 +1069,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (t.tag) badgesHTML += `<span class="tag">${t.tag}</span>`;
                 if (t.isImportant) badgesHTML += `<span class="badge-important">⭐ مهم</span>`;
                 if (t.deadlineLabel) badgesHTML += `<span class="badge-deadline ${overdue ? 'overdue' : ''}">📅 ${t.deadlineLabel}</span>`;
-                if (isUnread && t.status !== 'completed') badgesHTML += `<span class="badge-unread">🔵 جدید</span>`;
 
                 let lastReport = t.activities ? t.activities.filter(a => a.type === 'report').pop() : null;
                 let lastComment = t.activities ? t.activities.filter(a => a.type === 'comment').pop() : null;

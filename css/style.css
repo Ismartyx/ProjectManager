@@ -410,14 +410,67 @@ input:focus, textarea:focus {
 }
 
 /* وضعیت‌های تسک */
+.task-card.task-unread {
+    animation: unreadPulseGlowDark 2.2s infinite ease-in-out;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.22) 0%, rgba(30, 27, 75, 0.95) 100%) !important;
+    border: 1.5px solid #38bdf8 !important;
+    border-right: 5px solid #38bdf8 !important;
+}
+
+[data-theme="light"] .task-card.task-unread {
+    animation: unreadPulseGlowLight 2.2s infinite ease-in-out;
+    background: linear-gradient(135deg, #e0f2fe 0%, #ede9fe 100%) !important;
+    border: 1.5px solid #0284c7 !important;
+    border-right: 5px solid #0284c7 !important;
+}
+
+/* انیمیشن پالس درخشان دور تا دور کارت تسک جدید */
+@keyframes unreadPulseGlowDark {
+    0% {
+        box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.6), 0 0 14px rgba(56, 189, 248, 0.3);
+        border-color: #38bdf8;
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(56, 189, 248, 0), 0 0 26px rgba(56, 189, 248, 0.5);
+        border-color: #818cf8;
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.6), 0 0 14px rgba(56, 189, 248, 0.3);
+        border-color: #38bdf8;
+    }
+}
+
+@keyframes unreadPulseGlowLight {
+    0% {
+        box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.5), 0 3px 10px rgba(2, 132, 199, 0.2);
+        border-color: #0284c7;
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(2, 132, 199, 0), 0 4px 22px rgba(2, 132, 199, 0.35);
+        border-color: #38bdf8;
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.5), 0 3px 10px rgba(2, 132, 199, 0.2);
+        border-color: #0284c7;
+    }
+}
+
 .task-card.task-important {
     background: var(--important-bg);
     border-right: 4px solid var(--important-border);
 }
 
+.task-card.task-unread.task-important {
+    border-right: 5px solid var(--important-border) !important;
+}
+
 .task-card.task-overdue {
     background: var(--overdue-bg);
     border-right: 4px solid var(--overdue-border);
+}
+
+.task-card.task-unread.task-overdue {
+    border-right: 5px solid var(--overdue-border) !important;
 }
 
 .task-card.task-done {
