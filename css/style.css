@@ -1,0 +1,240 @@
+/* لود فونت به صورت کاملاً آفلاین */
+@font-face {
+    font-family: 'Vazirmatn';
+    src: url('../fonts/Vazirmatn-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Vazirmatn';
+    src: url('../fonts/Vazirmatn-Bold.woff2') format('woff2');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --bg-main: #0f172a; --bg-card: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8;
+    --primary: #8b5cf6; --secondary: #334155; --accent: #0ea5e9; --success: #10b981; --danger: #ef4444;
+    --border-radius: 12px; --border-color: rgba(255,255,255,0.05); --input-bg: #0f172a;
+}
+[data-theme="light"] {
+    --bg-main: #f1f5f9; --bg-card: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
+    --primary: #6d28d9; --secondary: #cbd5e1; --accent: #0284c7; --success: #059669; --danger: #dc2626;
+    --border-color: rgba(0,0,0,0.1); --input-bg: #f8fafc;
+}
+
+/* 🔴 حل مشکل فونت دکمه‌ها و فیلدها */
+* { box-sizing: border-box; font-family: 'Vazirmatn', sans-serif; outline: none; }
+button, input, select, textarea { font-family: inherit !important; }
+body { background-color: var(--bg-main); color: var(--text-main); margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; transition: background 0.3s; }
+
+/* هدر */
+.app-header { background: var(--bg-card); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1);}
+.app-header h1 { font-size: 1.1rem; margin: 0; font-weight: bold; }
+.header-actions { display: flex; gap: 10px; align-items: center; }
+.icon-btn { background: transparent; border: none; color: var(--text-main); cursor: pointer; padding: 5px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+
+/* فرم‌ها و کارت‌ها */
+.view-section { padding: 15px; animation: fadeIn 0.3s; }
+.form-container { max-width: 450px; margin: 0 auto; }
+.card { background-color: var(--bg-card); border-radius: var(--border-radius); padding: 20px; margin-bottom: 15px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px rgba(0,0,0,0.05);}
+.card h2 { margin-top: 0; font-size: 1.1rem; margin-bottom: 15px; }
+
+/* ورودی‌ها و دکمه‌ها */
+input, textarea { width: 100%; padding: 12px; margin-bottom: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.95rem; }
+input:focus, textarea:focus { border-color: var(--primary); }
+.checkbox-label { display: flex; align-items: center; justify-content: flex-start; gap: 8px; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px; }
+.checkbox-label input { width: auto; margin: 0; }
+
+/* استایل اصلی دکمه‌ها */
+.btn { padding: 12px; border: none; border-radius: 8px; font-size: 0.95rem; cursor: pointer; width: 100%; color: white; transition: 0.2s; margin-bottom: 10px;}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: linear-gradient(135deg, var(--primary), #6d28d9); }
+.btn-success { background: linear-gradient(135deg, var(--success), #059669); }
+.btn-secondary { background-color: var(--secondary); color: #000; }
+[data-theme="dark"] .btn-secondary { color: white; }
+.btn-small { width: auto; padding: 6px 12px; font-size: 0.85rem; }
+
+/* دراپ‌داون‌ها */
+.custom-select-wrapper { position: relative; width: 100%; margin-bottom: 12px; }
+.custom-select { display: flex; flex-direction: row-reverse; justify-content: space-between; align-items: center; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 15px; color: var(--text-main); cursor: pointer; font-size: 0.95rem;}
+.select-text { flex: 1; text-align: right; padding-right: 5px; }
+.custom-options { position: absolute; top: 100%; left: 0; right: 0; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); margin-top: 4px; z-index: 1000; max-height: 180px; overflow-y: auto; display: none; flex-direction: column; }
+.custom-options.open { display: flex; }
+.custom-option { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; text-align: right;}
+.custom-option:hover { background-color: rgba(139, 92, 246, 0.1); }
+
+/* درختواره پروژه‌ها */
+.project-group { margin-bottom: 15px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); background: var(--bg-card);}
+.project-header { background: rgba(139, 92, 246, 0.05); padding: 12px 15px; font-size: 1rem; font-weight: bold; color: var(--primary); cursor: pointer; display: flex; justify-content: space-between; align-items: center;}
+.project-tasks-container { padding: 10px; }
+.project-tasks-container.collapsed { display: none; }
+.task-card { background: var(--input-bg); border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer; border: 1px solid transparent; }
+.task-card:hover { border-color: var(--primary); }
+.task-card h3 { margin: 5px 0; font-size: 1rem; }
+.tag { background: rgba(139, 92, 246, 0.2); color: var(--primary); padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; display: inline-block; }
+
+/* دکمه شناور */
+.fab { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #6d28d9); color: white; border: none; box-shadow: 0 5px 20px rgba(139, 92, 246, 0.4); cursor: pointer; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 0; transition: transform 0.2s;}
+.fab:active { transform: translateX(-50%) scale(0.95); }
+.fab svg { display: block; }
+
+/* مودال‌ها */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(3px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 15px; opacity: 0; visibility: hidden; transition: 0.3s; }
+.modal-overlay.active { opacity: 1; visibility: visible; }
+.modal-content { width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; transform: scale(0.95); transition: 0.3s; background: var(--bg-main); padding: 20px; border-radius: 12px;}
+.modal-overlay.active .modal-content { transform: scale(1); }
+.modal-content.large-modal { max-width: 800px; }
+.modal-tabs { display: flex; width: 100%; background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 5px; margin-bottom: 15px; }
+.tab-btn { flex: 1; padding: 10px; border: none; background: transparent; color: var(--text-muted); border-radius: 6px; cursor: pointer; font-size: 0.95rem; transition: 0.3s; }
+.tab-btn.active { background: var(--primary); color: white; }
+
+/* 🔴 استایل‌های جدید برای باکس چت و عکس‌ها */
+.section-title { font-size: 1rem; color: var(--primary); border-bottom: 1px solid var(--border-color); padding-bottom: 5px; margin-bottom: 10px; margin-top: 20px; }
+
+.chat-section-wrapper {
+    background: rgba(139, 92, 246, 0.05);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    padding: 15px;
+    border-radius: 12px;
+    margin-top: 20px;
+}
+
+.report-item, .chat-bubble { padding: 10px 12px; border-radius: 8px; margin-bottom: 10px; font-size: 0.9rem; background: var(--input-bg); border: 1px solid var(--border-color); }
+.report-item { border-right: 4px solid var(--success); }
+.chat-meta { font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 5px; }
+.clickable-image { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 1px solid var(--border-color); margin-top: 5px; }
+
+/* دکمه حذف عکس */
+.remove-attachment-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: var(--danger);
+    color: white;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.image-viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: 0.3s; }
+.image-viewer.active { opacity: 1; visibility: visible; }
+.image-viewer img { max-width: 95%; max-height: 95%; border-radius: 8px; }
+.close-viewer { position: absolute; top: 20px; right: 20px; color: white; font-size: 2rem; cursor: pointer; }
+
+#toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 350px; }
+.custom-toast { background: var(--bg-card); padding: 12px 15px; border-radius: 8px; border-right: 4px solid var(--success); font-size: 0.9rem; animation: slideUp 0.3s forwards; color: var(--text-main); box-shadow: 0 4px 10px rgba(0,0,0,0.2);}
+.custom-toast.error { border-right-color: var(--danger); }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeOut { to { opacity: 0; } }
+
+/* تم یکپارچه و مدرن مکاو */
+:root, body[data-theme="dark"] {
+    --bg-main: #0b1120 !important;
+    --bg-card: #131c31 !important;
+    --bg-input: #0f172a !important;
+    --primary: #38bdf8 !important;
+    --accent: #38bdf8 !important;
+    --success: #10b981 !important;
+    --danger: #ef4444 !important;
+    --warning: #f59e0b !important;
+    --text-main: #f8fafc !important;
+    --text-muted: #94a3b8 !important;
+    --border-color: rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="dark"] { background-color: #0b1120 !important; color: #f8fafc !important; }
+body[data-theme="dark"] .card, body[data-theme="dark"] .modal-content, body[data-theme="dark"] .project-group {
+    background: #131c31 !important; border: 1px solid rgba(255, 255, 255, 0.08) !important; border-radius: 16px !important;
+}
+body[data-theme="dark"] input, body[data-theme="dark"] textarea, body[data-theme="dark"] .custom-select {
+    background: #0f172a !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; color: #f8fafc !important; border-radius: 12px !important;
+}
+body[data-theme="dark"] .btn-primary, #fabAdd { background: #38bdf8 !important; color: #0b1120 !important; font-weight: bold !important; border: none !important; }
+body[data-theme="dark"] .btn-success { background: #10b981 !important; color: #0b1120 !important; font-weight: bold !important; border: none !important; }
+
+/* کارت تسک‌های واکنش‌گرا و مینیمال */
+.task-card {
+    transition: all 0.2s ease; border-radius: 10px !important; border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    position: relative; padding: 8px 10px !important; margin-bottom: 8px !important; cursor: pointer;
+}
+.task-card.task-important { background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(19, 28, 49, 0.95)) !important; border-right: 4px solid #f59e0b !important; }
+.task-card.task-overdue { background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(19, 28, 49, 0.95)) !important; border-right: 4px solid #ef4444 !important; }
+.task-card.task-done { opacity: 0.72; border-right: 4px solid #10b981 !important; }
+.task-card h3 { font-size: 0.9rem !important; margin: 0 !important; font-weight: bold; }
+.badge-important, .badge-deadline, .tag { padding: 2px 6px !important; border-radius: 6px !important; font-size: 0.7rem !important; display: inline-block; }
+.badge-important { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+.badge-deadline { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.2); }
+.badge-deadline.overdue { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border-color: #ef4444; }
+.tag { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #cbd5e1; }
+
+@keyframes pulseUnread { 0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); } 70% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); } }
+.badge-unread { background: #ef4444; color: #fff; padding: 2px 6px !important; border-radius: 6px !important; border: none !important; font-size: 0.7rem !important; font-weight: bold; animation: pulseUnread 2s infinite; display: inline-block; }
+
+.task-card-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.task-card-title { flex: 1; min-width: 200px; }
+.task-latest-activity { display: none; flex: 2; min-width: 250px; font-size: 0.8rem; color: #cbd5e1; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 8px; border: 1px dashed rgba(255,255,255,0.05); }
+.task-card-meta { flex-shrink: 0; text-align: left; }
+
+@media (min-width: 800px) {
+    .task-latest-activity { display: block !important; }
+}
+
+.btn-quick-add { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; width: 26px; height: 26px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 1rem; transition: 0.2s; }
+.btn-quick-add:hover { background: #10b981; color: #0b1120; }
+
+.multi-select-wrapper { position: relative; width: 100%; user-select: none; }
+.multi-select-header { background: #0f172a; border: 1px solid rgba(255,255,255,0.12); padding: 10px 12px; border-radius: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: #f8fafc; font-size: 0.85rem; }
+.multi-select-panel { position: absolute; top: 100%; left: 0; right: 0; background: #131c31; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; margin-top: 5px; z-index: 999; display: none; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.6); }
+.multi-select-panel.open { display: flex; }
+.multi-select-search { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.2); }
+.multi-select-search input { width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: #fff; margin: 0; outline: none; font-size: 0.8rem; }
+.multi-select-list { max-height: 200px; overflow-y: auto; padding: 5px; }
+.multi-select-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; border-radius: 8px; transition: background 0.2s; }
+.multi-select-item:hover { background: rgba(255,255,255,0.05); }
+.multi-select-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: #38bdf8; margin: 0; cursor: pointer; }
+.multi-select-item.hidden { display: none; }
+
+#td-comments-list { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+.chat-msg { max-width: 85%; padding: 10px 14px; border-radius: 12px; position: relative; font-size: 0.9rem; line-height: 1.5; word-wrap: break-word; }
+.msg-mine { align-self: flex-start; background: rgba(56, 189, 248, 0.1); border-right: 4px solid #38bdf8; border-bottom-right-radius: 2px; }
+.msg-other { align-self: flex-end; background: rgba(255, 255, 255, 0.05); border-left: 4px solid var(--user-color, #94a3b8); border-bottom-left-radius: 2px; }
+.msg-meta { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 6px; font-weight: bold; gap: 15px; }
+.report-item { padding: 12px; background: rgba(16, 185, 129, 0.05); border-radius: 12px; border-right: 4px solid #10b981; margin-bottom: 12px; font-size: 0.9rem; line-height: 1.5; }
+
+#newProjectInput, #btnAddCustomProject, #newTagInput, #btnAddCustomTag, #globalItemLabel {
+    display: none !important;
+}
+
+#connection-status {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 99999 !important;
+    text-align: center !important;
+    padding: 8px !important;
+    font-size: 0.85rem !important;
+    font-weight: bold !important;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transform: translateY(-100%) !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4) !important;
+    margin: 0 !important;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+#connection-status.show { transform: translateY(0) !important; }
+
+@keyframes pulseCloud {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}

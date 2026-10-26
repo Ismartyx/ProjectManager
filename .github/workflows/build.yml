@@ -1,0 +1,84 @@
+name: Build Android APK
+on:
+  push:
+    branches:
+      - main
+      - master
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Cordova
+        run: npm install -g cordova
+
+      - name: Build APK
+        run: |
+          cordova create apk_build com.mechave.ws "MechaveWS"
+          rm -rf apk_build/www/*
+          rsync -av --exclude='apk_build' --exclude='.git' --exclude='.github' ./ apk_build/www/
+          cd apk_build
+
+          # کپی آیکن برنامه
+          if [ -f "www/icon-512.png" ]; then
+            cp www/icon-512.png icon.png
+          elif [ -f "www/icon-192.png" ]; then
+            cp www/icon-192.png icon.png
+          fi
+
+          # ساخت config.xml استاندارد (بدون پارامتر رنگ مشکل‌ساز)
+          node -e '
+          const fs = require("fs");
+          const xml = `<?xml version="1.0" encoding="utf-8"?>
+          <widget id="com.mechave.ws" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+              <name>MechaveWS</name>
+              <description>مدیریت پروژه مکاو</description>
+              <author email="info@mechave.ir" href="http://mechave.ir">Mecav Workshop</author>
+              <content src="index.html" />
+              <access origin="*" />
+              <allow-intent href="http://*/*" />
+              <allow-intent href="https://*/*" />
+              <allow-navigation href="*" />
+              <preference name="AndroidInsecureFileModeEnabled" value="true" />
+              <preference name="DisallowOverscroll" value="true" />
+              <platform name="android">
+                  <icon src="icon.png" />
+              </platform>
+          </widget>`;
+          fs.writeFileSync("config.xml", xml.trim(), "utf8");
+          '
+
+          # نصب نسخه پایدار اندروید 13 در کوردوا
+          cordova platform add android@13.0.0
+
+          # فعال کردن مجوز ارتباط با شبکه محلی (HTTP / پورت 5984) مستقیم در AndroidManifest.xml
+          node -e '
+          const fs = require("fs");
+          const manifestPath = "platforms/android/app/src/main/AndroidManifest.xml";
+          let content = fs.readFileSync(manifestPath, "utf8");
+          if (!content.includes("usesCleartextTraffic")) {
+              content = content.replace("<application", "<application android:usesCleartextTraffic=\"true\"");
+              fs.writeFileSync(manifestPath, content, "utf8");
+          }
+          '
+
+          cordova build android
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MechaveWS-APK
+          path: apk_build/platforms/android/app/build/outputs/apk/debug/app-debug.apk
