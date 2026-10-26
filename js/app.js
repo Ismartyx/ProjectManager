@@ -20,7 +20,7 @@ window.showCustomModal = function(options) {
         box.className = 'card';
         box.style.cssText = 'width: 90%; max-width: 400px; padding: 20px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateY(20px); transition: transform 0.2s ease; text-align: right;';
 
-        if(options.title) box.innerHTML += `<h3 style="margin-top: 0; color: var(--primary); font-size: 1.1rem; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">${options.title}</h3>`;
+        if(options.title) box.innerHTML += `<h3 style="margin-top: 0; color: var(--primary); font-size: 1.1rem; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">${options.title}</h3>`;
         if(options.message) box.innerHTML += `<div style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 15px; line-height: 1.6;">${options.message}</div>`;
 
         let inputEl = null;
@@ -33,13 +33,13 @@ window.showCustomModal = function(options) {
                 inputEl.value = options.placeholder; 
                 inputEl.placeholder = options.placeholder;
             }
-            inputEl.style.cssText = 'width: 100%; padding: 10px 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); background: #0f172a; color: #f8fafc; font-family: inherit; font-size: 0.9rem; outline: none;';
+            inputEl.style.cssText = 'width: 100%; padding: 10px 12px; margin-bottom: 15px; border-radius: 10px; border: 1px solid var(--border-input); background: var(--bg-input); color: var(--text-main); font-family: inherit; font-size: 0.95rem; outline: none;';
             box.appendChild(inputEl);
         }
 
         if(options.type === 'complex' && options.checkboxLabel) {
             const chkWrap = document.createElement('label');
-            chkWrap.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #94a3b8; margin-bottom: 15px; cursor: pointer;';
+            chkWrap.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px; cursor: pointer;';
             checkEl = document.createElement('input');
             checkEl.type = 'checkbox';
             checkEl.style.cssText = 'width: 16px; height: 16px; accent-color: var(--primary); margin: 0;';
@@ -112,7 +112,7 @@ function applyFontSize(sizeStr) {
     localStorage.setItem('pm_font_size', sizeStr);
     document.querySelectorAll('.btn-font-size').forEach(btn => {
         btn.style.background = btn.dataset.size === sizeStr ? 'var(--primary)' : 'transparent';
-        btn.style.color = btn.dataset.size === sizeStr ? '#0b1120' : '#f8fafc';
+        btn.style.color = btn.dataset.size === sizeStr ? (document.body.getAttribute('data-theme') === 'dark' ? '#0b1120' : '#ffffff') : 'var(--text-main)';
     });
 }
 
@@ -261,7 +261,7 @@ function setupMultiSelectWithSearch(wrapperId, dataArray, placeholder) {
                 ${dataArray.map(item => `
                     <label class="multi-select-item" data-search="${item.text.toLowerCase()} ${item.value.toLowerCase()}">
                         <input type="checkbox" value="${item.value}" class="ms-checkbox" />
-                        <span style="font-size: 0.85rem; color: #f8fafc;">${item.text}</span>
+                        <span style="font-size: 0.85rem; color: var(--text-main);">${item.text}</span>
                     </label>
                 `).join('')}
             </div>
@@ -452,15 +452,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const fontPanel = document.createElement('div');
         fontPanel.id = 'fontSettingsPanel';
-        fontPanel.style.cssText = 'background: #131c31; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; margin-top: 16px; margin-bottom: 20px;';
+        fontPanel.style.cssText = 'background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; margin-top: 16px; margin-bottom: 20px; box-shadow: var(--shadow);';
         fontPanel.innerHTML = `
-            <div style="color: #38bdf8; font-weight: bold; font-size: 0.95rem; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 10px;">
+            <div style="color: var(--primary); font-weight: bold; font-size: 0.95rem; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
                 🎨 اندازه فونت برنامه
             </div>
             <div style="display: flex; gap: 10px;">
-                <button class="btn btn-secondary btn-font-size" data-size="14px" style="flex: 1; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">کوچک (14)</button>
-                <button class="btn btn-secondary btn-font-size" data-size="15px" style="flex: 1; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">متوسط (15)</button>
-                <button class="btn btn-secondary btn-font-size" data-size="17px" style="flex: 1; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">بزرگ (17)</button>
+                <button class="btn btn-secondary btn-font-size" data-size="14px" style="flex: 1; border-radius: 12px;">کوچک (14)</button>
+                <button class="btn btn-secondary btn-font-size" data-size="15px" style="flex: 1; border-radius: 12px;">متوسط (15)</button>
+                <button class="btn btn-secondary btn-font-size" data-size="17px" style="flex: 1; border-radius: 12px;">بزرگ (17)</button>
             </div>
         `;
         settingsView.appendChild(fontPanel);
@@ -498,50 +498,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ncWrapper = document.createElement('div');
         ncWrapper.id = 'mecavNextcloudPanel';
         ncWrapper.innerHTML = `
-            <div style="background: #131c31; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; margin-bottom: 16px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 10px;">
-                    <span style="color: #38bdf8; font-weight: bold; font-size: 0.95rem;">📲 فایل بک‌آپ و ادغام</span>
-                    <span id="ncBackupStats" style="font-size: 0.8rem; color: #94a3b8;">در حال محاسبه...</span>
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                    <span style="color: var(--primary); font-weight: bold; font-size: 0.95rem;">📲 فایل بک‌آپ و ادغام</span>
+                    <span id="ncBackupStats" style="font-size: 0.8rem; color: var(--text-muted);">در حال محاسبه...</span>
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button id="btnManualExportFile" class="btn" style="flex: 1; background: #38bdf8; color: #0b1120; font-weight: bold; border-radius: 12px; padding: 12px;">📤 خروجی فایل</button>
-                    <button id="btnManualImportFile" class="btn" style="flex: 1; background: #10b981; color: #0b1120; font-weight: bold; border-radius: 12px; padding: 12px;">📥 ادغام فایل</button>
+                    <button id="btnManualExportFile" class="btn btn-primary" style="flex: 1; border-radius: 12px; padding: 12px;">📤 خروجی فایل</button>
+                    <button id="btnManualImportFile" class="btn btn-success" style="flex: 1; border-radius: 12px; padding: 12px;">📥 ادغام فایل</button>
                     <input type="file" id="inputManualRestoreFile" accept=".json" style="display: none;" />
                 </div>
             </div>
 
-            <div style="background: #131c31; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px;">
-                <div style="color: #38bdf8; font-weight: bold; font-size: 0.95rem; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 10px;">
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; box-shadow: var(--shadow);">
+                <div style="color: var(--primary); font-weight: bold; font-size: 0.95rem; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
                     ☁️ پشتیبان‌گیری ابری Nextcloud
                 </div>
                 <div style="margin-bottom: 10px;">
-                    <label style="display:block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">آدرس سرور نکست‌کلاد:</label>
+                    <label style="display:block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">آدرس سرور نکست‌کلاد:</label>
                     <input type="text" id="ncUrlInput" value="${cfg.url}" dir="ltr" style="width:100%; text-align:left;" placeholder="https://nc.paranas.ir" />
                 </div>
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <div style="flex: 1;">
-                        <label style="display:block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">نام کاربری:</label>
+                        <label style="display:block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">نام کاربری:</label>
                         <input type="text" id="ncUserInput" value="${cfg.user}" dir="ltr" style="width:100%; text-align:left;" placeholder="saeed" />
                     </div>
                     <div style="flex: 1;">
-                        <label style="display:block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">رمز عبور (App Password):</label>
+                        <label style="display:block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">رمز عبور (App Password):</label>
                         <input type="password" id="ncPassInput" value="${cfg.pass}" dir="ltr" style="width:100%; text-align:left;" placeholder="••••••••••••" />
                     </div>
                 </div>
                 <div style="margin-bottom: 12px;">
-                    <label style="display:block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">مسیر ذخیره در سرور:</label>
+                    <label style="display:block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">مسیر ذخیره در سرور:</label>
                     <input type="text" id="ncPathInput" value="${cfg.path}" dir="ltr" style="width:100%; text-align:left;" placeholder="Backups/ProjectManagerBackup/MechaveWS_Backup.json" />
                 </div>
                 <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-bottom: 14px; cursor: pointer;">
-                    <input type="checkbox" id="ncAutoBackupChk" ${cfg.autoBackup ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #38bdf8;" />
+                    <input type="checkbox" id="ncAutoBackupChk" ${cfg.autoBackup ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--primary);" />
                     <span>بکاپ خودکار پس از هر تغییر یا همگام‌سازی</span>
                 </label>
-                <button id="btnSaveNcConfig" class="btn" style="width: 100%; background: #38bdf8; color: #0b1120; font-weight: bold; border-radius: 12px; padding: 12px; margin-bottom: 10px;">
+                <button id="btnSaveNcConfig" class="btn btn-primary" style="width: 100%; border-radius: 12px; padding: 12px; margin-bottom: 10px;">
                     ذخیره تنظیمات Nextcloud
                 </button>
                 <div style="display: flex; gap: 10px;">
-                    <button id="btnNcManualUpload" class="btn btn-secondary" style="flex: 1; border-radius: 12px; padding: 10px; color: #38bdf8;">☁️ آپلود دستی</button>
-                    <button id="btnNcManualRestore" class="btn btn-secondary" style="flex: 1; border-radius: 12px; padding: 10px; color: #10b981;">🔄 بازیابی از سرور</button>
+                    <button id="btnNcManualUpload" class="btn btn-secondary" style="flex: 1; border-radius: 12px; padding: 10px;">☁️ آپلود دستی</button>
+                    <button id="btnNcManualRestore" class="btn btn-secondary" style="flex: 1; border-radius: 12px; padding: 10px;">🔄 بازیابی از سرور</button>
                 </div>
             </div>
         `;
