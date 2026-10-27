@@ -1,0 +1,17 @@
+{
+  "name": "cordova-plugin-mecav-notification",
+  "version": "1.0.0",
+  "description": "Native Android Notification plugin for MecavWS",
+  "cordova": {
+    "id": "cordova-plugin-mecav-notification",
+    "platforms": [
+      "android"
+    ]
+  },
+  "keywords": [
+    "ecosystem:cordova",
+    "cordova-android"
+  ],
+  "author": "Mecav Workshop",
+  "license": "MIT"
+}
