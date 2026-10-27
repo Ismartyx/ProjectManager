@@ -83,13 +83,17 @@ jobs:
           fs.writeFileSync(manifestPath, content, "utf8");
           '
 
-          cordova build android --buildConfig=../build.json
+          # کپی کلید امضای دائمی و تنظیمات به داخل پوشه بیلد
+          cp ../signing/mecav-release.keystore ./mecav-release.keystore
+          cp ../build.json ./build.json
+
+          cordova build android --buildConfig=build.json
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: MechaveWS-APK
-          path: apk_build/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          path: apk_build/platforms/android/app/build/outputs/apk/**/*.apk
 
   build-windows:
     name: Build Windows Application
