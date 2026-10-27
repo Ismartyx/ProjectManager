@@ -49,6 +49,12 @@
                 <h2 style="margin:0;">سلام، <span id="welcomeName" style="color:var(--primary)"></span></h2>
                 <label class="checkbox-label" id="archiveToggleLabel" style="display:none; margin:0;"><input type="checkbox" id="chkShowArchived"> نمایش آرشیو</label>
             </div>
+            <div id="notif-permission-banner" class="card" style="display: none; background: rgba(56, 189, 248, 0.08); border: 1px solid var(--primary); margin-bottom: 12px; padding: 10px 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                <div style="font-size: 0.85rem; color: var(--text-main);">
+                    🔔 <b>اعلان‌های سیستمی غیرفعال است!</b> برای دریافت زنگ و پیام هنگام ارجاع تسک، دکمه مقابل را بزنید:
+                </div>
+                <button id="btnBannerEnableNotif" class="btn btn-primary btn-small" style="margin: 0; padding: 6px 14px;">فعال‌سازی زنگ و پیام</button>
+            </div>
             <div id="admin-notifications" class="card" style="display: none; border-color: var(--accent);">
                 <h3 style="color: var(--accent); margin:0 0 10px 0;">🔔 کارتابل مدیر</h3>
                 <div id="admin-notif-list"></div>

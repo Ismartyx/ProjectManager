@@ -652,6 +652,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (typeof NotificationManager !== 'undefined') {
                 NotificationManager.startListening(user.id);
             }
+            const banner = document.getElementById('notif-permission-banner');
+            if (banner) {
+                banner.style.display = ("Notification" in window && Notification.permission !== "granted") ? 'flex' : 'none';
+            }
             if(user.role === 'admin') { 
                 document.getElementById('admin-settings-section').style.display = 'block'; 
                 renderAdminUserList(); 
@@ -666,6 +670,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     checkLoginStatus();
+
+    const btnBannerEnableNotif = document.getElementById('btnBannerEnableNotif');
+    if (btnBannerEnableNotif && !btnBannerEnableNotif.dataset.bound) {
+        btnBannerEnableNotif.dataset.bound = "true";
+        btnBannerEnableNotif.addEventListener('click', async () => {
+            if ("Notification" in window) {
+                try {
+                    let perm = await Notification.requestPermission();
+                    const banner = document.getElementById('notif-permission-banner');
+                    if (perm === 'granted') {
+                        if (banner) banner.style.display = 'none';
+                        NotificationManager.showLocalSystemNotification(
+                            '✅ اعلان‌های مکاو فعال شد',
+                            'صدای زنگ و اعلان‌های سیستمی روی این دستگاه فعال شدند.'
+                        );
+                        showToast('اعلان‌ها با موفقیت فعال شدند.');
+                    } else {
+                        showToast('دسترسی اعلان توسط مرورگر رد شد.', 'error');
+                    }
+                } catch (e) {
+                    NotificationManager.playAlertSound();
+                }
+            } else {
+                NotificationManager.playAlertSound();
+                showToast('صدای زنگ فعال است.');
+            }
+        });
+    }
 
     let searchInputEl = document.getElementById('dashboardSearchInput');
     if (searchInputEl) searchInputEl.addEventListener('input', () => renderDashboard());
