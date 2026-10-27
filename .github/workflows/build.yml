@@ -107,7 +107,18 @@ jobs:
         run: npm install
 
       - name: Build Windows Installer
-        run: npm run build:win
+        shell: powershell
+        run: |
+          npx electron-builder --win --x64 --publish never 2>&1 | Out-File -FilePath electron-build.log -Encoding utf8
+          Get-Content electron-build.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload Build Log on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-build-log
+          path: electron-build.log
 
       - name: Upload Windows Setup
         uses: actions/upload-artifact@v4

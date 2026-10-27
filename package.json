@@ -1,11 +1,11 @@
 {
   "name": "mechave-ws",
   "version": "1.0.0",
-  "description": "سیستم جامع مدیریت پروژه و وظایف مکاو",
+  "description": "Mecav Workshop Project Management System",
   "main": "electron-main.js",
   "scripts": {
     "start": "electron .",
-    "build:win": "electron-builder --win --x64"
+    "build:win": "electron-builder --win --x64 --publish never"
   },
   "author": "Mecav Workshop <info@mechave.ir>",
   "license": "ISC",
@@ -16,6 +16,7 @@
   "build": {
     "appId": "com.mechave.ws",
     "productName": "MechaveWS",
+    "publish": null,
     "directories": {
       "output": "dist"
     },
@@ -30,7 +31,9 @@
       "icon-192.png",
       "icon-512.png",
       "icon.ico",
-      "favicon.svg"
+      "favicon.svg",
+      "manifest.json",
+      "sw.js"
     ],
     "win": {
       "target": [
