@@ -34,60 +34,94 @@ const AuthManager = {
         }
     },
 
+    fetchUsersDirectlyFromServer: async function() {
+        if (typeof PouchAdapter === 'undefined') return null;
+        const urlsToTry = [
+            PouchAdapter.getLocalUrl(),
+            PouchAdapter.getOnlineUrl()
+        ].filter(Boolean);
+
+        const fetchOne = async (base) => {
+            const endpoint = base.replace(/\/+$/, '') + '/system_users_list';
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 3000);
+            try {
+                const res = await fetch(endpoint, {
+                    headers: { 'Authorization': 'Basic ' + btoa('admin:33995333Sma') },
+                    signal: controller.signal
+                });
+                clearTimeout(timer);
+                if (res.ok) {
+                    const doc = await res.json();
+                    if (doc && doc.users && Array.isArray(doc.users) && doc.users.length > 0) {
+                        return doc.users;
+                    }
+                }
+            } catch (e) {
+                clearTimeout(timer);
+            }
+            throw new Error('Failed to fetch from ' + base);
+        };
+
+        try {
+            return await Promise.any(urlsToTry.map(fetchOne));
+        } catch (e) {
+            return null;
+        }
+    },
+
     syncFromDB: async function() {
         if (typeof DBManager !== 'undefined' && DBManager.getUsersFromDB) {
             let dbUsers = await DBManager.getUsersFromDB();
             if (dbUsers && dbUsers.length > 0) {
-                // دریافت لیست واقعی پرسنل و مدیر از سرور کارگاه
                 this.usersList = dbUsers;
                 this.ensureNumericAdmin();
                 localStorage.setItem('pm_users_db', JSON.stringify(this.usersList));
                 this.refreshCurrentUserFromList();
-            } else if (PouchAdapter && PouchAdapter.isOnline) {
-                // فقط در صورتی که به سرور کارگاه وصل هستیم و سرور واقعاً تازه نصب شده و هیچ کاربری ندارد، ادمین 100 را بساز
-                if (this.usersList.length === 0) {
-                    this.usersList = [
-                        { id: '100', name: 'مدیر سیستم', pin: '100', role: 'admin', canAssignTasks: true }
-                    ];
-                }
-                this.saveUsers();
+                return;
+            }
+        }
+
+        let directUsers = await this.fetchUsersDirectlyFromServer();
+        if (directUsers && directUsers.length > 0) {
+            this.usersList = directUsers;
+            this.ensureNumericAdmin();
+            localStorage.setItem('pm_users_db', JSON.stringify(this.usersList));
+            this.refreshCurrentUserFromList();
+            if (typeof DBManager !== 'undefined' && DBManager.saveUsersToDB) {
+                DBManager.saveUsersToDB(this.usersList);
             }
         }
     },
 
-    // اگر لیست کاربران خالی باشد، صبر می‌کند تا سینک اولیه از سرور کامل شود و سپس مجدداً بارگذاری می‌کند
     syncFromDBWithWait: async function() {
-        // اگر از قبل داده داریم، همان را سریع برگردان
-        if (this.usersList && this.usersList.length > 0) {
-            await this.syncFromDB();
+        let directUsers = await this.fetchUsersDirectlyFromServer();
+        if (directUsers && directUsers.length > 0) {
+            this.usersList = directUsers;
+            this.ensureNumericAdmin();
+            localStorage.setItem('pm_users_db', JSON.stringify(this.usersList));
+            if (typeof DBManager !== 'undefined' && DBManager.saveUsersToDB) {
+                DBManager.saveUsersToDB(this.usersList);
+            }
             return;
         }
-        // داده نداریم - بررسی اتصال و دریافت اولیه از سرور محلی یا آنلاین
+
         if (typeof PouchAdapter !== 'undefined') {
             try {
                 await PouchAdapter.checkConnection();
                 if (PouchAdapter._initialSyncPromise) {
-                    await PouchAdapter.waitForInitialSync(6000);
+                    await PouchAdapter.waitForInitialSync(4000);
                 }
             } catch (e) {}
         }
-        // حالا دوباره از دیتابیس محلی می‌خوانیم
         await this.syncFromDB();
     },
 
     login: function(personnelCode, nationalCode) {
         let searchCode = (personnelCode.toLowerCase() === 'admin') ? '100' : personnelCode;
 
-        // اگر دستگاه جدید است و هنوز ارتباط اولیه با سرور برقرار نشده:
         if (!this.usersList || this.usersList.length === 0) {
-            if (searchCode === '100' && (nationalCode === '100' || nationalCode === 'admin')) {
-                this.usersList = [
-                    { id: '100', name: 'مدیر سیستم', pin: '100', role: 'admin', canAssignTasks: true }
-                ];
-                this.saveUsers();
-            } else {
-                throw new Error("اطلاعات کاربران هنوز از سرور دریافت نشده است. لطفاً اتصال اینترنت خود را بررسی کرده و چند لحظه بعد دوباره امتحان کنید.");
-            }
+            throw new Error("ارتباط با سرور برقرار نشد. لطفاً اینترنت/شبکه را بررسی کرده و چند لحظه بعد مجدداً دکمه ورود را بزنید.");
         }
 
         let user = this.usersList.find(u => u.id === searchCode);
