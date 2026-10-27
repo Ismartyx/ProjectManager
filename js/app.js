@@ -1109,7 +1109,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) { showToast('خطا در ذخیره تسک', 'error'); }
     });
 
-    window.toggleProject = function(headerEl) { headerEl.nextElementSibling.classList.toggle('collapsed'); };
+    function getCollapsedProjects() {
+        try {
+            let user = AuthManager.getCurrentUser();
+            let key = user ? 'pm_collapsed_projects_' + user.id : 'pm_collapsed_projects';
+            return JSON.parse(localStorage.getItem(key)) || [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function setProjectCollapsed(projectId, isCollapsed) {
+        if (!projectId) return;
+        try {
+            let user = AuthManager.getCurrentUser();
+            let key = user ? 'pm_collapsed_projects_' + user.id : 'pm_collapsed_projects';
+            let list = getCollapsedProjects();
+            if (isCollapsed) {
+                if (!list.includes(projectId)) list.push(projectId);
+            } else {
+                list = list.filter(id => id !== projectId);
+            }
+            localStorage.setItem(key, JSON.stringify(list));
+        } catch (e) {}
+    }
+
+    window.toggleProject = function(headerEl, projectId) {
+        const container = headerEl.nextElementSibling;
+        if (!container) return;
+        const isNowCollapsed = container.classList.toggle('collapsed');
+        if (projectId) {
+            setProjectCollapsed(projectId, isNowCollapsed);
+        }
+        const arrow = headerEl.querySelector('.project-collapse-arrow');
+        if (arrow) arrow.innerText = isNowCollapsed ? '◀' : '▼';
+    };
     const chkShowArchivedEl = document.getElementById('chkShowArchived');
     if(chkShowArchivedEl) chkShowArchivedEl.addEventListener('change', () => renderDashboard());
 
@@ -1188,6 +1222,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             return; 
         }
 
+        let collapsedList = getCollapsedProjects();
+
         myProjects.forEach(proj => {
             let projTasks = myTasks.filter(t => t.projectId === proj._id);
             if (searchTerm && projTasks.length === 0) return;
@@ -1202,15 +1238,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             let btnArchive = (currentUser.role === 'admin' && !showArchived) ? `<button class="btn btn-small btn-secondary" onclick="event.stopPropagation(); window.archiveProject('${proj._id}')" style="padding:4px 10px; font-size:0.8rem;">بستن و آرشیو</button>` : '';
             
+            let isCollapsed = searchTerm ? false : collapsedList.includes(proj._id);
+
             let projHTML = `<div class="project-group">
-                <div class="project-header" onclick="toggleProject(this)">
+                <div class="project-header" onclick="toggleProject(this, '${proj._id}')">
                     <div style="display:flex; align-items:center;">
+                        <span class="project-collapse-arrow" style="display:inline-block; font-size:0.75rem; margin-left:8px; color:var(--text-muted);">${isCollapsed ? '◀' : '▼'}</span>
                         <button class="btn-quick-add" onclick="event.stopPropagation(); window.quickAddTask('${proj._id}', '${proj.title}')" title="افزودن تسک به این پروژه">➕</button>
                         📁 ${proj.title} <span style="font-size:0.8rem; color: #38bdf8; margin-right:5px;">(${projTasks.length})</span>
                     </div>
                     ${btnArchive}
                 </div>
-                <div class="project-tasks-container">`;
+                <div class="project-tasks-container ${isCollapsed ? 'collapsed' : ''}">`;
             
             projTasks.forEach(t => {
                 let overdue = isTaskOverdue(t);
