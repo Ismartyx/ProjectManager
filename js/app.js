@@ -321,97 +321,11 @@ function compressImageToBase64(file, callback) {
     reader.readAsDataURL(file);
 }
 
-const NextcloudBackupManager = {
-    syncTimer: null,
-    isUploading: false,
-
-    getConfig: function() {
-        let saved = localStorage.getItem('mecav_nc_config');
-        if (saved) return JSON.parse(saved);
-        return { url: 'https://nc.paranas.ir', user: 'saeed', pass: '', path: 'Backups/ProjectManagerBackup/MechaveWS_Backup.json', autoBackup: true };
-    },
-    saveConfig: function(cfg) { localStorage.setItem('mecav_nc_config', JSON.stringify(cfg)); },
-
-    updateBadge: function(state, timeText = '') {
-        let badge = document.getElementById('nc-status-badge');
-        const currentUser = AuthManager.getCurrentUser();
-        if (!currentUser || currentUser.role !== 'admin') { if (badge) badge.style.display = 'none'; return; }
-
-        if (!badge) {
-            badge = document.createElement('div'); badge.id = 'nc-status-badge';
-            badge.style.cssText = 'font-size: 1.1rem; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.06); margin-right: auto; margin-left: 10px; cursor: pointer; transition: 0.2s;';
-            const headerActions = document.getElementById('headerActions');
-            if (headerActions && headerActions.parentNode) headerActions.parentNode.insertBefore(badge, headerActions);
-        }
-        badge.style.display = 'flex';
-        let lastTime = timeText || localStorage.getItem('mecav_nc_last_time') || '';
-
-        if (state === 'syncing') { badge.innerHTML = `☁️`; badge.style.color = '#38bdf8'; badge.style.animation = 'pulseCloud 1s infinite'; badge.title = 'در حال بک‌آپ...'; } 
-        else if (state === 'ok') { badge.innerHTML = `☁️`; badge.style.color = '#10b981'; badge.style.animation = 'none'; badge.title = 'بک‌آپ موفق - ' + lastTime; } 
-        else if (state === 'error') { badge.innerHTML = `☁️`; badge.style.color = '#ef4444'; badge.style.animation = 'none'; badge.title = 'خطا در اتصال'; } 
-        else {
-            let cfg = this.getConfig();
-            if (!cfg.pass) { badge.innerHTML = `☁️`; badge.style.color = '#f59e0b'; badge.title = 'تنظیم نشده'; } 
-            else { badge.innerHTML = `☁️`; badge.style.color = '#94a3b8'; badge.style.animation = 'none'; badge.title = 'آماده بک‌آپ'; }
-        }
-    },
-
+const BackupManager = {
     buildBackupPayload: async function() {
         let allData = await PouchAdapter.localDB.allDocs({ include_docs: true });
         let cleanDocs = allData.rows.map(r => { let doc = Object.assign({}, r.doc); delete doc._rev; return doc; });
         return { app: "MechaveWS", exportDate: new Date().toISOString(), totalItems: cleanDocs.length, users: AuthManager.usersList, data: cleanDocs };
-    },
-
-    buildWebDavUrl: function(cfg) {
-        let baseUrl = cfg.url.trim().replace(/\/+$/, ''); let cleanPath = cfg.path.trim().replace(/^\/+/, '');
-        return `${baseUrl}/remote.php/dav/files/${encodeURIComponent(cfg.user.trim())}/${cleanPath}`;
-    },
-
-    uploadToNextcloud: async function(silent = false) {
-        const currentUser = AuthManager.getCurrentUser();
-        if (!currentUser || currentUser.role !== 'admin') return;
-        const cfg = this.getConfig();
-        if (!cfg.url || !cfg.user || !cfg.pass || !cfg.path) { if (!silent) showToast('لطفاً اطلاعات نکست‌کلاد را وارد کنید.', 'error'); this.updateBadge('idle'); return; }
-        if (this.isUploading) return;
-        this.isUploading = true; this.updateBadge('syncing');
-
-        try {
-            const payload = await this.buildBackupPayload();
-            const jsonString = JSON.stringify(payload, null, 2);
-            const authHeader = 'Basic ' + btoa(unescape(encodeURIComponent(cfg.user.trim() + ':' + cfg.pass.trim())));
-            const targetUrl = this.buildWebDavUrl(cfg);
-
-            const res = await fetch(targetUrl, { method: 'PUT', headers: { 'Authorization': authHeader, 'Content-Type': 'application/json; charset=utf-8' }, body: jsonString, cache: 'no-cache' });
-            if (res.ok || res.status === 201 || res.status === 204) {
-                let nowStr = new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
-                localStorage.setItem('mecav_nc_last_time', nowStr); this.updateBadge('ok', nowStr);
-                if (!silent) showToast('☁️ بک‌آپ در سرور نکست‌کلاد ذخیره شد.');
-            } else throw new Error('HTTP ' + res.status);
-        } catch (err) {
-            this.updateBadge('error'); let errMsg = err.message || 'نامشخص';
-            if (errMsg.toLowerCase().includes('failed to fetch')) errMsg = 'ارتباط مسدود شد (CORS)';
-            if (!silent) { showToast('خطا نکست‌کلاد: ' + errMsg, 'error'); showCustomModal({ title: 'خطای ارتباط با نکست‌کلاد', message: "جزئیات خطا:\n" + err, type: 'alert' }); }
-        } finally { this.isUploading = false; }
-    },
-
-    restoreFromNextcloud: async function() {
-        const cfg = this.getConfig();
-        if (!cfg.url || !cfg.user || !cfg.pass || !cfg.path) return showToast('ابتدا تنظیمات نکست‌کلاد را کامل کنید.', 'error');
-        let isConfirmed = await showCustomModal({ title: 'بازیابی اطلاعات', message: 'آیا از بازیابی و ادغام اطلاعات از نکست‌کلاد مطمئن هستید؟', type: 'confirm' });
-        if (!isConfirmed) return;
-
-        try {
-            showToast('در حال دریافت فایل بک‌آپ...');
-            const authHeader = 'Basic ' + btoa(unescape(encodeURIComponent(cfg.user.trim() + ':' + cfg.pass.trim())));
-            const targetUrl = this.buildWebDavUrl(cfg);
-            const res = await fetch(targetUrl, { method: 'GET', headers: { 'Authorization': authHeader }, cache: 'no-cache' });
-            if (!res.ok) throw new Error('فایل یافت نشد یا رمز اشتباه است.');
-            const parsed = await res.json();
-            await this.applyRestoreData(parsed);
-        } catch (err) {
-            let errMsg = err.message || 'نامشخص'; if (errMsg.toLowerCase().includes('failed to fetch')) errMsg = 'ارتباط مسدود شد';
-            showToast('خطا در بازیابی: ' + errMsg, 'error'); showCustomModal({ title: 'خطا', message: "جزئیات خطا:\n" + err, type: 'alert' });
-        }
     },
 
     applyRestoreData: async function(parsed) {
@@ -422,14 +336,6 @@ const NextcloudBackupManager = {
         await AuthManager.syncFromDB();
         window.dispatchEvent(new CustomEvent('db_updated', { detail: { source: 'restore' } }));
         showToast('✅ اطلاعات با موفقیت بازیابی شد!');
-    },
-
-    triggerAutoBackup: function() {
-        const currentUser = AuthManager.getCurrentUser();
-        if (!currentUser || currentUser.role !== 'admin') return;
-        const cfg = this.getConfig(); if (!cfg.autoBackup || !cfg.pass) return;
-        if (this.syncTimer) clearTimeout(this.syncTimer);
-        this.syncTimer = setTimeout(() => { this.uploadToNextcloud(true); }, 4000);
     }
 };
 
@@ -575,64 +481,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        if (document.getElementById('mecavNextcloudPanel')) return;
+        if (document.getElementById('mecavManualBackupPanel')) return;
 
-        const cfg = NextcloudBackupManager.getConfig();
-        const ncWrapper = document.createElement('div');
-        ncWrapper.id = 'mecavNextcloudPanel';
-        ncWrapper.innerHTML = `
+        const backupWrapper = document.createElement('div');
+        backupWrapper.id = 'mecavManualBackupPanel';
+        backupWrapper.innerHTML = `
             <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-                    <span style="color: var(--primary); font-weight: bold; font-size: 0.95rem;">📲 فایل بک‌آپ و ادغام</span>
-                    <span id="ncBackupStats" style="font-size: 0.8rem; color: var(--text-muted);">در حال محاسبه...</span>
+                    <span style="color: var(--primary); font-weight: bold; font-size: 0.95rem;">💾 خروجی و ادغام فایل پشتیبان (JSON)</span>
+                    <span id="backupStats" style="font-size: 0.8rem; color: var(--text-muted);">در حال محاسبه...</span>
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button id="btnManualExportFile" class="btn btn-primary" style="flex: 1; border-radius: 12px; padding: 12px;">📤 خروجی فایل</button>
-                    <button id="btnManualImportFile" class="btn btn-success" style="flex: 1; border-radius: 12px; padding: 12px;">📥 ادغام فایل</button>
+                    <button id="btnManualExportFile" class="btn btn-primary" style="flex: 1; border-radius: 12px; padding: 12px;">📤 دانلود فایل بک‌آپ</button>
+                    <button id="btnManualImportFile" class="btn btn-success" style="flex: 1; border-radius: 12px; padding: 12px;">📥 ادغام فایل بک‌آپ</button>
                     <input type="file" id="inputManualRestoreFile" accept=".json" style="display: none;" />
                 </div>
             </div>
-
-            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; box-shadow: var(--shadow);">
-                <div style="color: var(--primary); font-weight: bold; font-size: 0.95rem; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-                    ☁️ پشتیبان‌گیری ابری Nextcloud
-                </div>
-                <div style="margin-bottom: 10px;">
-                    <label style="display:block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">آدرس سرور نکست‌کلاد:</label>
-                    <input type="text" id="ncUrlInput" value="${cfg.url}" dir="ltr" style="width:100%; text-align:left;" placeholder="https://nc.paranas.ir" />
-                </div>
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <div style="flex: 1;">
-                        <label style="display:block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">نام کاربری:</label>
-                        <input type="text" id="ncUserInput" value="${cfg.user}" dir="ltr" style="width:100%; text-align:left;" placeholder="saeed" />
-                    </div>
-                    <div style="flex: 1;">
-                        <label style="display:block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">رمز عبور (App Password):</label>
-                        <input type="password" id="ncPassInput" value="${cfg.pass}" dir="ltr" style="width:100%; text-align:left;" placeholder="••••••••••••" />
-                    </div>
-                </div>
-                <div style="margin-bottom: 12px;">
-                    <label style="display:block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">مسیر ذخیره در سرور:</label>
-                    <input type="text" id="ncPathInput" value="${cfg.path}" dir="ltr" style="width:100%; text-align:left;" placeholder="Backups/ProjectManagerBackup/MechaveWS_Backup.json" />
-                </div>
-                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-bottom: 14px; cursor: pointer;">
-                    <input type="checkbox" id="ncAutoBackupChk" ${cfg.autoBackup ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--primary);" />
-                    <span>بکاپ خودکار پس از هر تغییر یا همگام‌سازی</span>
-                </label>
-                <button id="btnSaveNcConfig" class="btn btn-primary" style="width: 100%; border-radius: 12px; padding: 12px; margin-bottom: 10px;">
-                    ذخیره تنظیمات Nextcloud
-                </button>
-                <div style="display: flex; gap: 10px;">
-                    <button id="btnNcManualUpload" class="btn btn-secondary" style="flex: 1; border-radius: 12px; padding: 10px;">☁️ آپلود دستی</button>
-                    <button id="btnNcManualRestore" class="btn btn-secondary" style="flex: 1; border-radius: 12px; padding: 10px;">🔄 بازیابی از سرور</button>
-                </div>
-            </div>
         `;
-        adminSec.appendChild(ncWrapper);
+        adminSec.appendChild(backupWrapper);
 
         document.getElementById('btnManualExportFile').addEventListener('click', async () => {
             try {
-                const payload = await NextcloudBackupManager.buildBackupPayload();
+                const payload = await BackupManager.buildBackupPayload();
                 const dataStr = JSON.stringify(payload, null, 2);
                 const blob = new Blob([dataStr], { type: "application/json" });
                 const url = URL.createObjectURL(blob);
@@ -655,7 +525,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             reader.onload = async (ev) => {
                 try {
                     let parsed = JSON.parse(ev.target.result);
-                    await NextcloudBackupManager.applyRestoreData(parsed);
+                    await BackupManager.applyRestoreData(parsed);
                     updateBackupStatsText();
                 } catch (err) { showToast('خطا در خواندن فایل بک‌آپ!', 'error'); }
                 fileInp.value = '';
@@ -663,30 +533,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             reader.readAsText(file);
         });
 
-        const readFormConfig = () => ({
-            url: document.getElementById('ncUrlInput').value.trim(),
-            user: document.getElementById('ncUserInput').value.trim(),
-            pass: document.getElementById('ncPassInput').value.trim(),
-            path: document.getElementById('ncPathInput').value.trim(),
-            autoBackup: document.getElementById('ncAutoBackupChk').checked
-        });
-
-        document.getElementById('btnSaveNcConfig').addEventListener('click', () => {
-            NextcloudBackupManager.saveConfig(readFormConfig()); showToast('تنظیمات ذخیره شد. در حال تست ارتباط...'); NextcloudBackupManager.uploadToNextcloud(false);
-        });
-        document.getElementById('btnNcManualUpload').addEventListener('click', () => {
-            NextcloudBackupManager.saveConfig(readFormConfig()); NextcloudBackupManager.uploadToNextcloud(false);
-        });
-        document.getElementById('btnNcManualRestore').addEventListener('click', () => {
-            NextcloudBackupManager.saveConfig(readFormConfig()); NextcloudBackupManager.restoreFromNextcloud();
-        });
+        updateBackupStatsText();
     }
 
     async function updateBackupStatsText() {
-        const statEl = document.getElementById('ncBackupStats');
+        const statEl = document.getElementById('backupStats');
         if (!statEl) return;
         try {
-            const payload = await NextcloudBackupManager.buildBackupPayload();
+            const payload = await BackupManager.buildBackupPayload();
             const kb = (new Blob([JSON.stringify(payload)]).size / 1024).toFixed(1);
             statEl.innerText = `${payload.totalItems} رکورد (${kb} KB)`;
         } catch (e) {}
@@ -801,7 +655,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if(user.role === 'admin') { 
                 document.getElementById('admin-settings-section').style.display = 'block'; 
                 renderAdminUserList(); 
-                NextcloudBackupManager.updateBadge('idle');
             }
             renderDashboard();
         } else { 
@@ -809,7 +662,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 NotificationManager.stopListening();
             }
             loginView.style.display = 'block'; 
-            NextcloudBackupManager.updateBadge('hide');
         }
     }
 

@@ -62,21 +62,34 @@ const AuthManager = {
             await this.syncFromDB();
             return;
         }
-        // داده نداریم - اگر آنلاین هستیم، منتظر اتمام pull اولیه می‌مانیم
-        if (typeof PouchAdapter !== 'undefined' && PouchAdapter._initialSyncPromise) {
-            await PouchAdapter.waitForInitialSync(8000);
+        // داده نداریم - بررسی اتصال و دریافت اولیه از سرور محلی یا آنلاین
+        if (typeof PouchAdapter !== 'undefined') {
+            try {
+                await PouchAdapter.checkConnection();
+                if (PouchAdapter._initialSyncPromise) {
+                    await PouchAdapter.waitForInitialSync(6000);
+                }
+            } catch (e) {}
         }
-        // حالا دوباره از دیتابیس محلی می‌خوانیم (که باید پر شده باشد)
+        // حالا دوباره از دیتابیس محلی می‌خوانیم
         await this.syncFromDB();
     },
 
     login: function(personnelCode, nationalCode) {
-        // اگر دستگاه جدید است و هنوز یک بار هم به سرور کارگاه وصل نشده است:
+        let searchCode = (personnelCode.toLowerCase() === 'admin') ? '100' : personnelCode;
+
+        // اگر دستگاه جدید است و هنوز ارتباط اولیه با سرور برقرار نشده:
         if (!this.usersList || this.usersList.length === 0) {
-            throw new Error("برای اولین ورود، لطفاً به وای‌فای کارگاه متصل شوید تا اطلاعات حساب‌ها از سرور دریافت شود.");
+            if (searchCode === '100' && (nationalCode === '100' || nationalCode === 'admin')) {
+                this.usersList = [
+                    { id: '100', name: 'مدیر سیستم', pin: '100', role: 'admin', canAssignTasks: true }
+                ];
+                this.saveUsers();
+            } else {
+                throw new Error("اطلاعات کاربران هنوز از سرور دریافت نشده است. لطفاً اتصال اینترنت خود را بررسی کرده و چند لحظه بعد دوباره امتحان کنید.");
+            }
         }
 
-        let searchCode = (personnelCode.toLowerCase() === 'admin') ? '100' : personnelCode;
         let user = this.usersList.find(u => u.id === searchCode);
         
         if (!user) throw new Error("کاربری با این کد پرسنلی یافت نشد.");

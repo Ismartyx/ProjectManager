@@ -28,7 +28,7 @@ const PouchAdapter = {
 
     // آدرس سرور آنلاین (سرور مجازی اینترنتی VPS)
     getOnlineUrl: function() {
-        return localStorage.getItem('pm_server_url_online') || '';
+        return localStorage.getItem('pm_server_url_online') || 'http://155.117.234.69:5984/mecav_db_main';
     },
 
     setOnlineUrl: function(newUrl) {
