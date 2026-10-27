@@ -822,8 +822,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(!container) return;
         container.innerHTML = AuthManager.usersList.map(u => 
             `<div style="display:flex; justify-content:space-between; align-items:center; padding: 10px; border-bottom: 1px solid var(--border-color); flex-wrap:wrap; gap:8px;">
-                <div>👤 ${u.name} (کد: <b>${u.id}</b>)</div>
-                <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                <div>
+                    👤 <b>${u.name}</b> (کد: <code>${u.id}</code>)
+                    ${u.role === 'admin' 
+                        ? `<span style="font-size:0.75rem; background:rgba(56,189,248,0.15); color:var(--primary); padding:2px 8px; border-radius:6px; margin-right:6px; border:1px solid rgba(56,189,248,0.3);">مدیر ارشد</span>` 
+                        : (u.canAssignTasks 
+                            ? `<span style="font-size:0.75rem; background:rgba(16,185,129,0.15); color:var(--success); padding:2px 8px; border-radius:6px; margin-right:6px; border:1px solid rgba(16,185,129,0.3);">⚡ مجاز به ارجاع</span>` 
+                            : `<span style="font-size:0.75rem; background:rgba(255,255,255,0.05); color:var(--text-muted); padding:2px 8px; border-radius:6px; margin-right:6px; border:1px solid var(--border-color);">پرسنل عادی</span>`
+                          )
+                    }
+                </div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                    ${u.role !== 'admin' ? `
+                        <button class="btn btn-small ${u.canAssignTasks ? 'btn-success' : 'btn-secondary'}" onclick="window.adminTogglePermission('${u.id}')" title="تغییر دسترسی تعیین مسئول تسک">
+                            ${u.canAssignTasks ? '✓ ارجاع: فعال' : '+ اجازه ارجاع'}
+                        </button>
+                    ` : ''}
                     <button class="btn btn-small btn-secondary" onclick="window.adminEditName('${u.id}')">✏️ ویرایش نام</button>
                     <button class="btn btn-small btn-secondary" onclick="window.adminChangePass('${u.id}')">🔑 تغییر رمز</button>
                     ${u.role !== 'admin' ? `<button class="btn btn-small btn-secondary" style="background:var(--danger); color:white; border:none;" onclick="window.adminDeleteUser('${u.id}')">🗑️ حذف</button>` : ''}
@@ -831,6 +845,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>`
         ).join('');
     }
+    window.adminTogglePermission = function(id) {
+        let user = AuthManager.usersList.find(u => u.id === id);
+        if(!user || user.role === 'admin') return;
+        let newStatus = !user.canAssignTasks;
+        AuthManager.updateUserPermission(id, newStatus);
+        renderAdminUserList();
+        renderDashboard();
+        showToast(newStatus ? `دسترسی ارجاع تسک به «${user.name}» داده شد.` : `دسترسی ارجاع تسک از «${user.name}» برداشته شد.`);
+    };
     window.adminEditName = async (id) => {
         let user = AuthManager.usersList.find(u => u.id === id);
         if(!user) return;
@@ -880,8 +903,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     fabAdd.addEventListener('click', async () => {
         document.getElementById('addModal').classList.add('active');
         let user = AuthManager.getCurrentUser();
+        let hasPower = user.role === 'admin' || Boolean(user.canAssignTasks);
         
-        if (user.role === 'admin') {
+        if (hasPower) {
             document.getElementById('advancedTaskOptions').style.display = 'block';
             let usersData = AuthManager.usersList.map(u => ({ text: u.name, value: u.id }));
             setupCustomSelect('taskAssigneeSelectWrapper', usersData, 'مسئول انجام...');
@@ -929,18 +953,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('btnSaveTask').addEventListener('click', async () => {
         let user = AuthManager.getCurrentUser();
-        let hasPower = user.role === 'admin';
+        let hasPower = user.role === 'admin' || Boolean(user.canAssignTasks);
         
         let projectId = document.getElementById('taskProjectSelectWrapper').dataset.value;
         let title = document.getElementById('taskTitle').value.trim();
         let tag = document.getElementById('taskTagSelectWrapper').dataset.value || ''; 
         
-        let assigneeId = hasPower ? document.getElementById('taskAssigneeSelectWrapper').dataset.value : user.id;
-        let finalizerId = hasPower ? document.getElementById('taskFinalizerSelectWrapper').dataset.value : user.id;
+        let assigneeId = hasPower ? (document.getElementById('taskAssigneeSelectWrapper').dataset.value || user.id) : user.id;
+        let finalizerId = hasPower ? (document.getElementById('taskFinalizerSelectWrapper').dataset.value || user.id) : user.id;
 
         if (!projectId || projectId === "undefined" || projectId === "ADD_NEW_PROJECT") return showToast('لطفاً یک پروژه معتبر انتخاب کنید.', 'error');
         if (!title) return showToast('عنوان تسک الزامی است.', 'error');
-        if (hasPower && (!assigneeId || !finalizerId)) return showToast('مسئول انجام و نهایی کردن را مشخص کنید.', 'error');
+        if (hasPower && !assigneeId) assigneeId = user.id;
+        if (hasPower && !finalizerId) finalizerId = user.id;
 
         let isPublic = document.getElementById('chkPublicTask') ? document.getElementById('chkPublicTask').checked : false;
         let obsWrapper = document.getElementById('observersMultiSelectWrapper');
@@ -1000,9 +1025,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const container = document.getElementById('tasks-list-container');
         
         let adminNotif = document.getElementById('admin-notifications');
-        if (currentUser.role === 'admin') {
-            let pendingTransfers = allTasks.filter(t => t.transferRequest !== null && !t.isArchived);
-            let pendingApprovals = allTasks.filter(t => t.status === 'pending_approval' && !t.isArchived);
+        let hasAssignPower = currentUser.role === 'admin' || Boolean(currentUser.canAssignTasks);
+        if (hasAssignPower) {
+            let pendingTransfers = allTasks.filter(t => t.transferRequest !== null && !t.isArchived && (currentUser.role === 'admin' || isSameUser(t.finalizerId, currentUser.id) || isSameUser(t.creatorId, currentUser.id)));
+            let pendingApprovals = allTasks.filter(t => t.status === 'pending_approval' && !t.isArchived && (currentUser.role === 'admin' || isSameUser(t.finalizerId, currentUser.id)));
             
             if (pendingTransfers.length > 0 || pendingApprovals.length > 0) {
                 if(adminNotif) adminNotif.style.display = 'block'; 
@@ -1035,7 +1061,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(!container) return;
         container.innerHTML = '';
         
-        let myTasks = currentUser.role === 'admin' ? allTasks : allTasks.filter(t => isSameUser(t.assigneeId, currentUser.id) || isSameUser(t.finalizerId, currentUser.id) || t.isPublic || (t.observers && t.observers.includes(currentUser.id)));
+        let myTasks = currentUser.role === 'admin' ? allTasks : allTasks.filter(t => isSameUser(t.assigneeId, currentUser.id) || isSameUser(t.finalizerId, currentUser.id) || isSameUser(t.creatorId, currentUser.id) || t.isPublic || (t.observers && t.observers.includes(currentUser.id)));
 
         if (searchTerm) {
             myTasks = myTasks.filter(t => {
@@ -1249,7 +1275,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let commentForm = document.getElementById('td-comment-form');
         let transferSec = document.getElementById('transferSection');
 
-        let isMainActor = isSameUser(task.assigneeId, user.id) || isSameUser(task.finalizerId, user.id) || user.role === 'admin';
+        let isMainActor = isSameUser(task.assigneeId, user.id) || isSameUser(task.finalizerId, user.id) || isSameUser(task.creatorId, user.id) || user.role === 'admin';
         let infoNotice = document.getElementById('observerNoticeBox');
 
         if (task.status === 'completed') {
@@ -1382,6 +1408,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.addEventListener('db_updated', async (e) => {
         await AuthManager.syncFromDB();
+        let user = AuthManager.getCurrentUser();
+        if (user) {
+            let welcomeEl = document.getElementById('welcomeName');
+            if (welcomeEl) welcomeEl.innerText = user.name;
+        }
         if (document.getElementById('dashboard-view').style.display !== 'none') renderDashboard();
         if (document.getElementById('settings-view').style.display !== 'none' && AuthManager.getCurrentUser()?.role === 'admin') {
             renderAdminUserList();

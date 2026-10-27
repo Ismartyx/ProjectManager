@@ -42,6 +42,7 @@ const AuthManager = {
                 this.usersList = dbUsers;
                 this.ensureNumericAdmin();
                 localStorage.setItem('pm_users_db', JSON.stringify(this.usersList));
+                this.refreshCurrentUserFromList();
             } else if (PouchAdapter && PouchAdapter.isOnline) {
                 // فقط در صورتی که به سرور کارگاه وصل هستیم و سرور واقعاً تازه نصب شده و هیچ کاربری ندارد، ادمین 100 را بساز
                 if (this.usersList.length === 0) {
@@ -91,7 +92,7 @@ const AuthManager = {
         localStorage.removeItem('pm_currentUser');
     },
 
-    getCurrentUser: function() {
+    refreshCurrentUserFromList: function() {
         if (!this.currentUser) {
             let stored = localStorage.getItem('pm_currentUser');
             if (stored) {
@@ -99,6 +100,19 @@ const AuthManager = {
                 if (this.currentUser.id === 'admin') this.currentUser.id = '100';
             }
         }
+        if (this.currentUser && this.usersList && this.usersList.length > 0) {
+            let latest = this.usersList.find(u => u.id === this.currentUser.id || (this.currentUser.id === '100' && u.id === 'admin'));
+            if (latest) {
+                this.currentUser.name = latest.name;
+                this.currentUser.role = latest.role;
+                this.currentUser.canAssignTasks = Boolean(latest.canAssignTasks);
+                localStorage.setItem('pm_currentUser', JSON.stringify(this.currentUser));
+            }
+        }
+    },
+
+    getCurrentUser: function() {
+        this.refreshCurrentUserFromList();
         return this.currentUser;
     },
 
@@ -133,6 +147,7 @@ const AuthManager = {
         if (user) {
             user.canAssignTasks = canAssign;
             this.saveUsers();
+            this.refreshCurrentUserFromList();
         }
     },
 
@@ -141,11 +156,8 @@ const AuthManager = {
         if (!user) throw new Error("کاربری با این مشخصات یافت نشد.");
         
         user.name = newName;
-        if (this.currentUser && (this.currentUser.id === targetUserId || (targetUserId === '100' && this.currentUser.id === 'admin'))) {
-            this.currentUser.name = newName;
-            localStorage.setItem('pm_currentUser', JSON.stringify(this.currentUser));
-        }
         this.saveUsers();
+        this.refreshCurrentUserFromList();
     }
 };
 
