@@ -1,12 +1,12 @@
-const CACHE_NAME = 'mecav-offline-v20';
+const CACHE_NAME = 'mecav-offline-v21';
 const FILES_TO_CACHE = [
   '/',
   '/index.html',
-  '/favicon.svg',
   '/manifest.json',
   '/css/style.css',
   '/js/pouchdb.min.js',
   '/js/notifications.js',
+  '/js/version.js',
   '/js/app.js',
   '/js/auth.js',
   '/js/db/adapter-pouch.js',
@@ -14,7 +14,8 @@ const FILES_TO_CACHE = [
   '/fonts/Vazirmatn-Regular.woff2',
   '/fonts/Vazirmatn-Bold.woff2',
   '/icon-192.png',
-  '/icon-512.png'
+  '/icon-512.png',
+  '/icon.ico'
 ];
 
 self.addEventListener('install', (evt) => {

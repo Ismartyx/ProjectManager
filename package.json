@@ -25,15 +25,16 @@
       "package.json",
       "index.html",
       "electron-main.js",
+      "electron-preload.js",
       "css/**/*",
       "js/**/*",
       "fonts/**/*",
       "icon-192.png",
       "icon-512.png",
       "icon.ico",
-      "favicon.svg",
       "manifest.json",
-      "sw.js"
+      "sw.js",
+      "version.json"
     ],
     "win": {
       "target": [

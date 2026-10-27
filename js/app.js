@@ -121,11 +121,11 @@ function applyBrandingAndIcons() {
     document.title = "مدیریت پروژه مکاو";
     applyFontSize(localStorage.getItem('pm_font_size') || '15px');
 
-    const iconUrl = "favicon.svg?v=1";
+    const iconUrl = "icon-192.png?v=10";
 
     document.querySelectorAll('h1, h2, h3, .header-title, header div, header span').forEach(el => {
         if (el.childNodes.length === 1 && el.innerText && (el.innerText.trim() === 'کارهای مکاو' || el.innerText.trim() === 'مدیریت پروژه مکاو')) {
-            el.innerHTML = `<img src="${iconUrl}" style="width:24px; height:24px; border-radius:6px; vertical-align:middle; margin-left:6px; border: 1px solid rgba(255,255,255,0.12);" /><span style="font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 150px; vertical-align: middle;">مدیریت پروژه مکاو</span>`;
+            el.innerHTML = `<img src="${iconUrl}" style="width:26px; height:26px; vertical-align:middle; margin-left:6px;" /><span style="font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 150px; vertical-align: middle;">مدیریت پروژه مکاو</span>`;
             el.style.display = 'inline-flex'; el.style.alignItems = 'center'; el.style.flexWrap = 'nowrap';
         }
     });
@@ -137,7 +137,7 @@ function applyBrandingAndIcons() {
             const logoBox = document.createElement('div');
             logoBox.id = 'mecavLoginLogo';
             logoBox.style.cssText = 'text-align: center; margin-bottom: 14px;';
-            logoBox.innerHTML = `<img src="${iconUrl}" style="width: 72px; height: 72px; border-radius: 18px; box-shadow: 0 6px 20px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);" />`;
+            logoBox.innerHTML = `<img src="${iconUrl}" style="width: 76px; height: 76px; drop-shadow: 0 6px 20px rgba(0,0,0,0.4);" />`;
             loginCard.insertBefore(logoBox, loginCard.firstChild);
         }
     }
@@ -341,6 +341,7 @@ const BackupManager = {
 
 document.addEventListener('DOMContentLoaded', async () => {
     try { applyBrandingAndIcons(); } catch (e) { console.warn(e); }
+    try { if (typeof VersionManager !== 'undefined') VersionManager.init(); } catch (e) {}
 
     if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
         Notification.requestPermission();

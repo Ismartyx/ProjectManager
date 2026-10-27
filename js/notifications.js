@@ -234,7 +234,16 @@ const NotificationManager = {
         this.playAlertSound();
         this.vibrateDevice();
 
-        // ۳. ارسال مستقیم به نوار وضعیت (Status Bar) اندروید از طریق پلاگین بومی بدون نیاز به هیچ برنامه جانبی
+        // ۳. ارسال مستقیم به نوتیفیکیشن سیستمی Action Center ویندوز (در نسخه نرم‌افزار ویندوز)
+        if (window.electronAPI && typeof window.electronAPI.showNotification === 'function') {
+            try {
+                window.electronAPI.showNotification(title, body);
+            } catch (err) {
+                console.warn("[Notification] خطا در ارسال به اعلان ویندوز:", err);
+            }
+        }
+
+        // ۴. ارسال مستقیم به نوار وضعیت (Status Bar) اندروید از طریق پلاگین بومی بدون نیاز به هیچ برنامه جانبی
         if (window.MecavNotification && typeof window.MecavNotification.show === 'function') {
             try {
                 window.MecavNotification.show(title, body);

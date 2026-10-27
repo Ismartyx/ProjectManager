@@ -1,5 +1,10 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, Notification } = require('electron');
 const path = require('path');
+
+// تنظیم نام رسمی برنامه در ویندوز جهت دریافت پایدار نوتیفیکیشن‌های Action Center
+if (process.platform === 'win32') {
+    app.setAppUserModelId('com.mechave.ws');
+}
 
 // جلوگیری از اجرای هم‌زمان چند نسخه از برنامه روی ویندوز
 const gotTheLock = app.requestSingleInstanceLock();
@@ -25,6 +30,7 @@ if (!gotTheLock) {
             icon: path.join(__dirname, 'icon.ico'),
             autoHideMenuBar: true,
             webPreferences: {
+                preload: path.join(__dirname, 'electron-preload.js'),
                 nodeIntegration: false,
                 contextIsolation: true,
                 webSecurity: false, // دسترسی مستقیم به شبکه محلی و اینترنت بدون محدودیت CORS
@@ -48,11 +54,24 @@ if (!gotTheLock) {
         });
     }
 
-    app.whenReady().then(() => {
-        // شناسه استاندارد جهت اتصال مستقیم نوتیفیکیشن‌ها به Action Center ویندوز
-        if (process.platform === 'win32') {
-            app.setAppUserModelId('com.mechave.ws');
+    // شنود اعلان‌های نیتیو ویندوز از صفحه برنامه
+    ipcMain.on('mecav-show-notification', (event, { title, body }) => {
+        try {
+            if (Notification.isSupported()) {
+                const notif = new Notification({
+                    title: title || 'مدیریت پروژه مکاو',
+                    body: body || '',
+                    icon: path.join(__dirname, 'icon.ico'),
+                    silent: false
+                });
+                notif.show();
+            }
+        } catch (err) {
+            console.error('Error showing native Windows notification:', err);
         }
+    });
+
+    app.whenReady().then(() => {
         createWindow();
 
         app.on('activate', () => {

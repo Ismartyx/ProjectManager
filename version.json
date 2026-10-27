@@ -1,0 +1,8 @@
+{
+  "version": "1.0.1",
+  "versionCode": 10001,
+  "releaseDate": "1405/08/07",
+  "changelog": "حل مشکل اعلان ویندوز، بازگردانی لوگوی اصلی بدون حاشیه سفید، و افزودن بررسی بروزرسانی خودکار",
+  "apkUrl": "https://github.com/Ismartyx/ProjectManager/actions",
+  "winUrl": "https://github.com/Ismartyx/ProjectManager/actions"
+}

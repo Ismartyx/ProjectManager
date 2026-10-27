@@ -5,9 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>مدیریت پروژه مکاو</title>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg?v=1">
-    <link rel="alternate icon" type="image/png" href="icon-192.png?v=6">
-    <link rel="apple-touch-icon" href="icon-192.png?v=6">
+    <link rel="icon" type="image/png" href="icon-192.png?v=10">
+    <link rel="apple-touch-icon" href="icon-192.png?v=10">
     <link rel="stylesheet" href="css/style.css">
     <link rel="manifest" href="manifest.json">
     <script>
@@ -103,6 +102,17 @@
                         <button id="btnTestMyNotif" class="btn btn-secondary btn-small" style="margin:0;">🧪 تست زنگ و پیام</button>
                     </div>
                     <div id="notifStatusText" style="font-size: 0.8rem; margin-top: 8px; color: var(--text-muted);"></div>
+                </div>
+
+                <div class="card" style="border: 1px solid var(--primary); margin-bottom: 15px;">
+                    <h3 style="color: var(--primary); margin-top: 0;">🔄 نسخه و بروزرسانی خودکار</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
+                        نسخه فعال برنامه روی این دستگاه: <b id="app-current-version-text" style="color: var(--text-main);">1.0.1</b>
+                    </p>
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                        <button id="btnCheckAppUpdate" class="btn btn-secondary btn-small" style="margin:0;">🔄 بررسی نسخه جدید</button>
+                        <span id="updateCheckStatus" style="font-size: 0.8rem; color: var(--text-muted);"></span>
+                    </div>
                 </div>
 
                 <div id="admin-settings-section" style="display: none;">
@@ -268,6 +278,7 @@
     <script src="js/db/adapter-pouch.js"></script>
     <script src="js/db/db-manager.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/version.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
