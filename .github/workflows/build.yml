@@ -54,6 +54,7 @@ jobs:
               <allow-navigation href="*" />
               <preference name="AndroidInsecureFileModeEnabled" value="true" />
               <preference name="DisallowOverscroll" value="true" />
+              <preference name="KeepRunning" value="true" />
               <platform name="android">
                   <icon src="icon.png" />
               </platform>
@@ -64,6 +65,7 @@ jobs:
           # نصب نسخه پایدار اندروید 13 در کوردوا
           cordova platform add android@13.0.0
           cordova plugin add cordova-plugin-android-permissions
+          cordova plugin add ../cordova-plugins/mecav-notification
 
           # فعال کردن مجوز ارتباط با شبکه محلی (HTTP / پورت 5984) مستقیم در AndroidManifest.xml
           node -e '

@@ -234,7 +234,20 @@ const NotificationManager = {
         this.playAlertSound();
         this.vibrateDevice();
 
-        // ۳. نمایش نوتیفیکیشن سیستمی
+        // ۳. ارسال مستقیم به نوار وضعیت (Status Bar) اندروید از طریق پلاگین بومی بدون نیاز به هیچ برنامه جانبی
+        if (window.MecavNotification && typeof window.MecavNotification.show === 'function') {
+            try {
+                window.MecavNotification.show(title, body);
+            } catch (err) {}
+        } else if (window.cordova && typeof window.cordova.exec === 'function') {
+            try {
+                window.cordova.exec(null, null, "MecavNotification", "show", [title, body]);
+            } catch (err) {
+                console.warn("[Notification] خطا در ارسال به نوار وضعیت اندروید:", err);
+            }
+        }
+
+        // ۴. نمایش نوتیفیکیشن سیستمی مرورگر (ویندوز / وب)
         if (!("Notification" in window)) return;
 
         if (Notification.permission === "granted") {

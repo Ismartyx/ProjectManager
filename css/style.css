@@ -1030,7 +1030,7 @@ input:focus, textarea:focus {
 }
 
 /* ==========================================
-   طراحی چند ستونه در نمایشگرهای عریض (ویندوز / تبلت افقی / مانیتور بزرگ)
+   طراحی چند ستونه هوشمند (CSS Columns / Masonry) در نمایشگرهای عریض
    ========================================== */
 @media (min-width: 992px) {
     .view-section {
@@ -1039,29 +1039,32 @@ input:focus, textarea:focus {
     }
     
     #tasks-list-container {
-        display: grid !important;
-        grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)) !important;
-        gap: 16px !important;
-        align-items: start !important;
+        display: block !important;
+        column-width: 440px !important;
+        column-gap: 18px !important;
     }
 
     #tasks-list-container > .card {
-        grid-column: 1 / -1;
+        column-span: all;
     }
 
     .project-group {
-        margin-bottom: 0 !important;
-        height: fit-content;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        display: inline-block !important;
+        width: 100% !important;
+        margin-bottom: 16px !important;
+        vertical-align: top;
     }
 }
 
-@media (min-width: 1500px) {
+@media (min-width: 1600px) {
     .view-section {
         max-width: 98% !important;
     }
 
     #tasks-list-container {
-        grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)) !important;
-        gap: 20px !important;
+        column-width: 480px !important;
+        column-gap: 22px !important;
     }
 }
