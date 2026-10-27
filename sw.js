@@ -1,10 +1,11 @@
-const CACHE_NAME = 'mecav-offline-v7';
+const CACHE_NAME = 'mecav-offline-v8';
 const FILES_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
   '/css/style.css',
   '/js/pouchdb.min.js',
+  '/js/notifications.js',
   '/js/app.js',
   '/js/auth.js',
   '/js/db/adapter-pouch.js',
@@ -24,9 +25,26 @@ self.addEventListener('install', (evt) => {
   self.skipWaiting();
 });
 
+self.addEventListener('activate', (evt) => {
+  evt.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      );
+    })
+  );
+  self.clients.claim();
+});
+
 self.addEventListener('fetch', (evt) => {
-  // به درخواست‌های دیتابیس کاری نداریم
-  if (evt.request.url.includes('5984')) return;
+  // به درخواست‌های دیتابیس یا سرور نوتیفیکیشن کاری نداریم
+  if (evt.request.url.includes('5984') || evt.request.url.includes(':8080') || evt.request.method !== 'GET') {
+    return;
+  }
   
   // بقیه فایل‌ها را برای حالت آفلاین از کش می‌خوانیم
   evt.respondWith(

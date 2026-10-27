@@ -3,39 +3,58 @@ const PouchAdapter = {
     remoteDB: null,
     syncHandler: null,
     isOnline: false,
+    activeMode: 'offline', // 'local' | 'online' | 'offline'
+    activeUrl: null,
+    _isChecking: false,
     // وعده‌ای که وقتی اولین سینک اولیه از سرور کامل شد resolve می‌شود
     _initialSyncPromise: null,
     _initialSyncResolve: null,
 
-    getServerUrl: function() {
-        return localStorage.getItem('pm_server_url') || 'http://192.168.1.106:5984/mecav_db_main';
+    // آدرس سرور محلی کارگاه (پیش‌فرض سیستم کارگاه)
+    getLocalUrl: function() {
+        return localStorage.getItem('pm_server_url_local') || localStorage.getItem('pm_server_url') || 'http://192.168.1.106:5984/mecav_db_main';
     },
 
-    setServerUrl: function(newUrl) {
-        if (!newUrl) return;
+    setLocalUrl: function(newUrl) {
+        if (!newUrl) return '';
         newUrl = newUrl.trim().replace(/\/+$/, '');
-        // اگر کاربر فقط آدرس سرور داد و نام دیتابیس را ننوشت، نام پیش‌فرض را اضافه کن
         if (!newUrl.endsWith('/mecav_db_main') && !newUrl.endsWith('/mecav_db')) {
             newUrl = newUrl + '/mecav_db_main';
         }
-        localStorage.setItem('pm_server_url', newUrl);
+        localStorage.setItem('pm_server_url_local', newUrl);
+        localStorage.setItem('pm_server_url', newUrl); // حفظ سازگاری قبلی
         return newUrl;
+    },
+
+    // آدرس سرور آنلاین (سرور مجازی اینترنتی VPS)
+    getOnlineUrl: function() {
+        return localStorage.getItem('pm_server_url_online') || '';
+    },
+
+    setOnlineUrl: function(newUrl) {
+        if (!newUrl) {
+            localStorage.removeItem('pm_server_url_online');
+            return '';
+        }
+        newUrl = newUrl.trim().replace(/\/+$/, '');
+        if (!newUrl.endsWith('/mecav_db_main') && !newUrl.endsWith('/mecav_db')) {
+            newUrl = newUrl + '/mecav_db_main';
+        }
+        localStorage.setItem('pm_server_url_online', newUrl);
+        return newUrl;
+    },
+
+    // برای سازگاری با کدهای قبلی
+    getServerUrl: function() {
+        return this.activeUrl || this.getLocalUrl();
+    },
+
+    setServerUrl: function(newUrl) {
+        return this.setLocalUrl(newUrl);
     },
 
     init: function() {
         this.localDB = new PouchDB('mecav_db_main');
-
-        // آدرس سرور (از تنظیمات یا پیش‌فرض)
-        const serverUrl = this.getServerUrl();
-        
-        // احراز هویت استاندارد PouchDB (جلوگیری از خطای مرورگر)
-        this.remoteDB = new PouchDB(serverUrl, { 
-            skipSetup: true,
-            auth: {
-                username: 'admin',
-                password: '33995333Sma' // 🔴 رمز عبور واقعی ادمین CouchDB
-            }
-        });
 
         // ساخت یک Promise که به محض پایان اولین pull از سرور، resolve می‌شود
         this._initialSyncPromise = new Promise((resolve) => {
@@ -46,15 +65,41 @@ const PouchAdapter = {
 
         window.addEventListener('offline', () => {
             this.isOnline = false;
-            this.updateStatusUI(false);
+            this.activeMode = 'offline';
+            this.updateStatusUI('offline');
         });
         window.addEventListener('online', () => {
             this.checkConnection();
         });
 
+        // بررسی دوره‌ای اتصال به سرور محلی و آنلاین
         setInterval(() => {
             this.checkConnection();
-        }, 3500);
+        }, 4000);
+    },
+
+    // تست دسترسی سریع به یک آدرس با سقف زمانی مشخص
+    testServer: function(url, timeoutMs = 2000) {
+        if (!url) return Promise.reject(new Error("آدرسی مشخص نشده است."));
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+        return fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Basic ' + btoa('admin:33995333Sma')
+            },
+            signal: controller.signal
+        }).then(res => {
+            clearTimeout(timer);
+            if (res.ok || res.status === 401 || res.status === 200) {
+                return true;
+            }
+            throw new Error('پاسخ سرور: ' + res.status);
+        }).catch(err => {
+            clearTimeout(timer);
+            throw err;
+        });
     },
 
     // صبر می‌کند تا اولین دریافت داده از سرور کامل شود (حداکثر maxMs میلی‌ثانیه)
@@ -65,14 +110,18 @@ const PouchAdapter = {
         ]);
     },
 
-    updateStatusUI: function(online) {
+    updateStatusUI: function(mode) {
         const statusEl = document.getElementById('connection-status');
         if (!statusEl) return;
 
-        if (online) {
+        if (mode === 'local') {
             statusEl.style.background = '#10b981';
             statusEl.style.color = '#fff';
-            statusEl.innerText = '🟢 متصل به سرور کارگاه (آنلاین)';
+            statusEl.innerText = '🟢 متصل به سرور محلی کارگاه (شبکه داخلی)';
+        } else if (mode === 'online') {
+            statusEl.style.background = '#0284c7';
+            statusEl.style.color = '#fff';
+            statusEl.innerText = '🌐 متصل به سرور آنلاین (اینترنت)';
         } else {
             statusEl.style.background = '#ef4444';
             statusEl.style.color = '#fff';
@@ -80,32 +129,71 @@ const PouchAdapter = {
         }
     },
 
-    checkConnection: function() {
+    // بررسی هوشمند: اول سرور محلی کارگاه، در صورت عدم دسترسی سرور آنلاین VPS
+    checkConnection: async function() {
+        if (this._isChecking) return;
+        this._isChecking = true;
+
         if (!navigator.onLine) {
             this.isOnline = false;
-            this.updateStatusUI(false);
-            // اگر آفلاین هستیم، سینک اولیه را resolve می‌کنیم تا صفحه ورود منتظر نماند
+            this.activeMode = 'offline';
+            this.updateStatusUI('offline');
             if (this._initialSyncResolve) { this._initialSyncResolve(); this._initialSyncResolve = null; }
+            this._isChecking = false;
             return;
         }
 
-        this.remoteDB.info()
-            .then(() => {
-                if (!this.isOnline) {
-                    this.isOnline = true;
-                    this.updateStatusUI(true);
-                    this.startSync();
-                } else {
-                    this.updateStatusUI(true);
+        const localUrl = this.getLocalUrl();
+        const onlineUrl = this.getOnlineUrl();
+
+        let chosenUrl = null;
+        let chosenMode = 'offline';
+
+        // 1. بررسی سرور محلی کارگاه با تایم‌اوت کوتاه (۱.۵ ثانیه)
+        try {
+            await this.testServer(localUrl, 1500);
+            chosenUrl = localUrl;
+            chosenMode = 'local';
+        } catch (localErr) {
+            // سرور محلی کارگاه در دسترس نیست (کاربر خارج از کارگاه است)
+            if (onlineUrl) {
+                try {
+                    await this.testServer(onlineUrl, 3000);
+                    chosenUrl = onlineUrl;
+                    chosenMode = 'online';
+                } catch (onlineErr) {
+                    chosenMode = 'offline';
                 }
-            })
-            .catch((err) => {
-                console.error("خطای اتصال به سرور:", err);
-                this.isOnline = false;
-                this.updateStatusUI(false);
-                // اگر سرور در دسترس نیست، سینک اولیه را resolve می‌کنیم تا صفحه ورود منتظر نماند
-                if (this._initialSyncResolve) { this._initialSyncResolve(); this._initialSyncResolve = null; }
-            });
+            } else {
+                chosenMode = 'offline';
+            }
+        }
+
+        if (chosenMode !== 'offline') {
+            const serverChanged = this.activeUrl !== chosenUrl;
+            this.activeUrl = chosenUrl;
+            this.activeMode = chosenMode;
+            this.isOnline = true;
+            this.updateStatusUI(chosenMode);
+
+            if (serverChanged || !this.remoteDB || !this.syncHandler) {
+                this.remoteDB = new PouchDB(chosenUrl, {
+                    skipSetup: true,
+                    auth: {
+                        username: 'admin',
+                        password: '33995333Sma'
+                    }
+                });
+                this.startSync();
+            }
+        } else {
+            this.isOnline = false;
+            this.activeMode = 'offline';
+            this.updateStatusUI('offline');
+            if (this._initialSyncResolve) { this._initialSyncResolve(); this._initialSyncResolve = null; }
+        }
+
+        this._isChecking = false;
     },
 
     startSync: function() {
@@ -113,18 +201,20 @@ const PouchAdapter = {
             try { this.syncHandler.cancel(); } catch (e) {}
         }
 
-        // اولین pull کامل از سرور - وقتی تمام شد، Promise را resolve می‌کنیم
+        if (!this.remoteDB) return;
+
+        // اولین pull کامل از سرور فعال - وقتی تمام شد، Promise را resolve می‌کنیم
         this.localDB.replicate.from(this.remoteDB)
             .on('complete', () => {
                 window.dispatchEvent(new CustomEvent('db_updated', { detail: { source: 'server_sync' } }));
-                // اعلام پایان سینک اولیه
                 if (this._initialSyncResolve) { this._initialSyncResolve(); this._initialSyncResolve = null; }
             })
-            .on('error', () => {
-                // حتی در صورت خطا، Promise را resolve می‌کنیم تا ورود block نشود
+            .on('error', (err) => {
+                console.warn("خطای دریافت اولیه از سرور:", err);
                 if (this._initialSyncResolve) { this._initialSyncResolve(); this._initialSyncResolve = null; }
             });
 
+        // همگام‌سازی دوطرفه زنده
         this.syncHandler = this.localDB.sync(this.remoteDB, {
             live: true,
             retry: true
@@ -132,8 +222,10 @@ const PouchAdapter = {
             window.dispatchEvent(new CustomEvent('db_updated', { detail: { source: 'live_sync', info: info } }));
         }).on('error', (err) => {
             console.error("خطای سینک:", err);
+            // در صورت بروز خطای قطع اتصال، وضعیت بررسی می‌شود
             this.isOnline = false;
-            this.updateStatusUI(false);
+            this.activeMode = 'offline';
+            this.updateStatusUI('offline');
         });
     },
 

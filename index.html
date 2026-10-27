@@ -69,12 +69,40 @@
                     <input type="password" id="myNewPassword" placeholder="رمز جدید..." />
                     <button id="btnChangeMyPass" class="btn btn-primary">ثبت</button>
                 </div>
+
+                <div class="card" style="border: 1px solid var(--accent); margin-bottom: 15px;">
+                    <h3 style="color: var(--accent); margin-top: 0;">🔔 اعلان‌های سیستمی گوشی و ویندوز</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
+                        برای دریافت صدای زنگ و پیام هنگام ارجاع تسک جدید یا ثبت نظر و گزارش، دستگاه خود را متصل کنید:
+                    </p>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button id="btnConnectMyDevice" class="btn btn-primary btn-small" style="flex: 1; margin:0;">📲 اتصال گوشی / ویندوز به اعلان‌ها</button>
+                        <button id="btnTestMyNotif" class="btn btn-secondary btn-small" style="margin:0;">🧪 تست زنگ و اعلان</button>
+                    </div>
+                </div>
+
                 <div id="admin-settings-section" style="display: none;">
                     <div class="card" style="border: 1px solid var(--accent); margin-bottom: 15px;">
-                        <h3 style="color: var(--accent); margin-top: 0;">🌐 آدرس سرور دیتابیس کارگاه (CouchDB)</h3>
-                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">در صورت تغییر آی‌پی سرور یا پورت، آدرس جدید را اینجا وارد و ذخیره کنید:</p>
-                        <input type="text" id="serverSyncUrl" placeholder="http://192.168.1.106:5984/mecav_db_main" style="direction: ltr; text-align: left; margin-bottom: 10px;" />
-                        <button id="btnSaveServerUrl" class="btn btn-primary" style="margin: 0;">ذخیره و اتصال مجدد به سرور</button>
+                        <h3 style="color: var(--accent); margin-top: 0;">🌐 تنظیمات سرور محلی و آنلاین (CouchDB)</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">
+                            سیستم هوشمند به طور خودکار ابتدا سرور کارگاه را بررسی می‌کند؛ اگر خارج از کارگاه بودید خودکار به سرور آنلاین متصل می‌شود.
+                        </p>
+                        <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 4px;">آدرس سرور محلی کارگاه (LAN):</label>
+                        <input type="text" id="serverLocalUrl" placeholder="http://192.168.1.106:5984/mecav_db_main" style="direction: ltr; text-align: left; margin-bottom: 10px;" />
+                        
+                        <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 4px;">آدرس سرور آنلاین اینترنتی (VPS):</label>
+                        <input type="text" id="serverOnlineUrl" placeholder="http://VPS_IP:5984/mecav_db_main" style="direction: ltr; text-align: left; margin-bottom: 12px;" />
+                        
+                        <button id="btnSaveServerUrls" class="btn btn-primary" style="margin: 0; width: 100%;">ذخیره و اتصال هوشمند</button>
+                    </div>
+
+                    <div class="card" style="border: 1px solid var(--accent); margin-bottom: 15px;">
+                        <h3 style="color: var(--accent); margin-top: 0;">🚀 تنظیمات سرور اعلان‌ها (ntfy روی VPS)</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">
+                            آدرس سرور پوش نوتیفیکیشن ntfy روی سرور مجازی جهت ارسال زنگ و پیام لحظه‌ای به گوشی و سیستم پرسنل:
+                        </p>
+                        <input type="text" id="serverPushUrl" placeholder="http://VPS_IP:8080" style="direction: ltr; text-align: left; margin-bottom: 10px;" />
+                        <button id="btnSavePushUrl" class="btn btn-primary" style="margin: 0; width: 100%;">ذخیره سرور اعلان‌ها</button>
                     </div>
                     <div class="card">
                         <h2>مدیریت پرسنل</h2>
@@ -211,6 +239,7 @@
     
     <!-- فایل‌های جاوااسکریپت به ترتیب درست و بدون اضافات -->
     <script src="js/pouchdb.min.js"></script>
+    <script src="js/notifications.js"></script>
     <script src="js/db/adapter-pouch.js"></script>
     <script src="js/db/db-manager.js"></script>
     <script src="js/auth.js"></script>

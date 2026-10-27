@@ -470,25 +470,116 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         applyFontSize(localStorage.getItem('pm_font_size') || '15px');
 
+        // اتصال دستگاه کاربر به سیستم دریافت اعلان‌ها
+        const btnConnectMyDevice = document.getElementById('btnConnectMyDevice');
+        if (btnConnectMyDevice && !btnConnectMyDevice.dataset.bound) {
+            btnConnectMyDevice.dataset.bound = "true";
+            btnConnectMyDevice.addEventListener('click', () => {
+                const user = AuthManager.getCurrentUser();
+                if (!user) return showToast("ابتدا وارد حساب کاربری شوید.", "error");
+
+                if (!NotificationManager.isConfigured()) {
+                    return showToast("آدرس سرور اعلان‌ها هنوز توسط مدیر تنظیم نشده است.", "error");
+                }
+
+                if ("Notification" in window && Notification.permission !== "granted") {
+                    Notification.requestPermission();
+                }
+
+                const subUrl = NotificationManager.getTopicSubscribeUrl(user.id);
+                const topic = NotificationManager.getUserTopic(user.id);
+
+                showCustomModal({
+                    title: '📲 اتصال این دستگاه به اعلان‌های سیستمی',
+                    html: `
+                        <div style="font-size:0.9rem; line-height:1.8; text-align:right;">
+                            <p>نام کانال اختصاصی شما: <b style="color:var(--primary); direction:ltr; display:inline-block;">${topic}</b></p>
+                            <p style="color:var(--text-muted); font-size:0.85rem;">
+                                برای دریافت صدای زنگ و پیام روی گوشی (حتی با صفحه قفل یا برنامه بسته) و ویندوز:
+                            </p>
+                            <ol style="margin-right:15px; padding-right:5px; font-size:0.85rem; color:var(--text-main);">
+                                <li>اپلیکیشن <b>ntfy</b> را روی گوشی نصب کنید و کانال بالا را اضافه نمایید.</li>
+                                <li>یا روی دکمه زیر کلیک کنید تا صفحه اشتراک مستقیم در مرورگر یا اپ باز شود:</li>
+                            </ol>
+                            <div style="margin-top:15px; text-align:center;">
+                                <a href="${subUrl}" target="_blank" class="btn btn-primary" style="display:inline-block; text-decoration:none; padding:10px 20px;">
+                                    🔗 باز کردن صفحه اشتراک اعلان
+                                </a>
+                            </div>
+                        </div>
+                    `,
+                    confirmText: 'متوجه شدم',
+                    showCancel: false
+                });
+            });
+        }
+
+        // دکمه ارسال تست اعلان
+        const btnTestMyNotif = document.getElementById('btnTestMyNotif');
+        if (btnTestMyNotif && !btnTestMyNotif.dataset.bound) {
+            btnTestMyNotif.dataset.bound = "true";
+            btnTestMyNotif.addEventListener('click', async () => {
+                const user = AuthManager.getCurrentUser();
+                if (!user) return showToast("ابتدا وارد حساب کاربری شوید.", "error");
+                if (!NotificationManager.isConfigured()) {
+                    return showToast("آدرس سرور اعلان‌ها تنظیم نشده است.", "error");
+                }
+                showToast("در حال ارسال اعلان تستی...");
+                try {
+                    await NotificationManager.sendTestPush(user.id);
+                    showToast("✅ اعلان تستی ارسال شد! گوشی یا سیستم خود را بررسی کنید.");
+                } catch (e) {
+                    showToast("خطا در ارسال تست: " + e.message, "error");
+                }
+            });
+        }
+
         const adminSec = document.getElementById('admin-settings-section');
         if (!adminSec) return;
 
-        // تنظیم و بارگذاری آدرس سرور کارگاه در پنل ادمین
-        const serverSyncUrlInput = document.getElementById('serverSyncUrl');
-        const btnSaveServerUrl = document.getElementById('btnSaveServerUrl');
-        if (serverSyncUrlInput && typeof PouchAdapter !== 'undefined') {
-            serverSyncUrlInput.value = PouchAdapter.getServerUrl();
+        // تنظیم و بارگذاری آدرس‌های سرور محلی و آنلاین در پنل ادمین
+        const serverLocalUrlInput = document.getElementById('serverLocalUrl');
+        const serverOnlineUrlInput = document.getElementById('serverOnlineUrl');
+        const btnSaveServerUrls = document.getElementById('btnSaveServerUrls');
+
+        if (serverLocalUrlInput && typeof PouchAdapter !== 'undefined') {
+            serverLocalUrlInput.value = PouchAdapter.getLocalUrl();
         }
-        if (btnSaveServerUrl && !btnSaveServerUrl.dataset.bound) {
-            btnSaveServerUrl.dataset.bound = "true";
-            btnSaveServerUrl.addEventListener('click', async () => {
-                let val = serverSyncUrlInput.value.trim();
-                if (!val) return showToast("آدرس سرور نمی‌تواند خالی باشد.", "error");
-                let newUrl = PouchAdapter.setServerUrl(val);
-                serverSyncUrlInput.value = newUrl;
-                showToast("آدرس سرور ذخیره شد. در حال اتصال مجدد...");
-                PouchAdapter.init();
+        if (serverOnlineUrlInput && typeof PouchAdapter !== 'undefined') {
+            serverOnlineUrlInput.value = PouchAdapter.getOnlineUrl();
+        }
+
+        if (btnSaveServerUrls && !btnSaveServerUrls.dataset.bound) {
+            btnSaveServerUrls.dataset.bound = "true";
+            btnSaveServerUrls.addEventListener('click', async () => {
+                let localVal = serverLocalUrlInput.value.trim();
+                let onlineVal = serverOnlineUrlInput.value.trim();
+                if (!localVal) return showToast("آدرس سرور محلی نمی‌تواند خالی باشد.", "error");
+
+                let newLocal = PouchAdapter.setLocalUrl(localVal);
+                let newOnline = PouchAdapter.setOnlineUrl(onlineVal);
+                serverLocalUrlInput.value = newLocal;
+                serverOnlineUrlInput.value = newOnline;
+
+                showToast("تنظیمات ذخیره شد. در حال اتصال هوشمند به سرور...");
+                await PouchAdapter.checkConnection();
                 await AuthManager.syncFromDB();
+            });
+        }
+
+        // تنظیم و بارگذاری آدرس سرور اعلان‌ها
+        const serverPushUrlInput = document.getElementById('serverPushUrl');
+        const btnSavePushUrl = document.getElementById('btnSavePushUrl');
+        if (serverPushUrlInput && typeof NotificationManager !== 'undefined') {
+            serverPushUrlInput.value = NotificationManager.getServerUrl();
+        }
+        if (btnSavePushUrl && !btnSavePushUrl.dataset.bound) {
+            btnSavePushUrl.dataset.bound = "true";
+            btnSavePushUrl.addEventListener('click', () => {
+                let val = serverPushUrlInput.value.trim();
+                let saved = NotificationManager.setServerUrl(val);
+                serverPushUrlInput.value = saved;
+                showToast(saved ? "آدرس سرور اعلان‌ها ذخیره شد." : "آدرس سرور اعلان‌ها پاک شد.");
             });
         }
 
@@ -985,9 +1076,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         try {
             await DBManager.saveTask(newTask);
-            if("Notification" in window && Notification.permission === "granted" && newTask.assigneeId !== user.id) {
-                new Notification("تسک جدید", { body: `تسک "${newTask.title}" به شما ارجاع شد.` });
+
+            // ارسال نوتیفیکیشن سیستمی به مسئول تسک
+            if (newTask.assigneeId && String(newTask.assigneeId) !== String(user.id)) {
+                NotificationManager.sendPush(newTask.assigneeId, {
+                    title: '📌 تسک جدید برای شما',
+                    body: `تسک "${newTask.title}" توسط ${user.name} به شما ارجاع شد.`,
+                    priority: newTask.isImportant ? 'urgent' : 'high',
+                    tags: ['pushpin', newTask.isImportant ? 'warning' : 'memo']
+                });
             }
+
+            // ارسال نوتیفیکیشن به ناظران
+            if (selectedObservers && selectedObservers.length > 0) {
+                const obsRecipients = selectedObservers.filter(id => id && String(id) !== String(user.id) && String(id) !== String(newTask.assigneeId));
+                if (obsRecipients.length > 0) {
+                    NotificationManager.sendPush(obsRecipients, {
+                        title: '👀 ناظر در تسک جدید',
+                        body: `شما به عنوان ناظر در تسک "${newTask.title}" تعیین شدید.`,
+                        priority: 'default',
+                        tags: ['eyes', 'pushpin']
+                    });
+                }
+            }
+
             document.getElementById('taskTitle').value = ''; 
             if(document.getElementById('taskDeadlineInput')) document.getElementById('taskDeadlineInput').value = '';
             if(document.getElementById('chkTaskImportant')) document.getElementById('chkTaskImportant').checked = false;
@@ -1363,7 +1475,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         if(isFinal) {
             currentOpenedTask.status = 'pending_approval';
-            if("Notification" in window && Notification.permission === "granted") new Notification("تایید نهایی", { body: `تسک ${currentOpenedTask.title} منتظر تایید است.` });
+            
+            // ارسال نوتیفیکیشن تایید نهایی برای مدیر یا تاییدکننده
+            const finalizerTarget = currentOpenedTask.finalizerId || 'admin';
+            NotificationManager.sendPush(finalizerTarget, {
+                title: '📋 تسک منتظر تایید نهایی',
+                body: `تسک "${currentOpenedTask.title}" توسط ${user.name} تکمیل شد و منتظر تایید نهایی است.`,
+                priority: 'high',
+                tags: ['clipboard', 'hourglass_flowing_sand']
+            });
+        } else {
+            // ارسال نوتیفیکیشن ثبت گزارش یا نظر جدید به سایر افراد درگیر در تسک
+            const recipients = [
+                currentOpenedTask.assigneeId,
+                currentOpenedTask.creatorId,
+                ...(currentOpenedTask.observers || [])
+            ].filter(id => id && String(id) !== String(user.id));
+
+            if (recipients.length > 0) {
+                const isReport = type === 'report';
+                const preview = text ? (text.length > 70 ? text.substring(0, 70) + '...' : text) : 'تصویر ارسال شد';
+                NotificationManager.sendPush(recipients, {
+                    title: isReport ? `📝 گزارش جدید در "${currentOpenedTask.title}"` : `💬 نظر جدید در "${currentOpenedTask.title}"`,
+                    body: `${user.name}: ${preview}`,
+                    priority: 'default',
+                    tags: isReport ? ['memo'] : ['speech_balloon']
+                });
+            }
         }
         
         // وقتی پیامی ثبت می‌شود، نشان خوانده شده فقط برای شخص پیام‌دهنده تنظیم می‌شود تا برای بقیه دوباره «جدید» شود
@@ -1376,16 +1514,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     window.approveTask = async function() {
+        let user = AuthManager.getCurrentUser();
         currentOpenedTask.status = 'completed';
-        currentOpenedTask.viewedBy = [AuthManager.getCurrentUser().id];
-        currentOpenedTask.activities.push({ id: Date.now(), userId: AuthManager.getCurrentUser().id, userName: 'سیستم', text: '✅ پرونده توسط مدیر تایید و بسته شد.', type: 'report', timestamp: Date.now() });
-        await DBManager.saveTask(currentOpenedTask); showToast('پرونده بسته شد.'); openTaskDetail(currentOpenedTask); renderDashboard();
+        currentOpenedTask.viewedBy = [user.id];
+        currentOpenedTask.activities.push({ id: Date.now(), userId: user.id, userName: 'سیستم', text: '✅ پرونده توسط مدیر تایید و بسته شد.', type: 'report', timestamp: Date.now() });
+        await DBManager.saveTask(currentOpenedTask);
+
+        // ارسال نوتیفیکیشن تایید به مسئول تسک
+        if (currentOpenedTask.assigneeId && String(currentOpenedTask.assigneeId) !== String(user.id)) {
+            NotificationManager.sendPush(currentOpenedTask.assigneeId, {
+                title: '✅ تایید نهایی تسک',
+                body: `تسک "${currentOpenedTask.title}" توسط مدیر تایید شد و پرونده بسته شد.`,
+                priority: 'high',
+                tags: ['white_check_mark', 'tada']
+            });
+        }
+
+        showToast('پرونده بسته شد.'); openTaskDetail(currentOpenedTask); renderDashboard();
     };
+
     window.rejectTask = async function() {
+        let user = AuthManager.getCurrentUser();
         currentOpenedTask.status = 'pending';
-        currentOpenedTask.viewedBy = [AuthManager.getCurrentUser().id];
-        currentOpenedTask.activities.push({ id: Date.now(), userId: AuthManager.getCurrentUser().id, userName: 'سیستم', text: '❌ مدیر کار را رد کرد و به مسئول ارجاع داد.', type: 'report', timestamp: Date.now() });
-        await DBManager.saveTask(currentOpenedTask); showToast('به مسئول برگشت داده شد.', 'error'); openTaskDetail(currentOpenedTask); renderDashboard();
+        currentOpenedTask.viewedBy = [user.id];
+        currentOpenedTask.activities.push({ id: Date.now(), userId: user.id, userName: 'سیستم', text: '❌ مدیر کار را رد کرد و به مسئول ارجاع داد.', type: 'report', timestamp: Date.now() });
+        await DBManager.saveTask(currentOpenedTask);
+
+        // ارسال نوتیفیکیشن رد/اصلاح به مسئول تسک
+        if (currentOpenedTask.assigneeId && String(currentOpenedTask.assigneeId) !== String(user.id)) {
+            NotificationManager.sendPush(currentOpenedTask.assigneeId, {
+                title: '⚠️ بازگشت تسک جهت اصلاح',
+                body: `تسک "${currentOpenedTask.title}" تایید نشد و جهت اصلاح به شما برگشت داده شد.`,
+                priority: 'urgent',
+                tags: ['warning', 'recycle']
+            });
+        }
+
+        showToast('به مسئول برگشت داده شد.', 'error'); openTaskDetail(currentOpenedTask); renderDashboard();
     };
 
     document.getElementById('btnRequestTransfer').addEventListener('click', async () => {
@@ -1394,12 +1559,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentOpenedTask.transferRequest = targetId; 
         currentOpenedTask.viewedBy = [AuthManager.getCurrentUser().id];
         await DBManager.saveTask(currentOpenedTask);
+
+        // ارسال نوتیفیکیشن به مدیر جهت تایید انتقال
+        NotificationManager.sendPush('admin', {
+            title: '🔄 درخواست ارجاع تسک',
+            body: `درخواست ارجاع تسک "${currentOpenedTask.title}" توسط ${AuthManager.getCurrentUser().name} ارسال شد.`,
+            priority: 'default',
+            tags: ['repeat']
+        });
+
         showToast('درخواست ارسال شد.'); document.getElementById('taskDetailModal').classList.remove('active'); renderDashboard();
     });
+
     window.handleTransfer = async function(taskId, isApproved) {
         let tasks = await DBManager.getTasks(); let task = tasks.find(t => t._id === taskId);
         if (task) {
-            if (isApproved) { task.assigneeId = task.transferRequest; showToast('تایید شد.'); } else { showToast('رد شد.', 'error'); }
+            let previousAssignee = task.assigneeId;
+            if (isApproved) {
+                task.assigneeId = task.transferRequest;
+                showToast('تایید شد.');
+
+                // ارسال نوتیفیکیشن به مسئول جدید
+                if (task.assigneeId) {
+                    NotificationManager.sendPush(task.assigneeId, {
+                        title: '📌 ارجاع تسک جدید به شما',
+                        body: `تسک "${task.title}" با تایید مدیر به شما ارجاع داده شد.`,
+                        priority: 'high',
+                        tags: ['pushpin', 'repeat']
+                    });
+                }
+            } else {
+                showToast('رد شد.', 'error');
+            }
             task.transferRequest = null; 
             task.viewedBy = [AuthManager.getCurrentUser().id];
             await DBManager.saveTask(task); renderDashboard();
