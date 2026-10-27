@@ -470,67 +470,59 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         applyFontSize(localStorage.getItem('pm_font_size') || '15px');
 
-        // اتصال دستگاه کاربر به سیستم دریافت اعلان‌ها
-        const btnConnectMyDevice = document.getElementById('btnConnectMyDevice');
-        if (btnConnectMyDevice && !btnConnectMyDevice.dataset.bound) {
-            btnConnectMyDevice.dataset.bound = "true";
-            btnConnectMyDevice.addEventListener('click', () => {
-                const user = AuthManager.getCurrentUser();
-                if (!user) return showToast("ابتدا وارد حساب کاربری شوید.", "error");
+        // فعال‌سازی و تست اعلان‌ها و صدای زنگ روی این دستگاه
+        const btnEnableNotif = document.getElementById('btnEnableNotif');
+        const btnTestMyNotif = document.getElementById('btnTestMyNotif');
+        const notifStatusText = document.getElementById('notifStatusText');
 
-                if (!NotificationManager.isConfigured()) {
-                    return showToast("آدرس سرور اعلان‌ها هنوز توسط مدیر تنظیم نشده است.", "error");
+        function updateNotifStatusDisplay() {
+            if (!notifStatusText) return;
+            if (!("Notification" in window)) {
+                notifStatusText.innerHTML = '<span style="color:var(--text-muted);">اعلان سیستمی در این مرورگر پشتیبانی نمی‌شود (صدای زنگ فعال است).</span>';
+                return;
+            }
+            if (Notification.permission === 'granted') {
+                notifStatusText.innerHTML = '<span style="color:#10b981; font-weight:bold;">🟢 اعلان سیستمی، ویبره و صدای زنگ روی این دستگاه فعال است.</span>';
+            } else if (Notification.permission === 'denied') {
+                notifStatusText.innerHTML = '<span style="color:#ef4444;">🔴 دسترسی اعلان مسدود شده است. لطفاً از تنظیمات سایت یا مرورگر دسترسی به Notification را مجاز کنید.</span>';
+            } else {
+                notifStatusText.innerHTML = '<span style="color:#f59e0b;">⏳ دسترسی اعلان هنوز فعال نشده است. روی دکمه فعال‌سازی بزنید.</span>';
+            }
+        }
+        updateNotifStatusDisplay();
+
+        if (btnEnableNotif && !btnEnableNotif.dataset.bound) {
+            btnEnableNotif.dataset.bound = "true";
+            btnEnableNotif.addEventListener('click', async () => {
+                if ("Notification" in window) {
+                    try {
+                        let perm = await Notification.requestPermission();
+                        updateNotifStatusDisplay();
+                        if (perm === 'granted') {
+                            NotificationManager.showLocalSystemNotification(
+                                '✅ اعلان‌های مکاو فعال شد',
+                                'صدای زنگ و اعلان‌های سیستمی روی این دستگاه با موفقیت فعال شدند.'
+                            );
+                            showToast('اعلان‌ها با موفقیت فعال شدند.');
+                        } else {
+                            showToast('دسترسی اعلان تایید نشد.', 'error');
+                        }
+                    } catch (e) {
+                        NotificationManager.playAlertSound();
+                        showToast('صدای زنگ فعال شد.');
+                    }
+                } else {
+                    NotificationManager.playAlertSound();
+                    showToast('صدای زنگ فعال است.');
                 }
-
-                if ("Notification" in window && Notification.permission !== "granted") {
-                    Notification.requestPermission();
-                }
-
-                const subUrl = NotificationManager.getTopicSubscribeUrl(user.id);
-                const topic = NotificationManager.getUserTopic(user.id);
-
-                showCustomModal({
-                    title: '📲 اتصال این دستگاه به اعلان‌های سیستمی',
-                    html: `
-                        <div style="font-size:0.9rem; line-height:1.8; text-align:right;">
-                            <p>نام کانال اختصاصی شما: <b style="color:var(--primary); direction:ltr; display:inline-block;">${topic}</b></p>
-                            <p style="color:var(--text-muted); font-size:0.85rem;">
-                                برای دریافت صدای زنگ و پیام روی گوشی (حتی با صفحه قفل یا برنامه بسته) و ویندوز:
-                            </p>
-                            <ol style="margin-right:15px; padding-right:5px; font-size:0.85rem; color:var(--text-main);">
-                                <li>اپلیکیشن <b>ntfy</b> را روی گوشی نصب کنید و کانال بالا را اضافه نمایید.</li>
-                                <li>یا روی دکمه زیر کلیک کنید تا صفحه اشتراک مستقیم در مرورگر یا اپ باز شود:</li>
-                            </ol>
-                            <div style="margin-top:15px; text-align:center;">
-                                <a href="${subUrl}" target="_blank" class="btn btn-primary" style="display:inline-block; text-decoration:none; padding:10px 20px;">
-                                    🔗 باز کردن صفحه اشتراک اعلان
-                                </a>
-                            </div>
-                        </div>
-                    `,
-                    confirmText: 'متوجه شدم',
-                    showCancel: false
-                });
             });
         }
 
-        // دکمه ارسال تست اعلان
-        const btnTestMyNotif = document.getElementById('btnTestMyNotif');
         if (btnTestMyNotif && !btnTestMyNotif.dataset.bound) {
             btnTestMyNotif.dataset.bound = "true";
-            btnTestMyNotif.addEventListener('click', async () => {
-                const user = AuthManager.getCurrentUser();
-                if (!user) return showToast("ابتدا وارد حساب کاربری شوید.", "error");
-                if (!NotificationManager.isConfigured()) {
-                    return showToast("آدرس سرور اعلان‌ها تنظیم نشده است.", "error");
-                }
-                showToast("در حال ارسال اعلان تستی...");
-                try {
-                    await NotificationManager.sendTestPush(user.id);
-                    showToast("✅ اعلان تستی ارسال شد! گوشی یا سیستم خود را بررسی کنید.");
-                } catch (e) {
-                    showToast("خطا در ارسال تست: " + e.message, "error");
-                }
+            btnTestMyNotif.addEventListener('click', () => {
+                NotificationManager.sendTestPush();
+                showToast('زنگ و پیام تستی اجرا شد.');
             });
         }
 
@@ -803,6 +795,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (user) {
             dashboardView.style.display = 'block'; document.getElementById('headerActions').style.display = 'flex';
             document.getElementById('welcomeName').innerText = user.name; fabAdd.style.display = 'flex';
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.startListening(user.id);
+            }
             if(user.role === 'admin') { 
                 document.getElementById('admin-settings-section').style.display = 'block'; 
                 renderAdminUserList(); 
@@ -810,6 +805,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             renderDashboard();
         } else { 
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.stopListening();
+            }
             loginView.style.display = 'block'; 
             NextcloudBackupManager.updateBadge('hide');
         }
@@ -1603,6 +1601,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (user) {
             let welcomeEl = document.getElementById('welcomeName');
             if (welcomeEl) welcomeEl.innerText = user.name;
+
+            // بررسی هوشمند تغییرات جدید تسک‌ها و اعلام سیستمی با صدا و ویبره درون برنامه
+            if (typeof NotificationManager !== 'undefined') {
+                try {
+                    let allTasks = await DBManager.getTasks();
+                    NotificationManager.handleDatabaseSyncUpdate(allTasks, user);
+                } catch (err) {}
+            }
         }
         if (document.getElementById('dashboard-view').style.display !== 'none') renderDashboard();
         if (document.getElementById('settings-view').style.display !== 'none' && AuthManager.getCurrentUser()?.role === 'admin') {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mecav-offline-v8';
+const CACHE_NAME = 'mecav-offline-v9';
 const FILES_TO_CACHE = [
   '/',
   '/index.html',
@@ -50,6 +50,25 @@ self.addEventListener('fetch', (evt) => {
   evt.respondWith(
     caches.match(evt.request).then((response) => {
       return response || fetch(evt.request);
+    })
+  );
+});
+
+// کلیک روی اعلان ویندوز یا اندروید: پنجره برنامه باز یا فوکوس شود
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const urlToOpen = (event.notification.data && event.notification.data.clickUrl) ? event.notification.data.clickUrl : '/';
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (let client of windowClients) {
+        if ('focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
     })
   );
 });
