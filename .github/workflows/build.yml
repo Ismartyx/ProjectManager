@@ -63,6 +63,7 @@ jobs:
 
           # نصب نسخه پایدار اندروید 13 در کوردوا
           cordova platform add android@13.0.0
+          cordova plugin add cordova-plugin-android-permissions
 
           # فعال کردن مجوز ارتباط با شبکه محلی (HTTP / پورت 5984) مستقیم در AndroidManifest.xml
           node -e '

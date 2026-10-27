@@ -47,13 +47,28 @@
         <div id="dashboard-view" class="view-section" style="display: none;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h2 style="margin:0;">سلام، <span id="welcomeName" style="color:var(--primary)"></span></h2>
-                <label class="checkbox-label" id="archiveToggleLabel" style="display:none; margin:0;"><input type="checkbox" id="chkShowArchived"> نمایش آرشیو</label>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button id="btnDashTestNotif" class="btn btn-secondary btn-small" style="margin:0; padding: 4px 10px; font-size: 0.78rem;">🔔 تست زنگ و اعلان</button>
+                    <label class="checkbox-label" id="archiveToggleLabel" style="display:none; margin:0;"><input type="checkbox" id="chkShowArchived"> نمایش آرشیو</label>
+                </div>
             </div>
             <div id="notif-permission-banner" class="card" style="display: none; background: rgba(56, 189, 248, 0.08); border: 1px solid var(--primary); margin-bottom: 12px; padding: 10px 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                 <div style="font-size: 0.85rem; color: var(--text-main);">
                     🔔 <b>اعلان‌های سیستمی غیرفعال است!</b> برای دریافت زنگ و پیام هنگام ارجاع تسک، دکمه مقابل را بزنید:
                 </div>
                 <button id="btnBannerEnableNotif" class="btn btn-primary btn-small" style="margin: 0; padding: 6px 14px;">فعال‌سازی زنگ و پیام</button>
+            </div>
+            <!-- پیام‌ها و اعلان‌های جدید (شامل تست و رویدادهای زنده برای همه پرسنل) -->
+            <div id="recent-notifications-section" class="card" style="display: none; border: 1px solid rgba(56, 189, 248, 0.3); border-right: 4px solid var(--primary); background: rgba(56, 189, 248, 0.04); margin-bottom: 14px; padding: 12px 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 1.1rem;">🔔</span>
+                        <span style="font-weight: bold; font-size: 0.95rem; color: var(--primary);">پیام‌ها و اعلان‌های جدید</span>
+                        <span id="recent-notifs-count" style="background: var(--primary); color: #0b1120; font-size: 0.75rem; padding: 1px 7px; border-radius: 12px; font-weight: bold;">0</span>
+                    </div>
+                    <button id="btnClearRecentNotifs" class="btn btn-secondary btn-small" style="margin: 0; padding: 3px 8px; font-size: 0.75rem;">پاک کردن همه</button>
+                </div>
+                <div id="recent-notifications-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
             </div>
             <div id="admin-notifications" class="card" style="display: none; border-color: var(--accent);">
                 <h3 style="color: var(--accent); margin:0 0 10px 0;">🔔 کارتابل مدیر</h3>

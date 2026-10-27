@@ -5,6 +5,147 @@ const NotificationManager = {
     _activeUserId: null,
     _lastTasksMap: null,
     _recentSelfTriggered: new Set(),
+    _inAppNotifs: [],
+
+    initInAppNotifs: function() {
+        try {
+            const saved = localStorage.getItem('pm_recent_inapp_notifs');
+            this._inAppNotifs = saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            this._inAppNotifs = [];
+        }
+        this.renderInAppNotifs();
+    },
+
+    saveInAppNotifs: function() {
+        try {
+            if (this._inAppNotifs.length > 25) {
+                this._inAppNotifs = this._inAppNotifs.slice(0, 25);
+            }
+            localStorage.setItem('pm_recent_inapp_notifs', JSON.stringify(this._inAppNotifs));
+        } catch (e) {}
+    },
+
+    addInAppNotification: function({ title, body, taskId = null, clickUrl = '', type = 'info' }) {
+        if (!title && !body) return;
+        const item = {
+            id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            title: title || 'اعلان جدید',
+            body: body || '',
+            taskId: taskId,
+            clickUrl: clickUrl,
+            type: type,
+            time: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })
+        };
+
+        this._inAppNotifs.unshift(item);
+        this.saveInAppNotifs();
+        this.renderInAppNotifs();
+    },
+
+    removeInAppNotification: function(notifId) {
+        this._inAppNotifs = this._inAppNotifs.filter(n => n.id !== notifId);
+        this.saveInAppNotifs();
+        this.renderInAppNotifs();
+    },
+
+    clearAllInAppNotifications: function() {
+        this._inAppNotifs = [];
+        this.saveInAppNotifs();
+        this.renderInAppNotifs();
+    },
+
+    renderInAppNotifs: function() {
+        const section = document.getElementById('recent-notifications-section');
+        const list = document.getElementById('recent-notifications-list');
+        const countBadge = document.getElementById('recent-notifs-count');
+        if (!section || !list) return;
+
+        if (!this._inAppNotifs || this._inAppNotifs.length === 0) {
+            section.style.display = 'none';
+            list.innerHTML = '';
+            if (countBadge) countBadge.innerText = '0';
+            return;
+        }
+
+        section.style.display = 'block';
+        if (countBadge) countBadge.innerText = String(this._inAppNotifs.length);
+
+        let html = '';
+        this._inAppNotifs.forEach(n => {
+            const clickAttr = n.taskId ? `onclick="window.openTaskById && window.openTaskById('${n.taskId}')"` : '';
+            const cursorStyle = n.taskId ? 'cursor: pointer;' : '';
+            html += `
+                <div class="inapp-notif-item" style="padding: 10px 12px; background: rgba(255,255,255,0.05); border-right: 3px solid var(--primary); border-radius: 6px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; ${cursorStyle}" ${clickAttr}>
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px;">
+                            <b style="font-size: 0.85rem; color: var(--text-main);">${n.title}</b>
+                            <span style="font-size: 0.7rem; color: var(--text-muted); direction: ltr;">${n.time}</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">${n.body}</div>
+                    </div>
+                    <button onclick="event.stopPropagation(); NotificationManager.removeInAppNotification('${n.id}')" style="background:none; border:none; color:var(--text-muted); font-size: 1.1rem; cursor: pointer; padding: 0 4px; line-height: 1;" title="حذف">&times;</button>
+                </div>
+            `;
+        });
+
+        list.innerHTML = html;
+    },
+
+    requestSystemPermission: function(onSuccess) {
+        let granted = false;
+        const markGranted = () => {
+            granted = true;
+            const banner = document.getElementById('notif-permission-banner');
+            if (banner) banner.style.display = 'none';
+            if (typeof onSuccess === 'function') onSuccess();
+        };
+
+        // ۱. محیط اپلیکیشن اندروید (Cordova / APK)
+        if (window.cordova && window.cordova.plugins && window.cordova.plugins.permissions) {
+            const perms = window.cordova.plugins.permissions;
+            const notifPerm = perms.POST_NOTIFICATIONS || 'android.permission.POST_NOTIFICATIONS';
+            try {
+                perms.checkPermission(notifPerm, function(status) {
+                    if (!status.hasPermission) {
+                        perms.requestPermission(notifPerm, function(res) {
+                            if (res && res.hasPermission) markGranted();
+                        }, function(err) {
+                            console.warn("[Notification] خطا در درخواست مجوز اندروید:", err);
+                        });
+                    } else {
+                        markGranted();
+                    }
+                }, function() {
+                    perms.requestPermission(notifPerm, function(res) {
+                        if (res && res.hasPermission) markGranted();
+                    });
+                });
+            } catch (e) {
+                console.warn("[Notification] خطا در اجرای پلاگین مجوز:", e);
+            }
+        }
+
+        // ۲. محیط مرورگر وب (ویندوز، آیفون iOS 16.4+، کروم اندروید، مک)
+        if ("Notification" in window) {
+            if (Notification.permission === "default") {
+                try {
+                    const p = Notification.requestPermission();
+                    if (p && typeof p.then === 'function') {
+                        p.then(perm => {
+                            if (perm === "granted") markGranted();
+                        }).catch(() => {});
+                    } else if (typeof Notification.requestPermission === 'function') {
+                        Notification.requestPermission(function(perm) {
+                            if (perm === "granted") markGranted();
+                        });
+                    }
+                } catch (e) {}
+            } else if (Notification.permission === "granted") {
+                markGranted();
+            }
+        }
+    },
 
     // آدرس سرور پوش نوتیفیکیشن روی سرور مجازی (پیش‌فرض سرور فعال)
     getServerUrl: function() {
@@ -79,13 +220,21 @@ const NotificationManager = {
         }
     },
 
-    // نمایش اعلان سیستمی واقعی در ویندوز (Action Center) یا اندروید (Notification Bar)
-    showLocalSystemNotification: function(title, body, clickUrl = '') {
-        // ۱. پخش زنگ و ویبره
+    // نمایش اعلان سیستمی واقعی در ویندوز (Action Center) یا اندروید (Notification Bar) + ثبت در پیام‌های بالای برنامه
+    showLocalSystemNotification: function(title, body, clickUrl = '', taskId = null) {
+        // ۱. ثبت فوری در بخش پیام‌ها و اعلان‌های بالای برنامه
+        this.addInAppNotification({
+            title: title,
+            body: body,
+            clickUrl: clickUrl,
+            taskId: taskId
+        });
+
+        // ۲. پخش زنگ و ویبره
         this.playAlertSound();
         this.vibrateDevice();
 
-        // ۲. نمایش نوتیفیکیشن سیستمی
+        // ۳. نمایش نوتیفیکیشن سیستمی
         if (!("Notification" in window)) return;
 
         if (Notification.permission === "granted") {
@@ -259,12 +408,16 @@ const NotificationManager = {
                 if (String(task.assigneeId) === String(currentUser.id) && String(task.creatorId) !== String(currentUser.id)) {
                     this.showLocalSystemNotification(
                         '📌 تسک جدید برای شما',
-                        `تسک "${task.title}" توسط ${task.creatorName || 'همکار'} به شما ارجاع شد.`
+                        `تسک "${task.title}" توسط ${task.creatorName || 'همکار'} به شما ارجاع شد.`,
+                        '',
+                        task._id
                     );
                 } else if ((task.observers || []).some(o => String(o) === String(currentUser.id))) {
                     this.showLocalSystemNotification(
                         '👀 ناظر در تسک جدید',
-                        `شما به عنوان ناظر در تسک "${task.title}" تعیین شدید.`
+                        `شما به عنوان ناظر در تسک "${task.title}" تعیین شدید.`,
+                        '',
+                        task._id
                     );
                 }
             } else {
@@ -279,7 +432,9 @@ const NotificationManager = {
                             const isReport = lastAct.type === 'report';
                             this.showLocalSystemNotification(
                                 isReport ? `📝 گزارش جدید در "${task.title}"` : `💬 نظر جدید در "${task.title}"`,
-                                `${lastAct.userName || 'همکار'}: ${lastAct.text ? (lastAct.text.length > 60 ? lastAct.text.substring(0, 60) + '...' : lastAct.text) : 'تصویر ارسال شد'}`
+                                `${lastAct.userName || 'همکار'}: ${lastAct.text ? (lastAct.text.length > 60 ? lastAct.text.substring(0, 60) + '...' : lastAct.text) : 'تصویر ارسال شد'}`,
+                                '',
+                                task._id
                             );
                         }
                     }
@@ -289,13 +444,13 @@ const NotificationManager = {
                 if (prev.status !== task.status) {
                     if (String(task.assigneeId) === String(currentUser.id)) {
                         if (task.status === 'completed') {
-                            this.showLocalSystemNotification('✅ تایید نهایی تسک', `تسک "${task.title}" توسط مدیر تایید شد.`);
+                            this.showLocalSystemNotification('✅ تایید نهایی تسک', `تسک "${task.title}" توسط مدیر تایید شد.`, '', task._id);
                         } else if (task.status === 'pending' && prev.status === 'pending_approval') {
-                            this.showLocalSystemNotification('⚠️ برگشت تسک', `تسک "${task.title}" تایید نشد و جهت اصلاح به شما برگشت داده شد.`);
+                            this.showLocalSystemNotification('⚠️ برگشت تسک', `تسک "${task.title}" تایید نشد و جهت اصلاح به شما برگشت داده شد.`, '', task._id);
                         }
                     }
                     if (currentUser.role === 'admin' && task.status === 'pending_approval' && prev.status !== 'pending_approval') {
-                        this.showLocalSystemNotification('📋 تسک منتظر تایید', `تسک "${task.title}" تکمیل شد و منتظر تایید مدیر است.`);
+                        this.showLocalSystemNotification('📋 تسک منتظر تایید', `تسک "${task.title}" تکمیل شد و منتظر تایید مدیر است.`, '', task._id);
                     }
                 }
             }

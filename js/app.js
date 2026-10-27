@@ -427,8 +427,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (btnTestMyNotif && !btnTestMyNotif.dataset.bound) {
             btnTestMyNotif.dataset.bound = "true";
             btnTestMyNotif.addEventListener('click', () => {
+                NotificationManager.requestSystemPermission();
                 NotificationManager.sendTestPush();
-                showToast('زنگ و پیام تستی اجرا شد.');
+                showToast('زنگ و پیام تستی در نوار بالای برنامه ثبت شد.');
             });
         }
 
@@ -651,6 +652,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('welcomeName').innerText = user.name; fabAdd.style.display = 'flex';
             if (typeof NotificationManager !== 'undefined') {
                 NotificationManager.startListening(user.id);
+                NotificationManager.initInAppNotifs();
+                NotificationManager.requestSystemPermission();
             }
             const banner = document.getElementById('notif-permission-banner');
             if (banner) {
@@ -671,30 +674,51 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     checkLoginStatus();
 
+    // شنود رخداد آماده بودن Cordova در اپلیکیشن اندروید جهت درخواست مجوز
+    document.addEventListener('deviceready', () => {
+        if (typeof NotificationManager !== 'undefined') {
+            NotificationManager.requestSystemPermission();
+        }
+    }, false);
+
+    // دکمه تست زنگ و اعلان در بالای داشبورد
+    const btnDashTestNotif = document.getElementById('btnDashTestNotif');
+    if (btnDashTestNotif && !btnDashTestNotif.dataset.bound) {
+        btnDashTestNotif.dataset.bound = "true";
+        btnDashTestNotif.addEventListener('click', () => {
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.requestSystemPermission();
+                NotificationManager.sendTestPush();
+                showToast('زنگ و پیام آزمایشی اجرا شد.');
+            }
+        });
+    }
+
+    // دکمه پاک کردن اعلان‌های جدید
+    const btnClearRecentNotifs = document.getElementById('btnClearRecentNotifs');
+    if (btnClearRecentNotifs && !btnClearRecentNotifs.dataset.bound) {
+        btnClearRecentNotifs.dataset.bound = "true";
+        btnClearRecentNotifs.addEventListener('click', () => {
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.clearAllInAppNotifications();
+            }
+        });
+    }
+
     const btnBannerEnableNotif = document.getElementById('btnBannerEnableNotif');
     if (btnBannerEnableNotif && !btnBannerEnableNotif.dataset.bound) {
         btnBannerEnableNotif.dataset.bound = "true";
         btnBannerEnableNotif.addEventListener('click', async () => {
-            if ("Notification" in window) {
-                try {
-                    let perm = await Notification.requestPermission();
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.requestSystemPermission(() => {
                     const banner = document.getElementById('notif-permission-banner');
-                    if (perm === 'granted') {
-                        if (banner) banner.style.display = 'none';
-                        NotificationManager.showLocalSystemNotification(
-                            '✅ اعلان‌های مکاو فعال شد',
-                            'صدای زنگ و اعلان‌های سیستمی روی این دستگاه فعال شدند.'
-                        );
-                        showToast('اعلان‌ها با موفقیت فعال شدند.');
-                    } else {
-                        showToast('دسترسی اعلان توسط مرورگر رد شد.', 'error');
-                    }
-                } catch (e) {
-                    NotificationManager.playAlertSound();
-                }
-            } else {
-                NotificationManager.playAlertSound();
-                showToast('صدای زنگ فعال است.');
+                    if (banner) banner.style.display = 'none';
+                    NotificationManager.showLocalSystemNotification(
+                        '✅ اعلان‌های مکاو فعال شد',
+                        'صدای زنگ و اعلان‌های سیستمی روی این دستگاه فعال شدند.'
+                    );
+                    showToast('اعلان‌ها با موفقیت فعال شدند.');
+                });
             }
         });
     }
@@ -723,6 +747,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('nationalCodeInput').value = '';
             showToast("با موفقیت وارد شدید.");
             checkLoginStatus();
+
+            // درخواست مجوز اعلان برای اندروید، آیفون و ویندوز بلافاصله بعد از لاگین
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.requestSystemPermission(() => {
+                    const banner = document.getElementById('notif-permission-banner');
+                    if (banner) banner.style.display = 'none';
+                });
+            }
         } catch (error) {
             showToast(error.message, "error");
         } finally {
