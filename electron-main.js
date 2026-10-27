@@ -22,7 +22,7 @@ if (!gotTheLock) {
             minWidth: 960,
             minHeight: 600,
             title: 'مدیریت پروژه مکاو',
-            icon: path.join(__dirname, 'icon-512.png'),
+            icon: path.join(__dirname, 'icon.ico'),
             autoHideMenuBar: true,
             webPreferences: {
                 nodeIntegration: false,

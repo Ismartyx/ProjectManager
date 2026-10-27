@@ -21,6 +21,7 @@
     },
     "artifactName": "MechaveWS-Setup.${ext}",
     "files": [
+      "package.json",
       "index.html",
       "electron-main.js",
       "css/**/*",
@@ -28,20 +29,21 @@
       "fonts/**/*",
       "icon-192.png",
       "icon-512.png",
+      "icon.ico",
       "favicon.svg"
     ],
     "win": {
       "target": [
         "nsis"
       ],
-      "icon": "icon-512.png"
+      "icon": "icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "مدیریت پروژه مکاو"
+      "shortcutName": "MechaveWS"
     }
   }
 }
