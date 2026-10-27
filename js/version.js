@@ -1,7 +1,7 @@
 // سیستم مدیریت نسخه و بررسی خودکار بروزرسانی
 const VersionManager = {
-    CURRENT_VERSION: "1.0.1",
-    CURRENT_VERSION_CODE: 10001,
+    CURRENT_VERSION: "1.0.2",
+    CURRENT_VERSION_CODE: 10002,
 
     init: function() {
         const verEl = document.getElementById('app-current-version-text');
@@ -36,7 +36,7 @@ const VersionManager = {
                     statusEl.innerText = `نسخه جدید ${data.version} منتشر شده است!`;
                     statusEl.style.color = 'var(--accent)';
                 }
-                this.showUpdatePrompt(data);
+                this.showUpdatePrompt(data, silent);
             } else {
                 if (!silent && statusEl) {
                     statusEl.innerText = `شما از آخرین نسخه برنامه (${this.CURRENT_VERSION}) استفاده می‌کنید.`;
@@ -52,7 +52,7 @@ const VersionManager = {
         }
     },
 
-    showUpdatePrompt: function(info) {
+    showUpdatePrompt: function(info, silent = false) {
         const isAndroid = Boolean(window.cordova);
         const isWin = Boolean(window.electronAPI && window.electronAPI.isElectron);
         let targetUrl = info.apkUrl || 'https://github.com/Ismartyx/ProjectManager/actions';
@@ -60,15 +60,33 @@ const VersionManager = {
             targetUrl = info.winUrl;
         }
 
+        const notifTitle = `🚀 نسخه جدید ${info.version} مکاو آماده است`;
+        const notifBody = info.changelog || 'جهت بروزرسانی برنامه کلیک کنید.';
+
+        // ۱. ثبت در پیام‌ها و اعلان‌های داخلی بالای برنامه
         if (typeof NotificationManager !== 'undefined' && NotificationManager.addInAppNotification) {
             NotificationManager.addInAppNotification({
-                title: `🚀 نسخه جدید ${info.version} موجود است`,
-                body: info.changelog || 'جهت بروزرسانی برنامه کلیک کنید.',
+                title: notifTitle,
+                body: notifBody,
                 clickUrl: targetUrl,
                 type: 'info'
             });
         }
 
+        // ۲. ارسال اعلان سیستمی (Action Center ویندوز / نوار وضعیت اندروید + زنگ و ویبره)
+        const lastNotified = localStorage.getItem('pm_last_notified_ver_code');
+        if (!silent || lastNotified !== String(info.versionCode)) {
+            localStorage.setItem('pm_last_notified_ver_code', String(info.versionCode));
+            if (typeof NotificationManager !== 'undefined' && NotificationManager.showLocalSystemNotification) {
+                NotificationManager.showLocalSystemNotification(
+                    notifTitle,
+                    notifBody,
+                    targetUrl
+                );
+            }
+        }
+
+        // ۳. بنر اقدام سریع در پایین صفحه
         let banner = document.getElementById('app-update-banner');
         if (!banner) {
             banner = document.createElement('div');
@@ -80,9 +98,9 @@ const VersionManager = {
                 right: 20px;
                 max-width: 480px;
                 margin: 0 auto;
-                background: #0f172a;
-                border: 2px solid var(--accent, #38bdf8);
-                color: #fff;
+                background: var(--bg-card);
+                border: 2px solid var(--accent);
+                color: var(--text-main);
                 padding: 14px 18px;
                 border-radius: 14px;
                 box-shadow: 0 12px 30px rgba(0,0,0,0.6);
@@ -98,10 +116,10 @@ const VersionManager = {
 
         banner.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <b style="color:var(--accent, #38bdf8); font-size:1rem;">🚀 نسخه جدید ${info.version} آماده است</b>
-                <button onclick="this.closest('#app-update-banner').remove()" style="background:none; border:none; color:#94a3b8; font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
+                <b style="color:var(--accent); font-size:1rem;">🚀 نسخه جدید ${info.version} آماده است</b>
+                <button onclick="this.closest('#app-update-banner').remove()" style="background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
             </div>
-            <div style="font-size:0.85rem; color:#cbd5e1; line-height:1.5;">${info.changelog || 'بهبودهای جدید در این نسخه اعمال شده است.'}</div>
+            <div style="font-size:0.85rem; color:var(--text-muted); line-height:1.5;">${info.changelog || 'بهبودهای جدید در این نسخه اعمال شده است.'}</div>
             <div style="display:flex; gap:8px; margin-top:6px;">
                 <a href="${targetUrl}" target="_blank" class="btn btn-primary btn-small" style="flex:1; text-align:center; text-decoration:none; margin:0; padding:6px 12px;">
                     📥 دریافت و نصب نسخه جدید

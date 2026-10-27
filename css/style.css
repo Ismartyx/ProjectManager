@@ -19,71 +19,73 @@
    متغیرهای پالت رنگی (تاریک و روشن)
    ========================================== */
 :root, [data-theme="dark"] {
-    --bg-main: #0b1120;
-    --bg-card: #131c31;
-    --bg-input: #0f172a;
+    --bg-main: #0b0f19;
+    --bg-card: #131b2e;
+    --bg-input: #0e1627;
+    --text-main: #f1f5f9;
+    --text-muted: #8b9bb4;
+    --border-color: rgba(255, 255, 255, 0.07);
+    --border-input: rgba(255, 255, 255, 0.11);
+    --shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.35);
+
+    /* رنگ‌های پایه */
     --primary: #38bdf8;
     --primary-hover: #0ea5e9;
     --accent: #38bdf8;
     --success: #10b981;
-    --danger: #ef4444;
+    --danger: #f43f5e;
     --warning: #f59e0b;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --border-color: rgba(255, 255, 255, 0.08);
-    --border-input: rgba(255, 255, 255, 0.12);
-    --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    
-    /* کارت‌های تسک در شب */
-    --task-bg: #10192e;
-    --task-border: rgba(255, 255, 255, 0.07);
-    --task-hover-bg: #16223d;
-    --activity-bg: rgba(0, 0, 0, 0.3);
-    --activity-border: rgba(255, 255, 255, 0.06);
-    --activity-text: #cbd5e1;
 
-    /* مهم و منقضی در شب */
-    --important-bg: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(19, 28, 49, 0.95));
+    /* کارت‌های تسک در شب */
+    --task-bg: #111827;
+    --task-border: rgba(255, 255, 255, 0.06);
+    --task-hover-bg: #172033;
+    --activity-bg: rgba(0, 0, 0, 0.22);
+    --activity-border: rgba(255, 255, 255, 0.05);
+    --activity-text: #94a3b8;
+
+    /* وضعیت‌ها در شب (ملایم و مینیمال) */
     --important-border: #f59e0b;
-    --overdue-bg: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(19, 28, 49, 0.95));
-    --overdue-border: #ef4444;
-    --done-bg: rgba(16, 185, 129, 0.08);
+    --overdue-border: #f43f5e;
+    --done-bg: rgba(16, 185, 129, 0.04);
 
     /* بج‌ها در شب */
-    --badge-imp-bg: rgba(245, 158, 11, 0.18);
+    --badge-imp-bg: rgba(245, 158, 11, 0.12);
     --badge-imp-text: #fbbf24;
-    --badge-imp-border: rgba(245, 158, 11, 0.3);
-    --badge-dl-bg: rgba(56, 189, 248, 0.15);
-    --badge-dl-text: #38bdf8;
-    --badge-dl-border: rgba(56, 189, 248, 0.25);
-    --badge-overdue-bg: rgba(239, 68, 68, 0.2);
-    --badge-overdue-text: #fca5a5;
-    --tag-bg: rgba(255, 255, 255, 0.06);
-    --tag-text: #cbd5e1;
-    --tag-border: rgba(255, 255, 255, 0.1);
+    --badge-imp-border: rgba(245, 158, 11, 0.25);
+    --badge-dl-bg: rgba(255, 255, 255, 0.05);
+    --badge-dl-text: var(--text-main);
+    --badge-dl-border: rgba(255, 255, 255, 0.1);
+    --badge-overdue-bg: rgba(244, 63, 94, 0.12);
+    --badge-overdue-text: #fda4af;
+    --tag-bg: rgba(255, 255, 255, 0.05);
+    --tag-text: #94a3b8;
+    --tag-border: rgba(255, 255, 255, 0.08);
 
     /* چت در شب */
-    --chat-mine-bg: rgba(56, 189, 248, 0.12);
-    --chat-mine-border: #38bdf8;
-    --chat-other-bg: rgba(255, 255, 255, 0.05);
-    --chat-report-bg: rgba(16, 185, 129, 0.07);
+    --chat-mine-bg: rgba(56, 189, 248, 0.08);
+    --chat-mine-border: var(--primary);
+    --chat-other-bg: rgba(255, 255, 255, 0.04);
+    --chat-report-bg: rgba(16, 185, 129, 0.06);
 }
 
 [data-theme="light"] {
     --bg-main: #f8fafc;
     --bg-card: #ffffff;
-    --bg-input: #ffffff;
-    --primary: #0284c7;
-    --primary-hover: #0369a1;
-    --accent: #0284c7;
-    --success: #10b981;
-    --danger: #ef4444;
-    --warning: #d97706;
+    --bg-input: #f1f5f9;
     --text-main: #0f172a;
     --text-muted: #64748b;
     --border-color: #e2e8f0;
     --border-input: #cbd5e1;
-    --shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    --shadow: 0 1px 4px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.03);
+
+    /* رنگ‌های پایه */
+    --primary: #0284c7;
+    --primary-hover: #0369a1;
+    --accent: #0284c7;
+    --success: #10b981;
+    --danger: #e11d48;
+    --warning: #d97706;
 
     /* کارت‌های تسک در روز */
     --task-bg: #ffffff;
@@ -91,33 +93,94 @@
     --task-hover-bg: #f8fafc;
     --activity-bg: #f8fafc;
     --activity-border: #e2e8f0;
-    --activity-text: #334155;
+    --activity-text: #64748b;
 
-    /* مهم و منقضی در روز */
-    --important-bg: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-    --important-border: #f59e0b;
-    --overdue-bg: linear-gradient(135deg, #fff1f2 0%, #fee2e2 100%);
-    --overdue-border: #ef4444;
-    --done-bg: #f0fdf4;
+    /* وضعیت‌ها در روز */
+    --important-border: #d97706;
+    --overdue-border: #e11d48;
+    --done-bg: #f8fafc;
 
     /* بج‌ها در روز */
     --badge-imp-bg: #fef3c7;
     --badge-imp-text: #b45309;
     --badge-imp-border: #fde68a;
-    --badge-dl-bg: #e0f2fe;
-    --badge-dl-text: #0369a1;
-    --badge-dl-border: #bae6fd;
-    --badge-overdue-bg: #fee2e2;
-    --badge-overdue-text: #dc2626;
+    --badge-dl-bg: #f1f5f9;
+    --badge-dl-text: #334155;
+    --badge-dl-border: #e2e8f0;
+    --badge-overdue-bg: #ffe4e6;
+    --badge-overdue-text: #be123c;
     --tag-bg: #f1f5f9;
-    --tag-text: #475569;
+    --tag-text: #64748b;
     --tag-border: #e2e8f0;
 
     /* چت در روز */
-    --chat-mine-bg: #e0f2fe;
-    --chat-mine-border: #0284c7;
+    --chat-mine-bg: rgba(2, 132, 199, 0.08);
+    --chat-mine-border: var(--primary);
     --chat-other-bg: #f1f5f9;
     --chat-report-bg: #f0fdf4;
+}
+
+/* ============================================================
+   پالت‌های رنگی چندگانه (Theme Palettes)
+   ============================================================ */
+/* ۱. پالت اقیانوسی مکاو (Oceanic Blue - پیش‌فرض) */
+:root, [data-palette="ocean"] {
+    --primary: #0284c7;
+    --primary-hover: #0369a1;
+    --accent: #0284c7;
+}
+[data-theme="dark"], [data-theme="dark"][data-palette="ocean"] {
+    --primary: #38bdf8;
+    --primary-hover: #0ea5e9;
+    --accent: #38bdf8;
+}
+
+/* ۲. پالت زمردی مریم‌گلی (Emerald / Sage) */
+[data-palette="emerald"] {
+    --primary: #059669;
+    --primary-hover: #047857;
+    --accent: #059669;
+}
+[data-theme="dark"][data-palette="emerald"] {
+    --primary: #34d399;
+    --primary-hover: #10b981;
+    --accent: #34d399;
+}
+
+/* ۳. پالت کهربایی گرم (Warm Amber / Copper) */
+[data-palette="amber"] {
+    --primary: #d97706;
+    --primary-hover: #b45309;
+    --accent: #d97706;
+}
+[data-theme="dark"][data-palette="amber"] {
+    --primary: #fbbf24;
+    --primary-hover: #f59e0b;
+    --accent: #fbbf24;
+}
+
+/* ۴. پالت زنبقی لوکس (Modern Violet / Iris) */
+[data-palette="violet"] {
+    --primary: #7c3aed;
+    --primary-hover: #6d28d9;
+    --accent: #7c3aed;
+}
+[data-theme="dark"][data-palette="violet"] {
+    --primary: #a78bfa;
+    --primary-hover: #8b5cf6;
+    --accent: #a78bfa;
+}
+
+/* ۵. پالت نوک‌مدادی مینیمال (Monochrome Graphite / Slate) */
+[data-palette="graphite"] {
+    --primary: #475569;
+    --primary-hover: #334155;
+    --accent: #64748b;
+}
+[data-theme="dark"][data-palette="graphite"] {
+    --primary: #cbd5e1;
+    --primary-hover: #94a3b8;
+    --accent: #e2e8f0;
 }
 
 /* ==========================================
@@ -409,74 +472,80 @@ input:focus, textarea:focus {
     line-height: 1.4;
 }
 
-/* وضعیت‌های تسک */
+/* وضعیت‌های تسک - مینیمال، آرام و چشم‌نواز */
 .task-card.task-unread {
-    animation: unreadPulseGlowDark 2.2s infinite ease-in-out;
-    background: linear-gradient(135deg, rgba(14, 165, 233, 0.22) 0%, rgba(30, 27, 75, 0.95) 100%) !important;
-    border: 1.5px solid #38bdf8 !important;
-    border-right: 5px solid #38bdf8 !important;
+    border-right: 4px solid var(--accent) !important;
+    background: var(--task-bg) !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
 }
 
 [data-theme="light"] .task-card.task-unread {
-    animation: unreadPulseGlowLight 2.2s infinite ease-in-out;
-    background: linear-gradient(135deg, #e0f2fe 0%, #ede9fe 100%) !important;
-    border: 1.5px solid #0284c7 !important;
-    border-right: 5px solid #0284c7 !important;
-}
-
-/* انیمیشن پالس درخشان دور تا دور کارت تسک جدید */
-@keyframes unreadPulseGlowDark {
-    0% {
-        box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.6), 0 0 14px rgba(56, 189, 248, 0.3);
-        border-color: #38bdf8;
-    }
-    50% {
-        box-shadow: 0 0 0 6px rgba(56, 189, 248, 0), 0 0 26px rgba(56, 189, 248, 0.5);
-        border-color: #818cf8;
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.6), 0 0 14px rgba(56, 189, 248, 0.3);
-        border-color: #38bdf8;
-    }
-}
-
-@keyframes unreadPulseGlowLight {
-    0% {
-        box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.5), 0 3px 10px rgba(2, 132, 199, 0.2);
-        border-color: #0284c7;
-    }
-    50% {
-        box-shadow: 0 0 0 6px rgba(2, 132, 199, 0), 0 4px 22px rgba(2, 132, 199, 0.35);
-        border-color: #38bdf8;
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.5), 0 3px 10px rgba(2, 132, 199, 0.2);
-        border-color: #0284c7;
-    }
+    border-right: 4px solid var(--accent) !important;
+    background: var(--task-bg) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .task-card.task-important {
-    background: var(--important-bg);
-    border-right: 4px solid var(--important-border);
-}
-
-.task-card.task-unread.task-important {
-    border-right: 5px solid var(--important-border) !important;
+    border-right: 4px solid var(--warning) !important;
+    background: var(--task-bg);
 }
 
 .task-card.task-overdue {
-    background: var(--overdue-bg);
-    border-right: 4px solid var(--overdue-border);
-}
-
-.task-card.task-unread.task-overdue {
-    border-right: 5px solid var(--overdue-border) !important;
+    border-right: 4px solid var(--danger) !important;
+    background: var(--task-bg);
 }
 
 .task-card.task-done {
-    background: var(--done-bg);
-    border-right: 4px solid var(--success);
-    opacity: 0.85;
+    border-right: 4px solid var(--success) !important;
+    background: var(--task-bg);
+    opacity: 0.75;
+}
+
+/* دراپ‌داون پالت رنگی هدر */
+.palette-dropdown-wrapper {
+    position: relative;
+}
+
+.palette-dropdown {
+    position: absolute;
+    top: 46px;
+    left: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 12px 14px;
+    box-shadow: var(--shadow);
+    z-index: 1000;
+    width: 220px;
+    animation: fadeIn 0.15s ease;
+}
+
+.palette-options {
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    margin-top: 6px;
+}
+
+.palette-color-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    padding: 0;
+    outline: none;
+}
+
+.palette-color-btn:hover {
+    transform: scale(1.15);
+}
+
+.palette-color-btn.active {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 2px var(--accent);
+    transform: scale(1.12);
 }
 
 .task-card-inner {

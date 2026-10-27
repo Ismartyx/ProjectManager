@@ -626,6 +626,72 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // ==========================================
+    // سیستم انتخاب پالت رنگی چندگانه (Palette Switcher)
+    // ==========================================
+    let currentPalette = localStorage.getItem('pm_theme_palette') || 'ocean';
+    document.body.setAttribute('data-palette', currentPalette);
+
+    function applyPalette(palId) {
+        currentPalette = palId;
+        document.body.setAttribute('data-palette', palId);
+        localStorage.setItem('pm_theme_palette', palId);
+        
+        // بروزرسانی دکمه‌های هدر
+        document.querySelectorAll('.palette-color-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.palette === palId);
+        });
+
+        // بروزرسانی دکمه‌های صفحه تنظیمات
+        document.querySelectorAll('.palette-setting-btn').forEach(btn => {
+            if (btn.dataset.palette === palId) {
+                btn.style.borderColor = 'var(--primary)';
+                btn.style.background = 'var(--bg-input)';
+                btn.style.fontWeight = 'bold';
+            } else {
+                btn.style.borderColor = 'var(--border-color)';
+                btn.style.background = 'transparent';
+                btn.style.fontWeight = 'normal';
+            }
+        });
+    }
+
+    applyPalette(currentPalette);
+
+    // دکمه باز/بسته کردن منوی کشویی پالت در هدر
+    const btnPaletteToggle = document.getElementById('btnPaletteToggle');
+    const paletteDropdown = document.getElementById('paletteDropdown');
+    if (btnPaletteToggle && paletteDropdown) {
+        btnPaletteToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = paletteDropdown.style.display === 'block';
+            paletteDropdown.style.display = isOpen ? 'none' : 'block';
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!paletteDropdown.contains(e.target) && e.target !== btnPaletteToggle) {
+                paletteDropdown.style.display = 'none';
+            }
+        });
+    }
+
+    // رویداد کلیک روی دکمه‌های پالت در هدر
+    document.querySelectorAll('.palette-color-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const pal = btn.dataset.palette;
+            if (pal) applyPalette(pal);
+            if (paletteDropdown) paletteDropdown.style.display = 'none';
+        });
+    });
+
+    // رویداد کلیک روی دکمه‌های پالت در تنظیمات
+    document.querySelectorAll('.palette-setting-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const pal = btn.dataset.palette;
+            if (pal) applyPalette(pal);
+        });
+    });
+
     const imageViewer = document.getElementById('imageViewer');
     const viewerImage = document.getElementById('viewerImage');
     if(document.getElementById('btnCloseViewer')) {

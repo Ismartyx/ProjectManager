@@ -24,7 +24,20 @@
     <header class="app-header" style="margin-top: 25px;">
         <h1 id="header-title">کارهای مکاو</h1>
         <div class="header-actions">
-            <button id="btnThemeToggle" class="icon-btn" title="تغییر تم">☀️</button>
+            <button id="btnThemeToggle" class="icon-btn" title="تغییر تم شب و روز">☀️</button>
+            <div class="palette-dropdown-wrapper">
+                <button id="btnPaletteToggle" class="icon-btn" title="انتخاب پالت رنگی">🎨</button>
+                <div id="paletteDropdown" class="palette-dropdown" style="display: none;">
+                    <div style="font-size: 0.8rem; font-weight: bold; margin-bottom: 6px; color: var(--text-muted); text-align: right;">رنگ‌بندی دلخواه:</div>
+                    <div class="palette-options">
+                        <button class="palette-color-btn" data-palette="ocean" style="background:#0ea5e9;" title="اقیانوسی مکاو"></button>
+                        <button class="palette-color-btn" data-palette="emerald" style="background:#10b981;" title="زمردی آرام"></button>
+                        <button class="palette-color-btn" data-palette="amber" style="background:#f59e0b;" title="کهربایی گرم"></button>
+                        <button class="palette-color-btn" data-palette="violet" style="background:#8b5cf6;" title="بنفش سنگی"></button>
+                        <button class="palette-color-btn" data-palette="graphite" style="background:#64748b;" title="نوک‌مدادی مینیمال"></button>
+                    </div>
+                </div>
+            </div>
             <div id="headerActions" style="display: none; align-items: center; gap: 10px;">
                 <button id="btnSettings" class="icon-btn">⚙️</button>
                 <button id="btnLogout" class="btn btn-secondary btn-small" style="margin: 0;">خروج</button>
@@ -102,6 +115,30 @@
                         <button id="btnTestMyNotif" class="btn btn-secondary btn-small" style="margin:0;">🧪 تست زنگ و پیام</button>
                     </div>
                     <div id="notifStatusText" style="font-size: 0.8rem; margin-top: 8px; color: var(--text-muted);"></div>
+                </div>
+
+                <div class="card" style="border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <h3 style="color: var(--primary); margin-top: 0;">🎨 انتخاب رنگ‌بندی برنامه (پالت دلخواه)</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+                        رنگ دلخواه خود را جهت آرامش چشم و زیبایی بیشتر انتخاب کنید:
+                    </p>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="settingsPaletteList">
+                        <button class="btn btn-secondary palette-setting-btn" data-palette="ocean" style="flex: 1; min-width: 120px; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0;">
+                            <span style="width: 13px; height: 13px; border-radius: 50%; background: #0ea5e9; display: inline-block;"></span> اقیانوسی
+                        </button>
+                        <button class="btn btn-secondary palette-setting-btn" data-palette="emerald" style="flex: 1; min-width: 120px; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0;">
+                            <span style="width: 13px; height: 13px; border-radius: 50%; background: #10b981; display: inline-block;"></span> زمردی
+                        </button>
+                        <button class="btn btn-secondary palette-setting-btn" data-palette="amber" style="flex: 1; min-width: 120px; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0;">
+                            <span style="width: 13px; height: 13px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span> کهربایی
+                        </button>
+                        <button class="btn btn-secondary palette-setting-btn" data-palette="violet" style="flex: 1; min-width: 120px; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0;">
+                            <span style="width: 13px; height: 13px; border-radius: 50%; background: #8b5cf6; display: inline-block;"></span> بنفش
+                        </button>
+                        <button class="btn btn-secondary palette-setting-btn" data-palette="graphite" style="flex: 1; min-width: 120px; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0;">
+                            <span style="width: 13px; height: 13px; border-radius: 50%; background: #64748b; display: inline-block;"></span> نوک‌مدادی
+                        </button>
+                    </div>
                 </div>
 
                 <div class="card" style="border: 1px solid var(--primary); margin-bottom: 15px;">
