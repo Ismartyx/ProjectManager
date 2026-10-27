@@ -6,9 +6,9 @@ const NotificationManager = {
     _lastTasksMap: null,
     _recentSelfTriggered: new Set(),
 
-    // آدرس سرور پوش نوتیفیکیشن روی سرور مجازی (اختیاری جهت همگام‌سازی از راه دور)
+    // آدرس سرور پوش نوتیفیکیشن روی سرور مجازی (پیش‌فرض سرور فعال)
     getServerUrl: function() {
-        return localStorage.getItem('pm_push_server_url') || '';
+        return localStorage.getItem('pm_push_server_url') || 'http://155.117.234.69:8080';
     },
 
     setServerUrl: function(url) {
