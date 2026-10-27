@@ -821,15 +821,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         const container = document.getElementById('admin-users-list-container');
         if(!container) return;
         container.innerHTML = AuthManager.usersList.map(u => 
-            `<div style="display:flex; justify-content:space-between; align-items:center; padding: 10px; border-bottom: 1px solid var(--border-color);">
+            `<div style="display:flex; justify-content:space-between; align-items:center; padding: 10px; border-bottom: 1px solid var(--border-color); flex-wrap:wrap; gap:8px;">
                 <div>👤 ${u.name} (کد: <b>${u.id}</b>)</div>
-                <div style="display:flex; gap:5px;">
-                    <button class="btn btn-small btn-secondary" onclick="window.adminChangePass('${u.id}')">تغییر رمز</button>
-                    ${u.role !== 'admin' ? `<button class="btn btn-small btn-secondary" style="background:var(--danger); color:white; border:none;" onclick="window.adminDeleteUser('${u.id}')">حذف</button>` : ''}
+                <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                    <button class="btn btn-small btn-secondary" onclick="window.adminEditName('${u.id}')">✏️ ویرایش نام</button>
+                    <button class="btn btn-small btn-secondary" onclick="window.adminChangePass('${u.id}')">🔑 تغییر رمز</button>
+                    ${u.role !== 'admin' ? `<button class="btn btn-small btn-secondary" style="background:var(--danger); color:white; border:none;" onclick="window.adminDeleteUser('${u.id}')">🗑️ حذف</button>` : ''}
                 </div>
             </div>`
         ).join('');
     }
+    window.adminEditName = async (id) => {
+        let user = AuthManager.usersList.find(u => u.id === id);
+        if(!user) return;
+        let newName = await showCustomModal({ 
+            title: 'ویرایش نام پرسنل', 
+            type: 'prompt', 
+            placeholder: user.name, 
+            okText: 'ذخیره' 
+        });
+        if(newName && newName.trim() !== '' && newName.trim() !== user.name) {
+            try {
+                AuthManager.updateUserName(id, newName.trim());
+                renderAdminUserList();
+                renderDashboard();
+                let cur = AuthManager.getCurrentUser();
+                if (cur && (cur.id === id || (id === '100' && cur.id === 'admin'))) {
+                    let welcomeEl = document.getElementById('welcomeName');
+                    if (welcomeEl) welcomeEl.innerText = newName.trim();
+                }
+                showToast("نام با موفقیت ویرایش شد.");
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        }
+    };
     window.adminChangePass = async (id) => {
         let newPass = await showCustomModal({ title: 'تغییر رمز عبور', type: 'prompt', placeholder: 'رمز عبور جدید را وارد کنید...' });
         if(newPass && newPass.trim() !== '') { 

@@ -134,6 +134,18 @@ const AuthManager = {
             user.canAssignTasks = canAssign;
             this.saveUsers();
         }
+    },
+
+    updateUserName: function(targetUserId, newName) {
+        let user = this.usersList.find(u => u.id === targetUserId);
+        if (!user) throw new Error("کاربری با این مشخصات یافت نشد.");
+        
+        user.name = newName;
+        if (this.currentUser && (this.currentUser.id === targetUserId || (targetUserId === '100' && this.currentUser.id === 'admin'))) {
+            this.currentUser.name = newName;
+            localStorage.setItem('pm_currentUser', JSON.stringify(this.currentUser));
+        }
+        this.saveUsers();
     }
 };
 
