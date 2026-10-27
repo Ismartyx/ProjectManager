@@ -118,10 +118,10 @@ function applyFontSize(sizeStr) {
 
 function applyBrandingAndIcons() {
     injectMecavUnifiedTheme();
-    document.title = "MechaveWS";
+    document.title = "مدیریت پروژه مکاو";
     applyFontSize(localStorage.getItem('pm_font_size') || '15px');
 
-    const iconUrl = "icon-192.png?v=5";
+    const iconUrl = "favicon.svg?v=1";
 
     document.querySelectorAll('h1, h2, h3, .header-title, header div, header span').forEach(el => {
         if (el.childNodes.length === 1 && el.innerText && (el.innerText.trim() === 'کارهای مکاو' || el.innerText.trim() === 'مدیریت پروژه مکاو')) {

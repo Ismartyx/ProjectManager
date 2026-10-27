@@ -1,7 +1,8 @@
-const CACHE_NAME = 'mecav-offline-v19';
+const CACHE_NAME = 'mecav-offline-v20';
 const FILES_TO_CACHE = [
   '/',
   '/index.html',
+  '/favicon.svg',
   '/manifest.json',
   '/css/style.css',
   '/js/pouchdb.min.js',
