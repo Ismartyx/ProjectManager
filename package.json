@@ -1,0 +1,47 @@
+{
+  "name": "mechave-ws",
+  "version": "1.0.0",
+  "description": "سیستم جامع مدیریت پروژه و وظایف مکاو",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win --x64"
+  },
+  "author": "Mecav Workshop <info@mechave.ir>",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^28.2.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.mechave.ws",
+    "productName": "MechaveWS",
+    "directories": {
+      "output": "dist"
+    },
+    "artifactName": "MechaveWS-Setup.${ext}",
+    "files": [
+      "index.html",
+      "electron-main.js",
+      "css/**/*",
+      "js/**/*",
+      "fonts/**/*",
+      "icon-192.png",
+      "icon-512.png",
+      "favicon.svg"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "icon-512.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "مدیریت پروژه مکاو"
+    }
+  }
+}

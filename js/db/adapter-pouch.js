@@ -28,9 +28,6 @@ const PouchAdapter = {
 
     // آدرس سرور آنلاین (سرور مجازی اینترنتی VPS)
     getOnlineUrl: function() {
-        if (window.location.protocol === 'https:') {
-            return window.location.origin + '/db/mecav_db_main';
-        }
         return localStorage.getItem('pm_server_url_online') || 'http://155.117.234.69:5984/mecav_db_main';
     },
 
@@ -152,8 +149,13 @@ const PouchAdapter = {
         let chosenUrl = null;
         let chosenMode = 'offline';
 
-        if (window.location.protocol === 'https:') {
-            // در صفحات HTTPS، درخواست‌های HTTP محلی به دلیل امنیت مرورگر (Mixed Content) مسدود می‌شوند
+        // 1. اولویت اول: بررسی سرور محلی کارگاه با تایم‌اوت سریع (۱.۵ ثانیه)
+        try {
+            await this.testServer(localUrl, 1500);
+            chosenUrl = localUrl;
+            chosenMode = 'local';
+        } catch (localErr) {
+            // سرور محلی کارگاه در دسترس نیست (کاربر خارج از شبکه کارگاه است)
             if (onlineUrl) {
                 try {
                     await this.testServer(onlineUrl, 3000);
@@ -162,26 +164,8 @@ const PouchAdapter = {
                 } catch (onlineErr) {
                     chosenMode = 'offline';
                 }
-            }
-        } else {
-            // 1. بررسی سرور محلی کارگاه با تایم‌اوت کوتاه (۱.۵ ثانیه)
-            try {
-                await this.testServer(localUrl, 1500);
-                chosenUrl = localUrl;
-                chosenMode = 'local';
-            } catch (localErr) {
-                // سرور محلی کارگاه در دسترس نیست (کاربر خارج از کارگاه است)
-                if (onlineUrl) {
-                    try {
-                        await this.testServer(onlineUrl, 3000);
-                        chosenUrl = onlineUrl;
-                        chosenMode = 'online';
-                    } catch (onlineErr) {
-                        chosenMode = 'offline';
-                    }
-                } else {
-                    chosenMode = 'offline';
-                }
+            } else {
+                chosenMode = 'offline';
             }
         }
 

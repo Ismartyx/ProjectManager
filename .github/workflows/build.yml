@@ -1,11 +1,13 @@
-name: Build Android APK
+name: Build MechaveWS Apps (Android & Windows)
 on:
   push:
     branches:
       - main
       - master
+
 jobs:
-  build:
+  build-android:
+    name: Build Android APK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source
@@ -29,7 +31,7 @@ jobs:
         run: |
           cordova create apk_build com.mechave.ws "MechaveWS"
           rm -rf apk_build/www/*
-          rsync -av --exclude='apk_build' --exclude='.git' --exclude='.github' ./ apk_build/www/
+          rsync -av --exclude='apk_build' --exclude='.git' --exclude='.github' --exclude='node_modules' --exclude='dist' ./ apk_build/www/
           cd apk_build
 
           # کپی آیکن برنامه
@@ -39,7 +41,7 @@ jobs:
             cp www/icon-192.png icon.png
           fi
 
-          # ساخت config.xml استاندارد (بدون پارامتر رنگ مشکل‌ساز)
+          # ساخت config.xml استاندارد
           node -e '
           const fs = require("fs");
           const xml = `<?xml version="1.0" encoding="utf-8"?>
@@ -88,3 +90,27 @@ jobs:
         with:
           name: MechaveWS-APK
           path: apk_build/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+
+  build-windows:
+    name: Build Windows Application
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Windows Installer
+        run: npm run build:win
+
+      - name: Upload Windows Setup
+        uses: actions/upload-artifact@v4
+        with:
+          name: MechaveWS-Windows-Setup
+          path: dist/*.exe
