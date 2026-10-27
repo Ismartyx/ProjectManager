@@ -36,10 +36,9 @@ const AuthManager = {
 
     fetchUsersDirectlyFromServer: async function() {
         if (typeof PouchAdapter === 'undefined') return null;
-        const urlsToTry = [
-            PouchAdapter.getLocalUrl(),
-            PouchAdapter.getOnlineUrl()
-        ].filter(Boolean);
+        const urlsToTry = (window.location.protocol === 'https:')
+            ? [PouchAdapter.getOnlineUrl()]
+            : [PouchAdapter.getLocalUrl(), PouchAdapter.getOnlineUrl()].filter(Boolean);
 
         const fetchOne = async (base) => {
             const endpoint = base.replace(/\/+$/, '') + '/system_users_list';

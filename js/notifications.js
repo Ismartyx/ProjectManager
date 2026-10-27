@@ -149,6 +149,9 @@ const NotificationManager = {
 
     // آدرس سرور پوش نوتیفیکیشن روی سرور مجازی (پیش‌فرض سرور فعال)
     getServerUrl: function() {
+        if (window.location.protocol === 'https:') {
+            return window.location.origin + '/ntfy';
+        }
         return localStorage.getItem('pm_push_server_url') || 'http://155.117.234.69:8080';
     },
 
