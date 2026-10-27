@@ -83,7 +83,7 @@ jobs:
           fs.writeFileSync(manifestPath, content, "utf8");
           '
 
-          cordova build android
+          cordova build android --buildConfig=../build.json
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

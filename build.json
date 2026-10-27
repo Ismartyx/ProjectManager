@@ -1,0 +1,18 @@
+{
+  "android": {
+    "debug": {
+      "keystore": "../signing/mecav-release.keystore",
+      "storePassword": "mecavworkshop",
+      "alias": "mecav",
+      "password": "mecavworkshop",
+      "keystoreType": "pkcs12"
+    },
+    "release": {
+      "keystore": "../signing/mecav-release.keystore",
+      "storePassword": "mecavworkshop",
+      "alias": "mecav",
+      "password": "mecavworkshop",
+      "keystoreType": "pkcs12"
+    }
+  }
+}
