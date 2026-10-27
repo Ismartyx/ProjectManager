@@ -47,16 +47,17 @@
         <div id="dashboard-view" class="view-section" style="display: none;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h2 style="margin:0;">سلام، <span id="welcomeName" style="color:var(--primary)"></span></h2>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <button id="btnDashTestNotif" class="btn btn-secondary btn-small" style="margin:0; padding: 4px 10px; font-size: 0.78rem;">🔔 تست زنگ و اعلان</button>
-                    <label class="checkbox-label" id="archiveToggleLabel" style="display:none; margin:0;"><input type="checkbox" id="chkShowArchived"> نمایش آرشیو</label>
-                </div>
+                <label class="checkbox-label" id="archiveToggleLabel" style="display:none; margin:0;"><input type="checkbox" id="chkShowArchived"> نمایش آرشیو</label>
             </div>
             <div id="notif-permission-banner" class="card" style="display: none; background: rgba(56, 189, 248, 0.08); border: 1px solid var(--primary); margin-bottom: 12px; padding: 10px 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                <div style="font-size: 0.85rem; color: var(--text-main);">
-                    🔔 <b>اعلان‌های سیستمی غیرفعال است!</b> برای دریافت زنگ و پیام هنگام ارجاع تسک، دکمه مقابل را بزنید:
+                <div style="font-size: 0.85rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; flex: 1;">
+                    <span>🔔</span>
+                    <span id="notifBannerText"><b>اعلان‌های سیستمی غیرفعال است!</b> برای دریافت زنگ و اعلان، دکمه مقابل را بزنید:</span>
                 </div>
-                <button id="btnBannerEnableNotif" class="btn btn-primary btn-small" style="margin: 0; padding: 6px 14px;">فعال‌سازی زنگ و پیام</button>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <button id="btnBannerEnableNotif" class="btn btn-primary btn-small" style="margin: 0; padding: 6px 14px;">فعال‌سازی اعلان</button>
+                    <button id="btnDismissNotifBanner" style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 2px 6px; line-height: 1;" title="بستن بنر">&times;</button>
+                </div>
             </div>
             <!-- پیام‌ها و اعلان‌های جدید (شامل تست و رویدادهای زنده برای همه پرسنل) -->
             <div id="recent-notifications-section" class="card" style="display: none; border: 1px solid rgba(56, 189, 248, 0.3); border-right: 4px solid var(--primary); background: rgba(56, 189, 248, 0.04); margin-bottom: 14px; padding: 12px 14px;">

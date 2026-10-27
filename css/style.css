@@ -1028,3 +1028,40 @@ input:focus, textarea:focus {
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* ==========================================
+   طراحی چند ستونه در نمایشگرهای عریض (ویندوز / تبلت افقی / مانیتور بزرگ)
+   ========================================== */
+@media (min-width: 992px) {
+    .view-section {
+        max-width: 96% !important;
+        padding: 20px 28px !important;
+    }
+    
+    #tasks-list-container {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)) !important;
+        gap: 16px !important;
+        align-items: start !important;
+    }
+
+    #tasks-list-container > .card {
+        grid-column: 1 / -1;
+    }
+
+    .project-group {
+        margin-bottom: 0 !important;
+        height: fit-content;
+    }
+}
+
+@media (min-width: 1500px) {
+    .view-section {
+        max-width: 98% !important;
+    }
+
+    #tasks-list-container {
+        grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)) !important;
+        gap: 20px !important;
+    }
+}

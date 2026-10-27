@@ -656,8 +656,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 NotificationManager.requestSystemPermission();
             }
             const banner = document.getElementById('notif-permission-banner');
+            const isDismissed = localStorage.getItem('pm_dismiss_notif_banner') === 'true';
             if (banner) {
-                banner.style.display = ("Notification" in window && Notification.permission !== "granted") ? 'flex' : 'none';
+                if (isDismissed) {
+                    banner.style.display = 'none';
+                } else if (!window.isSecureContext && window.location.protocol === 'http:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                    banner.style.display = 'flex';
+                    const txt = document.getElementById('notifBannerText');
+                    if (txt) {
+                        txt.innerHTML = `<b>اعلان در ویندوز:</b> مرورگر کروم نوتیفیکیشن را روی آدرس IP مسدود می‌کند. در این کامپیوتر به جای آی‌پی، آدرس <a href="http://localhost:8000" style="color:var(--primary); font-weight:bold; text-decoration:underline;">http://localhost:8000</a> را باز کنید تا اعلان‌ها فعال شوند.`;
+                    }
+                } else {
+                    banner.style.display = ("Notification" in window && Notification.permission !== "granted") ? 'flex' : 'none';
+                }
             }
             if(user.role === 'admin') { 
                 document.getElementById('admin-settings-section').style.display = 'block'; 
@@ -681,19 +692,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }, false);
 
-    // دکمه تست زنگ و اعلان در بالای داشبورد
-    const btnDashTestNotif = document.getElementById('btnDashTestNotif');
-    if (btnDashTestNotif && !btnDashTestNotif.dataset.bound) {
-        btnDashTestNotif.dataset.bound = "true";
-        btnDashTestNotif.addEventListener('click', () => {
-            if (typeof NotificationManager !== 'undefined') {
-                NotificationManager.requestSystemPermission();
-                NotificationManager.sendTestPush();
-                showToast('زنگ و پیام آزمایشی اجرا شد.');
-            }
-        });
-    }
-
     // دکمه پاک کردن اعلان‌های جدید
     const btnClearRecentNotifs = document.getElementById('btnClearRecentNotifs');
     if (btnClearRecentNotifs && !btnClearRecentNotifs.dataset.bound) {
@@ -705,10 +703,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    const btnDismissNotifBanner = document.getElementById('btnDismissNotifBanner');
+    if (btnDismissNotifBanner && !btnDismissNotifBanner.dataset.bound) {
+        btnDismissNotifBanner.dataset.bound = "true";
+        btnDismissNotifBanner.addEventListener('click', () => {
+            const banner = document.getElementById('notif-permission-banner');
+            if (banner) banner.style.display = 'none';
+            localStorage.setItem('pm_dismiss_notif_banner', 'true');
+        });
+    }
+
     const btnBannerEnableNotif = document.getElementById('btnBannerEnableNotif');
     if (btnBannerEnableNotif && !btnBannerEnableNotif.dataset.bound) {
         btnBannerEnableNotif.dataset.bound = "true";
         btnBannerEnableNotif.addEventListener('click', async () => {
+            if (!window.isSecureContext && window.location.protocol === 'http:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                showToast('در مرورگر کروم، اعلان فقط روی http://localhost:8000 یا HTTPS کار می‌کند.', 'warning');
+                return;
+            }
             if (typeof NotificationManager !== 'undefined') {
                 NotificationManager.requestSystemPermission(() => {
                     const banner = document.getElementById('notif-permission-banner');
