@@ -71,8 +71,11 @@ jobs:
           let content = fs.readFileSync(manifestPath, "utf8");
           if (!content.includes("usesCleartextTraffic")) {
               content = content.replace("<application", "<application android:usesCleartextTraffic=\"true\"");
-              fs.writeFileSync(manifestPath, content, "utf8");
           }
+          if (!content.includes("POST_NOTIFICATIONS")) {
+              content = content.replace("</manifest>", "    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n    <uses-permission android:name=\"android.permission.VIBRATE\" />\n    <uses-permission android:name=\"android.permission.WAKE_LOCK\" />\n</manifest>");
+          }
+          fs.writeFileSync(manifestPath, content, "utf8");
           '
 
           cordova build android
