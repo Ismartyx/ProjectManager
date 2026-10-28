@@ -186,6 +186,28 @@ function isTaskOverdue(task) {
     return now >= startOfDeadlineDay;
 }
 
+function isSameUser(id1, id2) {
+    if (!id1 || !id2) return id1 === id2;
+    return ((id1 === '100' || id1 === 'admin') && (id2 === '100' || id2 === 'admin')) || String(id1) === String(id2);
+}
+window.isSameUser = isSameUser;
+
+function findUserName(id) {
+    if (!id) return '';
+    try {
+        let uList = (typeof AuthManager !== 'undefined' && Array.isArray(AuthManager.usersList)) ? AuthManager.usersList : [];
+        if (id === 'admin' || id === '100') {
+            let adm = uList.find(u => u && (u.id === '100' || u.id === 'admin'));
+            return adm ? adm.name : 'مدیر سیستم';
+        }
+        let u = uList.find(user => user && isSameUser(user.id, id));
+        return u ? u.name : String(id);
+    } catch (e) {
+        return String(id);
+    }
+}
+window.findUserName = findUserName;
+
 function getUserColor(userId) {
     if (!userId) return '#94a3b8';
     if (userId === '100' || userId === 'admin') return '#f59e0b';
@@ -197,25 +219,33 @@ function getUserColor(userId) {
 
 function getUserAvatar(userId) {
     if (!userId) return null;
-    let uList = (typeof AuthManager !== 'undefined' && AuthManager.usersList) ? AuthManager.usersList : [];
-    let user = uList.find(u => isSameUser(u.id, userId));
-    return user ? user.avatar : null;
+    try {
+        let uList = (typeof AuthManager !== 'undefined' && Array.isArray(AuthManager.usersList)) ? AuthManager.usersList : [];
+        let user = uList.find(u => u && isSameUser(u.id, userId));
+        return user ? user.avatar : null;
+    } catch (e) {
+        return null;
+    }
 }
 
 function getUserAvatarHtml(userId, size = 24) {
-    const avatar = getUserAvatar(userId);
-    const uColor = getUserColor(userId);
-    const name = findUserName(userId);
-    const initial = name ? name.trim().charAt(0) : '?';
+    try {
+        const avatar = getUserAvatar(userId);
+        const uColor = getUserColor(userId);
+        const name = findUserName(userId);
+        const initial = name ? name.trim().charAt(0) : '?';
 
-    if (avatar) {
-        if (avatar.startsWith('data:image') || avatar.startsWith('http')) {
-            return `<img src="${avatar}" class="user-avatar-thumb" style="width:${size}px; height:${size}px; margin-left:6px;" alt="" />`;
-        } else {
-            return `<span class="user-avatar-thumb" style="display:inline-flex; align-items:center; justify-content:center; width:${size}px; height:${size}px; background:var(--bg-input); font-size:${Math.round(size * 0.65)}px; border:1px solid var(--border-color); margin-left:6px;">${avatar}</span>`;
+        if (avatar) {
+            if (avatar.startsWith('data:image') || avatar.startsWith('http')) {
+                return `<img src="${avatar}" class="user-avatar-thumb" style="width:${size}px; height:${size}px; margin-left:6px;" alt="" />`;
+            } else {
+                return `<span class="user-avatar-thumb" style="display:inline-flex; align-items:center; justify-content:center; width:${size}px; height:${size}px; background:var(--bg-input); font-size:${Math.round(size * 0.65)}px; border:1px solid var(--border-color); margin-left:6px;">${avatar}</span>`;
+            }
         }
+        return `<span class="user-avatar-thumb" style="display:inline-flex; align-items:center; justify-content:center; width:${size}px; height:${size}px; background:${uColor}; color:#fff; font-size:${Math.round(size * 0.52)}px; font-weight:bold; margin-left:6px;">${initial}</span>`;
+    } catch (e) {
+        return '';
     }
-    return `<span class="user-avatar-thumb" style="display:inline-flex; align-items:center; justify-content:center; width:${size}px; height:${size}px; background:${uColor}; color:#fff; font-size:${Math.round(size * 0.52)}px; font-weight:bold; margin-left:6px;">${initial}</span>`;
 }
 
 function setupCustomSelect(wrapperId, dataArray, placeholder, onDeleteClick = null, userObj = null) {
@@ -952,11 +982,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (user) {
             dashboardView.style.display = 'block'; document.getElementById('headerActions').style.display = 'flex';
-            document.getElementById('welcomeName').innerHTML = `${getUserAvatarHtml(user.id, 24)} <span>${user.name}</span>`; fabAdd.style.display = 'flex';
+            try {
+                const avatarHtml = (typeof getUserAvatarHtml === 'function') ? getUserAvatarHtml(user.id, 24) : '';
+                document.getElementById('welcomeName').innerHTML = `${avatarHtml} <span>${user.name || ''}</span>`;
+            } catch (err) {
+                document.getElementById('welcomeName').innerText = (user && user.name) ? user.name : '';
+            }
+            fabAdd.style.display = 'flex';
             if (typeof NotificationManager !== 'undefined') {
-                NotificationManager.startListening(user.id);
-                NotificationManager.initInAppNotifs();
-                NotificationManager.requestSystemPermission();
+                try {
+                    NotificationManager.startListening(user.id);
+                    NotificationManager.initInAppNotifs();
+                    NotificationManager.requestSystemPermission();
+                } catch (e) {}
             }
             const banner = document.getElementById('notif-permission-banner');
             const isDismissed = localStorage.getItem('pm_dismiss_notif_banner') === 'true';
@@ -975,9 +1013,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             if(user.role === 'admin') { 
                 document.getElementById('admin-settings-section').style.display = 'block'; 
-                renderAdminUserList(); 
+                try { renderAdminUserList(); } catch (e) {}
             }
-            renderDashboard();
+            try {
+                renderDashboard();
+            } catch (e) {
+                console.error("خطا در بارگذاری داشبورد:", e);
+            }
         } else { 
             if (typeof NotificationManager !== 'undefined') {
                 NotificationManager.stopListening();
@@ -1502,13 +1544,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     const chkShowArchivedEl = document.getElementById('chkShowArchived');
     if(chkShowArchivedEl) chkShowArchivedEl.addEventListener('change', () => renderDashboard());
-
-    function findUserName(id) {
-        if (id === 'admin' || id === '100') { let adm = AuthManager.usersList.find(u => u.id === '100' || u.id === 'admin'); return adm ? adm.name : 'مدیر سیستم'; }
-        return AuthManager.usersList.find(u => u.id === id)?.name || id;
-    }
-
-    function isSameUser(id1, id2) { return ((id1 === '100' || id1 === 'admin') && (id2 === '100' || id2 === 'admin')) || id1 === id2; }
 
     // ==========================================
     // قابلیت چیدمان سفارشی پروژه‌ها (Drag & Drop و Touch & Hold)
