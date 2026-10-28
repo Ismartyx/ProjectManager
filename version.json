@@ -1,8 +1,8 @@
 {
-  "version": "1.0.8",
-  "versionCode": 10008,
+  "version": "1.0.9",
+  "versionCode": 10009,
   "releaseDate": "1405/08/07",
-  "changelog": "دانلود مستقیم درون‌برنامه‌ای با نوار پیشرفت، اجرای خودکار نصاب بدون باز شدن مرورگر، و ارتقای بدون نیاز به حذف نسخه قبلی",
+  "changelog": "پشتیبانی از تغییر اندازه پنجره ویندوز و باریک شدن آزادانه (مشابه تلگرام)، چیدمان فشرده هوشمند، و ارتقای عملکرد نوتیفیکیشن‌ها",
   "apkUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk",
   "winUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS-Setup.exe"
 }

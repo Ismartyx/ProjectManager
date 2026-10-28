@@ -22,10 +22,10 @@ if (!gotTheLock) {
 
     function createWindow() {
         mainWindow = new BrowserWindow({
-            width: 1366,
-            height: 850,
-            minWidth: 960,
-            minHeight: 600,
+            width: 1200,
+            height: 800,
+            minWidth: 360,
+            minHeight: 450,
             title: 'مدیریت پروژه مکاو',
             icon: path.join(__dirname, 'icon.ico'),
             autoHideMenuBar: true,
@@ -63,6 +63,13 @@ if (!gotTheLock) {
                     body: body || '',
                     icon: path.join(__dirname, 'icon.ico'),
                     silent: false
+                });
+                notif.on('click', () => {
+                    if (mainWindow) {
+                        if (mainWindow.isMinimized()) mainWindow.restore();
+                        mainWindow.show();
+                        mainWindow.focus();
+                    }
                 });
                 notif.show();
             }

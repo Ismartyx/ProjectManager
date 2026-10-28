@@ -1235,6 +1235,49 @@ input:focus, textarea:focus {
     }
 }
 
+/* ============================================================
+   حالت فشرده و باریک (مانند اپ دسکتاپ تلگرام یا مانیتورهای کوچک)
+   ============================================================ */
+@media (max-width: 600px) {
+    .app-header {
+        padding: 10px 12px;
+    }
+    .app-header h1 {
+        font-size: 1rem;
+    }
+    .view-section {
+        padding: 10px 8px !important;
+    }
+    .card {
+        padding: 14px 14px;
+        border-radius: 14px;
+    }
+    .project-header {
+        padding: 9px 10px;
+        font-size: 0.88rem;
+    }
+    .filter-tabs-wrapper {
+        gap: 5px;
+    }
+    .filter-tab-btn {
+        padding: 5px 9px;
+        font-size: 0.78rem;
+        border-radius: 8px;
+    }
+    .task-card {
+        padding: 10px 12px;
+        border-radius: 12px;
+    }
+    .task-card h3 {
+        font-size: 0.9rem;
+    }
+    .modal-content {
+        width: 94% !important;
+        max-width: 94% !important;
+        padding: 16px 14px !important;
+    }
+}
+
 /* اسپلش لودینگ اولیه برنامه با لوگوی مکاو */
 .splash-logo-container {
     position: relative;
