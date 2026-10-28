@@ -123,12 +123,10 @@ function applyBrandingAndIcons() {
 
     const iconUrl = "icon-192.png?v=10";
 
-    document.querySelectorAll('h1, h2, h3, .header-title, header div, header span').forEach(el => {
-        if (el.childNodes.length === 1 && el.innerText && (el.innerText.trim() === 'کارهای مکاو' || el.innerText.trim() === 'مدیریت پروژه مکاو')) {
-            el.innerHTML = `<img src="${iconUrl}" style="width:26px; height:26px; vertical-align:middle; margin-left:6px;" /><span style="font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 150px; vertical-align: middle;">مدیریت پروژه مکاو</span>`;
-            el.style.display = 'inline-flex'; el.style.alignItems = 'center'; el.style.flexWrap = 'nowrap';
-        }
-    });
+    const headerTitle = document.getElementById('header-title');
+    if (headerTitle) {
+        headerTitle.innerText = "مدیریت پروژه مکاو";
+    }
 
     const loginView = document.getElementById('login-view');
     if (loginView && !document.getElementById('mecavLoginLogo')) {

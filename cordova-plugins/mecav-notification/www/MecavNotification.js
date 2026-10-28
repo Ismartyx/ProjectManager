@@ -15,6 +15,9 @@ var MecavNotification = {
             if (typeof onError === 'function') onError(err);
         }, 'MecavNotification', 'downloadAndInstall', [apkUrl]);
     },
+    openUrl: function(url, onSuccess, onError) {
+        exec(onSuccess, onError, 'MecavNotification', 'openUrl', [url]);
+    },
     startBackgroundListener: function(serverUrl, topic, onSuccess, onError) {
         exec(onSuccess, onError, 'MecavNotification', 'startBackgroundListener', [serverUrl, topic]);
     },

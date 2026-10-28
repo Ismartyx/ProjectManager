@@ -93,6 +93,26 @@ public class MecavNotification extends CordovaPlugin {
             }
             downloadAndInstallApk(apkUrl, callbackContext);
             return true;
+        } else if ("openUrl".equals(action)) {
+            final String url = args.optString(0, "");
+            if (url != null && !url.isEmpty()) {
+                cordova.getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                            browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            cordova.getActivity().startActivity(browserIntent);
+                            callbackContext.success();
+                        } catch (Exception e) {
+                            callbackContext.error("خطا در باز کردن مرورگر: " + e.getMessage());
+                        }
+                    }
+                });
+                return true;
+            }
+            callbackContext.error("آدرس نامعتبر است");
+            return true;
         } else if ("startBackgroundListener".equals(action)) {
             final String serverUrl = args.optString(0, "http://155.117.234.69:8080");
             final String topic = args.optString(1, "");

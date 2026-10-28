@@ -223,7 +223,7 @@
    ============================================================ */
 .electron-titlebar {
     display: none;
-    height: 36px;
+    height: 32px;
     background: var(--bg-card);
     border-bottom: 1px solid var(--border-color);
     position: fixed;
@@ -241,7 +241,7 @@ body.is-electron .electron-titlebar {
 }
 
 body.is-electron {
-    padding-top: 36px;
+    padding-top: 32px;
 }
 
 .electron-titlebar-drag {
@@ -256,23 +256,7 @@ body.is-electron {
 }
 
 .electron-titlebar-brand {
-    -webkit-app-region: no-drag !important;
-    cursor: pointer !important;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.82rem;
-    font-weight: bold;
-    color: var(--text-muted);
-    transition: opacity 0.2s, transform 0.2s;
-}
-.electron-titlebar-brand:hover {
-    opacity: 0.85;
-    transform: scale(1.02);
-}
-.electron-titlebar-brand * {
-    -webkit-app-region: no-drag !important;
-    cursor: pointer !important;
+    display: none !important;
 }
 
 .electron-titlebar-icon {

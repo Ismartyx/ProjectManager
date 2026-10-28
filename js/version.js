@@ -1,7 +1,7 @@
 // سیستم مدیریت نسخه و بررسی خودکار بروزرسانی
 const VersionManager = {
-    CURRENT_VERSION: "1.0.15",
-    CURRENT_VERSION_CODE: 10015,
+    CURRENT_VERSION: "1.0.16",
+    CURRENT_VERSION_CODE: 10016,
 
     init: function() {
         const verEl = document.getElementById('app-current-version-text');
@@ -88,15 +88,46 @@ const VersionManager = {
     openInBrowser: function(targetUrl) {
         if (!targetUrl) return;
         try {
+            // ۱. پلتفرم ویندوز (Electron بومی)
+            if (window.electronAPI && typeof window.electronAPI.openExternal === 'function') {
+                window.electronAPI.openExternal(targetUrl);
+                return;
+            }
+
+            // ۲. پلتفرم اندروید از طریق پلاگین بومی مکاو
+            if (window.MecavNotification && typeof window.MecavNotification.openUrl === 'function') {
+                window.MecavNotification.openUrl(targetUrl);
+                return;
+            }
+
+            // ۳. پلتفرم اندروید از طریق هسته بومی کوردوا (بدون نیاز به پلاگین)
+            if (window.navigator && window.navigator.app && typeof window.navigator.app.loadUrl === 'function') {
+                window.navigator.app.loadUrl(targetUrl, { openExternal: true });
+                return;
+            }
+
+            // ۴. پلاگین این‌اپ‌بروزر (در صورت وجود)
             if (window.cordova && window.cordova.InAppBrowser) {
                 window.cordova.InAppBrowser.open(targetUrl, '_system');
-            } else if (window.open) {
-                window.open(targetUrl, '_system');
-            } else {
+                return;
+            }
+
+            // ۵. مرورگر وب استاندارد / PWA
+            const a = document.createElement('a');
+            a.href = targetUrl;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.setAttribute('download', '');
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => a.remove(), 100);
+        } catch (e) {
+            console.error('[VersionManager] error openInBrowser:', e);
+            try {
+                window.open(targetUrl, '_blank');
+            } catch (ex) {
                 window.location.href = targetUrl;
             }
-        } catch (e) {
-            window.location.href = targetUrl;
         }
     },
 

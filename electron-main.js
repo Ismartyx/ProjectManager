@@ -45,7 +45,7 @@ if (!gotTheLock) {
             windowOptions.titleBarOverlay = {
                 color: '#0f172a',
                 symbolColor: '#94a3b8',
-                height: 36
+                height: 32
             };
         }
 

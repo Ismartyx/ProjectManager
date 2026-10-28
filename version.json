@@ -1,8 +1,8 @@
 {
-  "version": "1.0.15",
-  "versionCode": 10015,
+  "version": "1.0.16",
+  "versionCode": 10016,
   "releaseDate": "1405/08/07",
-  "changelog": "رفع کامل خطای تجزیه بسته در اندروید (There was a problem parsing the package) با بازسازی امضای سه‌گانه v1, v2, v3، ابزارهای پایدار بیلد و ارتقای امنیت نصب",
+  "changelog": "حذف لوگوهای تکراری و یکپارچه‌سازی نوار عنوان (یک لوگوی واحد و استاندارد)، و فعال‌سازی کامل کلید دانلود مستقیم با مرورگر در ویندوز و اندروید",
   "apkUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk",
   "winUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS-Setup.exe"
 }
