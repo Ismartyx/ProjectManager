@@ -44,8 +44,10 @@ jobs:
           # ساخت config.xml استاندارد
           node -e '
           const fs = require("fs");
+          const pkg = JSON.parse(fs.readFileSync("www/package.json", "utf8"));
+          const version = pkg.version || "1.0.5";
           const xml = `<?xml version="1.0" encoding="utf-8"?>
-          <widget id="com.mechave.ws" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+          <widget id="com.mechave.ws" version="${version}" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
               <name>MechaveWS</name>
               <description>مدیریت پروژه مکاو</description>
               <author email="info@mechave.ir" href="http://mechave.ir">Mecav Workshop</author>
@@ -87,7 +89,24 @@ jobs:
           cp ../signing/mecav-release.keystore ./mecav-release.keystore
           cp ../build.json ./build.json
 
-          cordova build android --buildConfig=build.json
+          cordova build android --release --buildConfig=build.json
+
+          # بارگذاری خودکار فایل نصبی جدید در سرور دیتابیس جهت دانلود و نصب مستقیم درون‌برنامه‌ای
+          APK_PATH=$(find platforms/android/app/build/outputs/apk/ -name "*.apk" | head -n 1)
+          if [ -n "$APK_PATH" ] && [ -f "$APK_PATH" ]; then
+            echo "Deploying APK to CouchDB direct update repository..."
+            REV=$(curl -s "http://155.117.234.69:5984/mecav_db_main/app_release" | grep -o '"_rev":"[^"]*"' | head -n 1 | cut -d'"' -f4 || true)
+            if [ -z "$REV" ]; then
+              curl -s -X PUT "http://155.117.234.69:5984/mecav_db_main/app_release" \
+                -H "Content-Type: application/json" \
+                -d '{"description":"MechaveWS Application Release Attachments"}'
+              REV=$(curl -s "http://155.117.234.69:5984/mecav_db_main/app_release" | grep -o '"_rev":"[^"]*"' | head -n 1 | cut -d'"' -f4)
+            fi
+            curl -s -X PUT "http://155.117.234.69:5984/mecav_db_main/app_release/MechaveWS.apk?rev=$REV" \
+              -H "Content-Type: application/vnd.android.package-archive" \
+              --data-binary @"$APK_PATH" || true
+            echo "APK deployed."
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -123,6 +142,34 @@ jobs:
         with:
           name: electron-build-log
           path: electron-build.log
+
+      - name: Deploy Windows Setup to CouchDB
+        shell: powershell
+        run: |
+          $exe = Get-ChildItem -Path dist/*.exe | Select-Object -First 1
+          if ($exe) {
+            Write-Host "Publishing Windows Setup to CouchDB..."
+            try {
+              $doc = Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_db_main/app_release" -Method Get -ErrorAction SilentlyContinue
+              $rev = $doc._rev
+            } catch {
+              $res = Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_db_main/app_release" -Method Put -Body '{"description":"MechaveWS Application Release Attachments"}' -ContentType "application/json"
+              $rev = $res.rev
+            }
+            $bytes = [System.IO.File]::ReadAllBytes($exe.FullName)
+            Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_db_main/app_release/MechaveWS-Setup.exe?rev=$rev" -Method Put -Body $bytes -ContentType "application/x-msdownload"
+            Write-Host "Windows Setup deployed successfully."
+          }
+
+          # به‌روزرسانی سند اطلاعات نسخه در دیتابیس
+          try {
+            $vdoc = Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_db_main/app_version_info" -Method Get -ErrorAction SilentlyContinue
+            $vrev = $vdoc._rev
+          } catch { $vrev = $null }
+          $vdata = Get-Content version.json -Raw | ConvertFrom-Json
+          if ($vrev) { $vdata | Add-Member -NotePropertyName "_rev" -NotePropertyValue $vrev -Force }
+          $body = $vdata | ConvertTo-Json
+          Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_db_main/app_version_info" -Method Put -Body $body -ContentType "application/json"
 
       - name: Upload Windows Setup
         uses: actions/upload-artifact@v4

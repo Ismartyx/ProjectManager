@@ -241,6 +241,7 @@ const NotificationManager = {
             } catch (err) {
                 console.warn("[Notification] خطا در ارسال به اعلان ویندوز:", err);
             }
+            return;
         }
 
         // ۴. ارسال مستقیم به نوار وضعیت (Status Bar) اندروید از طریق پلاگین بومی بدون نیاز به هیچ برنامه جانبی
@@ -248,12 +249,14 @@ const NotificationManager = {
             try {
                 window.MecavNotification.show(title, body);
             } catch (err) {}
+            return;
         } else if (window.cordova && typeof window.cordova.exec === 'function') {
             try {
                 window.cordova.exec(null, null, "MecavNotification", "show", [title, body]);
             } catch (err) {
                 console.warn("[Notification] خطا در ارسال به نوار وضعیت اندروید:", err);
             }
+            return;
         }
 
         // ۴. نمایش نوتیفیکیشن سیستمی مرورگر (ویندوز / وب)

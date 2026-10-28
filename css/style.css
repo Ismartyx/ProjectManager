@@ -833,11 +833,24 @@ input:focus, textarea:focus {
     justify-content: space-between;
     align-items: center;
     color: var(--text-main);
+    background-color: var(--bg-card);
     transition: background-color 0.15s;
+    flex-shrink: 0;
 }
 
 .custom-option:hover {
     background-color: rgba(56, 189, 248, 0.08);
+}
+
+.custom-option.action-option {
+    background-color: var(--bg-hover) !important;
+    border-bottom: 2px solid var(--border-color) !important;
+    font-weight: 700;
+    color: var(--primary) !important;
+}
+
+.custom-option.action-option:hover {
+    background-color: rgba(56, 189, 248, 0.16) !important;
 }
 
 /* منوی چند انتخابی */

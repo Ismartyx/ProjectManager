@@ -1,7 +1,7 @@
 // سیستم مدیریت نسخه و بررسی خودکار بروزرسانی
 const VersionManager = {
-    CURRENT_VERSION: "1.0.4",
-    CURRENT_VERSION_CODE: 10004,
+    CURRENT_VERSION: "1.0.5",
+    CURRENT_VERSION_CODE: 10005,
 
     init: function() {
         const verEl = document.getElementById('app-current-version-text');
@@ -12,10 +12,10 @@ const VersionManager = {
             checkBtn.addEventListener('click', () => this.checkForUpdates(false));
         }
 
-        // بررسی خودکار در پس‌زمینه بعد از ۵ ثانیه از لود اولیه برنامه
+        // بررسی خودکار در پس‌زمینه بعد از ۴ ثانیه از لود اولیه برنامه
         setTimeout(() => {
             this.checkForUpdates(true);
-        }, 5000);
+        }, 4000);
     },
 
     checkForUpdates: async function(silent = false) {
@@ -26,11 +26,34 @@ const VersionManager = {
         }
 
         try {
-            const endpoint = 'https://raw.githubusercontent.com/Ismartyx/ProjectManager/main/version.json?t=' + Date.now();
-            const res = await fetch(endpoint, { cache: 'no-store' });
-            if (!res.ok) throw new Error('خطا در دریافت اطلاعات نسخه');
+            let data = null;
 
-            const data = await res.json();
+            // ۱. تلاش اول: بررسی از مخزن دیتابیس لوکال یا آنلاین (پشتیبانی آفلاین/آنلاین)
+            try {
+                const couchDbUrl = (typeof DBManager !== 'undefined' && DBManager.getRemoteUrl) 
+                    ? DBManager.getRemoteUrl() 
+                    : 'http://155.117.234.69:5984/mecav_db_main';
+                const vRes = await fetch(`${couchDbUrl}/app_version_info?t=${Date.now()}`);
+                if (vRes.ok) {
+                    data = await vRes.json();
+                }
+            } catch (e) {}
+
+            // ۲. تلاش دوم: در صورت عدم دسترسی به دیتابیس، بررسی از گیت‌هاب
+            if (!data) {
+                try {
+                    const endpoint = 'https://raw.githubusercontent.com/Ismartyx/ProjectManager/main/version.json?t=' + Date.now();
+                    const res = await fetch(endpoint, { cache: 'no-store' });
+                    if (res.ok) {
+                        data = await res.json();
+                    }
+                } catch (e) {}
+            }
+
+            if (!data) {
+                throw new Error('عدم دریافت اطلاعات نسخه از سرور');
+            }
+
             if (data && data.versionCode > this.CURRENT_VERSION_CODE) {
                 if (statusEl) {
                     statusEl.innerText = `نسخه جدید ${data.version} منتشر شده است!`;
@@ -52,16 +75,27 @@ const VersionManager = {
         }
     },
 
+    startDirectUpdate: function(targetUrl) {
+        if (!targetUrl) return;
+        // در اندروید (Cordova) مستقیماً به Intent سیستم واگذار می‌شود تا دانلود منیجر بومی آن را دریافت و نصب کند
+        if (window.cordova) {
+            window.open(targetUrl, '_system');
+        } else if (window.electronAPI && typeof window.electronAPI.openExternal === 'function') {
+            window.electronAPI.openExternal(targetUrl);
+        } else {
+            window.open(targetUrl, '_blank');
+        }
+    },
+
     showUpdatePrompt: function(info, silent = false) {
-        const isAndroid = Boolean(window.cordova);
         const isWin = Boolean(window.electronAPI && window.electronAPI.isElectron);
-        let targetUrl = info.apkUrl || 'https://github.com/Ismartyx/ProjectManager/actions';
+        let targetUrl = info.apkUrl || 'http://155.117.234.69:5984/mecav_db_main/app_release/MechaveWS.apk';
         if (isWin && info.winUrl) {
             targetUrl = info.winUrl;
         }
 
         const notifTitle = `🚀 نسخه جدید ${info.version} مکاو آماده است`;
-        const notifBody = info.changelog || 'جهت بروزرسانی برنامه کلیک کنید.';
+        const notifBody = info.changelog || 'جهت دانلود و نصب مستقیم نسخه جدید کلیک کنید.';
 
         // ۱. ثبت در پیام‌ها و اعلان‌های داخلی بالای برنامه
         if (typeof NotificationManager !== 'undefined' && NotificationManager.addInAppNotification) {
@@ -86,7 +120,7 @@ const VersionManager = {
             }
         }
 
-        // ۳. بنر اقدام سریع در پایین صفحه
+        // ۳. بنر اقدام سریع در پایین صفحه (با دانلود و نصب مستقیم درون‌برنامه‌ای)
         let banner = document.getElementById('app-update-banner');
         if (!banner) {
             banner = document.createElement('div');
@@ -96,35 +130,38 @@ const VersionManager = {
                 bottom: 24px;
                 left: 20px;
                 right: 20px;
-                max-width: 480px;
+                max-width: 460px;
                 margin: 0 auto;
                 background: var(--bg-card);
                 border: 2px solid var(--accent);
                 color: var(--text-main);
-                padding: 14px 18px;
-                border-radius: 14px;
-                box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+                padding: 16px 20px;
+                border-radius: 16px;
+                box-shadow: 0 16px 36px rgba(0,0,0,0.5);
                 z-index: 10000;
                 display: flex;
                 flex-direction: column;
-                gap: 8px;
+                gap: 10px;
                 direction: rtl;
                 font-family: inherit;
+                backdrop-filter: blur(10px);
             `;
             document.body.appendChild(banner);
         }
 
         banner.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <b style="color:var(--accent); font-size:1rem;">🚀 نسخه جدید ${info.version} آماده است</b>
-                <button onclick="this.closest('#app-update-banner').remove()" style="background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
+                <b style="color:var(--accent); font-size:1rem; display:flex; align-items:center; gap:6px;">
+                    🚀 نسخه جدید ${info.version} مکاو آماده است
+                </b>
+                <button onclick="this.closest('#app-update-banner').remove()" style="background:none; border:none; color:var(--text-muted); font-size:1.3rem; cursor:pointer; line-height:1;" title="بستن">&times;</button>
             </div>
-            <div style="font-size:0.85rem; color:var(--text-muted); line-height:1.5;">${info.changelog || 'بهبودهای جدید در این نسخه اعمال شده است.'}</div>
-            <div style="display:flex; gap:8px; margin-top:6px;">
-                <a href="${targetUrl}" target="_blank" class="btn btn-primary btn-small" style="flex:1; text-align:center; text-decoration:none; margin:0; padding:6px 12px;">
-                    📥 دریافت و نصب نسخه جدید
-                </a>
-                <button onclick="this.closest('#app-update-banner').remove()" class="btn btn-secondary btn-small" style="margin:0; padding:6px 12px;">
+            <div style="font-size:0.85rem; color:var(--text-muted); line-height:1.5;">${info.changelog || 'بهبودها و رفع باگ‌های جدید در این نسخه اعمال شده است.'}</div>
+            <div style="display:flex; gap:10px; margin-top:4px;">
+                <button onclick="VersionManager.startDirectUpdate('${targetUrl}'); this.closest('#app-update-banner').remove();" class="btn btn-primary btn-small" style="flex:1; text-align:center; margin:0; padding:8px 14px; font-weight:bold; cursor:pointer;">
+                    📥 دانلود و نصب مستقیم
+                </button>
+                <button onclick="this.closest('#app-update-banner').remove()" class="btn btn-secondary btn-small" style="margin:0; padding:8px 14px; cursor:pointer;">
                     بعداً
                 </button>
             </div>

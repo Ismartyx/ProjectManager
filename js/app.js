@@ -209,12 +209,8 @@ function setupCustomSelect(wrapperId, dataArray, placeholder, onDeleteClick = nu
         opt.className = 'custom-option';
         
         if (item.value === 'ADD_NEW_PROJECT' || item.value === 'ADD_NEW_TAG') {
+            opt.className = 'custom-option action-option';
             opt.innerHTML = `<span style="color: var(--primary); font-weight: bold; display: flex; align-items: center; gap: 6px;">${item.text}</span>`;
-            opt.style.borderBottom = '1px solid var(--border-color)';
-            opt.style.background = 'rgba(56, 189, 248, 0.08)';
-            opt.style.position = 'sticky';
-            opt.style.top = '0';
-            opt.style.zIndex = '3';
         } else if (onDeleteClick && item.canDelete) {
             opt.innerHTML = `<span>${item.text}</span> <span class="delete-btn" style="color:var(--danger); font-size:1.2rem;">✕</span>`;
             opt.querySelector('.delete-btn').onclick = async (e) => {

@@ -8,5 +8,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
         } catch (e) {
             console.error('IPC notification error:', e);
         }
+    },
+    openExternal: (url) => {
+        try {
+            ipcRenderer.send('mecav-open-external', url);
+        } catch (e) {
+            window.open(url, '_blank');
+        }
     }
 });

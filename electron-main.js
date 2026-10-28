@@ -71,6 +71,17 @@ if (!gotTheLock) {
         }
     });
 
+    // باز کردن لینک دانلود یا فایل در سیستم
+    ipcMain.on('mecav-open-external', (event, url) => {
+        try {
+            if (url && (url.startsWith('http:') || url.startsWith('https:'))) {
+                shell.openExternal(url);
+            }
+        } catch (err) {
+            console.error('Error opening external url:', err);
+        }
+    });
+
     app.whenReady().then(() => {
         createWindow();
 

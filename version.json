@@ -1,8 +1,8 @@
 {
-  "version": "1.0.4",
-  "versionCode": 10004,
+  "version": "1.0.5",
+  "versionCode": 10005,
   "releaseDate": "1405/08/07",
-  "changelog": "حذف فیلدهای اضافی پروژه و تگ و انتقال گزینه تعریف جدید به ابتدای منوی کشویی",
-  "apkUrl": "https://github.com/Ismartyx/ProjectManager/actions",
-  "winUrl": "https://github.com/Ismartyx/ProjectManager/actions"
+  "changelog": "رفع تداخل منوی انتخابی، بهینه‌سازی دریافت پایدار اعلان‌های اندروید و دانلود مستقیم آپدیت درون برنامه",
+  "apkUrl": "http://155.117.234.69:5984/mecav_db_main/app_release/MechaveWS.apk",
+  "winUrl": "http://155.117.234.69:5984/mecav_db_main/app_release/MechaveWS-Setup.exe"
 }
