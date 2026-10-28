@@ -1,8 +1,8 @@
 {
-  "version": "1.0.6",
-  "versionCode": 10006,
+  "version": "1.0.7",
+  "versionCode": 10007,
   "releaseDate": "1405/08/07",
-  "changelog": "بهبود فوق‌العاده سرعت لود اولیه تسک‌ها، امکان حذف کامل پروژه‌ها توسط مدیر و بهینه‌سازی اعلان‌ها",
+  "changelog": "افزودن اسپلش اسکرین و انیمیشن لودینگ اختصاصی با لوگوی مکاو و جایگزینی با لوگوی پیش‌فرض",
   "apkUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk",
   "winUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS-Setup.exe"
 }

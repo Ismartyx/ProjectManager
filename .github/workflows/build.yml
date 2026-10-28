@@ -59,8 +59,13 @@ jobs:
               <preference name="AndroidInsecureFileModeEnabled" value="true" />
               <preference name="DisallowOverscroll" value="true" />
               <preference name="KeepRunning" value="true" />
+              <preference name="AndroidWindowSplashScreenAnimatedIcon" value="icon.png" />
+              <preference name="AndroidWindowSplashScreenBackground" value="#0f172a" />
+              <preference name="SplashScreenDelay" value="0" />
               <platform name="android">
                   <icon src="icon.png" />
+                  <preference name="AndroidWindowSplashScreenAnimatedIcon" value="icon.png" />
+                  <preference name="AndroidWindowSplashScreenBackground" value="#0f172a" />
               </platform>
           </widget>`;
           fs.writeFileSync("config.xml", xml.trim(), "utf8");
@@ -70,6 +75,29 @@ jobs:
           cordova platform add android@13.0.0
           cordova plugin add cordova-plugin-android-permissions
           cordova plugin add ../cordova-plugins/mecav-notification
+
+          # جایگزینی لوگوی ربات پیش‌فرض کوردوا با لوگوی واقعی مکاو در اسپلش اسکرین بومی اندروید
+          mkdir -p platforms/android/app/src/main/res/drawable
+          cp icon.png platforms/android/app/src/main/res/drawable/mecav_splash_icon.png
+          cat << 'EOF' > platforms/android/app/src/main/res/drawable/ic_cdv_splashscreen.xml
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <color android:color="#0f172a" />
+    </item>
+    <item android:gravity="center"
+          android:width="160dp"
+          android:height="160dp">
+        <bitmap android:src="@drawable/mecav_splash_icon"
+                android:gravity="center" />
+    </item>
+</layer-list>
+EOF
+          for d in platforms/android/app/src/main/res/drawable*; do
+            if [ -f "$d/ic_cdv_splashscreen.xml" ]; then
+              cp platforms/android/app/src/main/res/drawable/ic_cdv_splashscreen.xml "$d/ic_cdv_splashscreen.xml"
+            fi
+          done
 
           # فعال کردن مجوز ارتباط با شبکه محلی (HTTP / پورت 5984) مستقیم در AndroidManifest.xml
           node -e '

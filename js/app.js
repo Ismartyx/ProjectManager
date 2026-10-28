@@ -753,7 +753,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             loginView.style.display = 'block'; 
         }
+        setTimeout(hideAppSplash, 350);
     }
+
+    function hideAppSplash() {
+        const splash = document.getElementById('app-splash-overlay');
+        if (splash && splash.style.display !== 'none' && !splash.dataset.hidden) {
+            splash.dataset.hidden = 'true';
+            splash.style.opacity = '0';
+            setTimeout(() => {
+                splash.style.display = 'none';
+            }, 450);
+        }
+    }
+    window.hideAppSplash = hideAppSplash;
+    setTimeout(hideAppSplash, 1500);
 
     checkLoginStatus();
 

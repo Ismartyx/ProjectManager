@@ -1,7 +1,7 @@
 // سیستم مدیریت نسخه و بررسی خودکار بروزرسانی
 const VersionManager = {
-    CURRENT_VERSION: "1.0.6",
-    CURRENT_VERSION_CODE: 10006,
+    CURRENT_VERSION: "1.0.7",
+    CURRENT_VERSION_CODE: 10007,
 
     init: function() {
         const verEl = document.getElementById('app-current-version-text');
