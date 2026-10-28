@@ -79,23 +79,15 @@ jobs:
           # جایگزینی لوگوی ربات پیش‌فرض کوردوا با لوگوی واقعی مکاو در اسپلش اسکرین بومی اندروید
           node -e '
           const fs = require("fs");
-          const xml = `<?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item>
-        <color android:color="#0f172a" />
-    </item>
-    <item android:gravity="center" android:width="160dp" android:height="160dp">
-        <bitmap android:src="@drawable/mecav_splash_icon" android:gravity="center" />
-    </item>
-</layer-list>`;
+          const xml = `<?xml version="1.0" encoding="utf-8"?><layer-list xmlns:android="http://schemas.android.com/apk/res/android"><item><color android:color="#0f172a" /></item><item android:gravity="center" android:width="160dp" android:height="160dp"><bitmap android:src="@drawable/mecav_splash_icon" android:gravity="center" /></item></layer-list>`;
           fs.mkdirSync("platforms/android/app/src/main/res/drawable", { recursive: true });
           fs.copyFileSync("icon.png", "platforms/android/app/src/main/res/drawable/mecav_splash_icon.png");
-          fs.writeFileSync("platforms/android/app/src/main/res/drawable/ic_cdv_splashscreen.xml", xml.trim(), "utf8");
+          fs.writeFileSync("platforms/android/app/src/main/res/drawable/ic_cdv_splashscreen.xml", xml, "utf8");
           const resDir = "platforms/android/app/src/main/res";
           fs.readdirSync(resDir).forEach(dir => {
               if (dir.startsWith("drawable")) {
                   const target = `${resDir}/${dir}/ic_cdv_splashscreen.xml`;
-                  if (fs.existsSync(target)) fs.writeFileSync(target, xml.trim(), "utf8");
+                  if (fs.existsSync(target)) fs.writeFileSync(target, xml, "utf8");
               }
           });
           '
