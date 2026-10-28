@@ -805,6 +805,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     let searchInputEl = document.getElementById('dashboardSearchInput');
     if (searchInputEl) searchInputEl.addEventListener('input', () => renderDashboard());
 
+    // تب‌های فیلتر سریع داشبورد
+    document.querySelectorAll('.filter-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            window.currentDashboardTab = btn.dataset.filter;
+            renderDashboard();
+        });
+    });
+
     document.addEventListener('keydown', (e) => { if(e.key === 'Enter' && loginView.style.display !== 'none') btnLogin.click(); });
 
     btnLogin.addEventListener('click', async () => {
@@ -1202,6 +1212,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         let myTasks = currentUser.role === 'admin' ? allTasks : allTasks.filter(t => isSameUser(t.assigneeId, currentUser.id) || isSameUser(t.finalizerId, currentUser.id) || isSameUser(t.creatorId, currentUser.id) || t.isPublic || (t.observers && t.observers.includes(currentUser.id)));
 
+        // شمارش و نمایش تعداد کل تسک‌های جدید/خوانده‌نشده
+        let totalUnreadCount = allTasks.filter(t => (!t.viewedBy || !t.viewedBy.includes(currentUser.id)) && t.status !== 'completed' && (isSameUser(t.assigneeId, currentUser.id) || isSameUser(t.creatorId, currentUser.id) || (t.observers && t.observers.includes(currentUser.id)))).length;
+        const totalUnreadBadge = document.getElementById('unreadTotalCountBadge');
+        if (totalUnreadBadge) {
+            if (totalUnreadCount > 0) {
+                totalUnreadBadge.style.display = 'inline-flex';
+                totalUnreadBadge.innerText = totalUnreadCount;
+            } else {
+                totalUnreadBadge.style.display = 'none';
+            }
+        }
+
+        // اعمال تب فیلتر سریع
+        window.currentDashboardTab = window.currentDashboardTab || 'all';
+        if (window.currentDashboardTab === 'unread') {
+            myTasks = myTasks.filter(t => (!t.viewedBy || !t.viewedBy.includes(currentUser.id)) && t.status !== 'completed');
+        } else if (window.currentDashboardTab === 'mine') {
+            myTasks = myTasks.filter(t => isSameUser(t.assigneeId, currentUser.id));
+        } else if (window.currentDashboardTab === 'important') {
+            myTasks = myTasks.filter(t => t.isImportant && t.status !== 'completed');
+        }
+
         if (searchTerm) {
             myTasks = myTasks.filter(t => {
                 let assigneeName = findUserName(t.assigneeId).toLowerCase();
@@ -1213,7 +1245,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let myProjects = filteredProjects.filter(p => myTasks.some(t => t.projectId === p._id) || currentUser.role === 'admin');
         
         if (myProjects.length === 0) { 
-            container.innerHTML = searchTerm ? '<div class="card">تسکی با این جستجو یافت نشد.</div>' : '<div class="card">پروژه فعالی وجود ندارد.</div>'; 
+            container.innerHTML = searchTerm ? '<div class="card">تسکی با این جستجو یافت نشد.</div>' : '<div class="card">تسک فعالی با این فیلتر وجود ندارد.</div>'; 
             return; 
         }
 
@@ -1222,6 +1254,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         myProjects.forEach(proj => {
             let projTasks = myTasks.filter(t => t.projectId === proj._id);
             if (searchTerm && projTasks.length === 0) return;
+
+            let unreadCountInProj = projTasks.filter(t => (!t.viewedBy || !t.viewedBy.includes(currentUser.id)) && t.status !== 'completed').length;
+            let unreadBadgeInHeader = unreadCountInProj > 0 ? `<span class="badge-unread-count">${unreadCountInProj} جدید</span>` : '';
 
             projTasks.sort((a, b) => {
                 if (a.status === 'completed' && b.status !== 'completed') return 1;
@@ -1240,7 +1275,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div style="display:flex; align-items:center;">
                         <span class="project-collapse-arrow" style="display:inline-block; font-size:0.75rem; margin-left:8px; color:var(--text-muted);">${isCollapsed ? '◀' : '▼'}</span>
                         <button class="btn-quick-add" onclick="event.stopPropagation(); window.quickAddTask('${proj._id}', '${proj.title}')" title="افزودن تسک به این پروژه">➕</button>
-                        📁 ${proj.title} <span style="font-size:0.8rem; color: #38bdf8; margin-right:5px;">(${projTasks.length})</span>
+                        📁 ${proj.title} <span style="font-size:0.8rem; color: var(--primary); margin-right:5px;">(${projTasks.length})</span> ${unreadBadgeInHeader}
                     </div>
                     ${btnArchive}
                 </div>
@@ -1248,7 +1283,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             projTasks.forEach(t => {
                 let overdue = isTaskOverdue(t);
-                let isUnread = !t.viewedBy || !t.viewedBy.includes(currentUser.id);
+                let isUnread = (!t.viewedBy || !t.viewedBy.includes(currentUser.id)) && t.status !== 'completed';
 
                 let cardClasses = 'task-card';
                 if (t.status === 'completed') {
@@ -1262,6 +1297,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let statusTxt = t.status === 'completed' ? '✅' : (t.status === 'pending_approval' ? '⏳' : (overdue ? '🚨' : '🔥'));
                 
                 let badgesHTML = '';
+                if (isUnread) badgesHTML += `<span class="badge-unread"><span class="unread-dot"></span>جدید</span>`;
                 if (t.tag) badgesHTML += `<span class="tag">${t.tag}</span>`;
                 if (t.isImportant) badgesHTML += `<span class="badge-important">⭐ مهم</span>`;
                 if (t.deadlineLabel) badgesHTML += `<span class="badge-deadline ${overdue ? 'overdue' : ''}">📅 ${t.deadlineLabel}</span>`;

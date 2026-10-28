@@ -88,6 +88,12 @@
                 <h3 style="color: var(--accent); margin:0 0 10px 0;">🔔 کارتابل مدیر</h3>
                 <div id="admin-notif-list"></div>
             </div>
+            <div class="filter-tabs-wrapper" id="dashboardFilterTabs">
+                <button class="filter-tab-btn active" data-filter="all">همه پروژه‌ها</button>
+                <button class="filter-tab-btn" data-filter="unread" id="btnFilterUnread">📌 جدیدها <span id="unreadTotalCountBadge" style="display:none;" class="badge-unread-count">0</span></button>
+                <button class="filter-tab-btn" data-filter="mine">👤 کارهای من</button>
+                <button class="filter-tab-btn" data-filter="important">⭐ مهم‌ها</button>
+            </div>
             <div style="margin-bottom: 15px; display: flex; gap: 10px;">
                 <input type="text" id="dashboardSearchInput" class="dashboard-search-input" placeholder="🔍 جستجو در عنوان، مسئول، تگ...">
             </div>
