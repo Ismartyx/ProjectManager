@@ -863,11 +863,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentPalette = localStorage.getItem('pm_theme_palette') || 'ocean';
     document.body.setAttribute('data-palette', currentPalette);
 
-        applyPalette: function() {
-            // Placeholder
-        }
-    };
-
     function applyPalette(palId) {
         currentPalette = palId;
         document.body.setAttribute('data-palette', palId);

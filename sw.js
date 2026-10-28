@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mecav-offline-v22';
+const CACHE_NAME = 'mecav-offline-v24';
 const FILES_TO_CACHE = [
   '/',
   '/index.html',
@@ -7,6 +7,7 @@ const FILES_TO_CACHE = [
   '/js/pouchdb.min.js',
   '/js/notifications.js',
   '/js/version.js',
+  '/js/auto-lock.js',
   '/js/app.js',
   '/js/auth.js',
   '/js/db/adapter-pouch.js',
@@ -48,10 +49,16 @@ self.addEventListener('fetch', (evt) => {
     return;
   }
   
-  // بقیه فایل‌ها را برای حالت آفلاین از کش می‌خوانیم
+  // استراتژی شبکه اول (Network-First) با فال‌بک کش جهت دریافت سریع‌ترین آپدیت‌ها و کارکرد آفلاین کامل
   evt.respondWith(
-    caches.match(evt.request).then((response) => {
-      return response || fetch(evt.request);
+    fetch(evt.request).then((networkResponse) => {
+      if (networkResponse && networkResponse.status === 200) {
+        const responseClone = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(evt.request, responseClone));
+      }
+      return networkResponse;
+    }).catch(() => {
+      return caches.match(evt.request);
     })
   );
 });
