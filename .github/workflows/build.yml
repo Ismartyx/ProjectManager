@@ -91,21 +91,21 @@ jobs:
 
           cordova build android --release --buildConfig=build.json -- --packageType=apk
 
-          # بارگذاری خودکار فایل نصبی جدید در سرور دیتابیس جهت دانلود و نصب مستقیم درون‌برنامه‌ای
+          # بارگذاری خودکار فایل نصبی جدید در سرور دیتابیس (مخزن ریلیزهای مجزا جهت جلوگیری از سنگین شدن دیتابیس تسک‌ها)
           APK_PATH=$(find platforms/android/app/build/outputs/apk/ -name "*.apk" | head -n 1)
           if [ -n "$APK_PATH" ] && [ -f "$APK_PATH" ]; then
             echo "Deploying APK to CouchDB direct update repository..."
-            REV=$(curl -s "http://155.117.234.69:5984/mecav_db_main/app_release" | grep -o '"_rev":"[^"]*"' | head -n 1 | cut -d'"' -f4 || true)
+            REV=$(curl -s "http://155.117.234.69:5984/mecav_releases/app_release" | grep -o '"_rev":"[^"]*"' | head -n 1 | cut -d'"' -f4 || true)
             if [ -z "$REV" ]; then
-              curl -s -X PUT "http://155.117.234.69:5984/mecav_db_main/app_release" \
+              curl -s -X PUT "http://155.117.234.69:5984/mecav_releases/app_release" \
                 -H "Content-Type: application/json" \
                 -d '{"description":"MechaveWS Application Release Attachments"}'
-              REV=$(curl -s "http://155.117.234.69:5984/mecav_db_main/app_release" | grep -o '"_rev":"[^"]*"' | head -n 1 | cut -d'"' -f4)
+              REV=$(curl -s "http://155.117.234.69:5984/mecav_releases/app_release" | grep -o '"_rev":"[^"]*"' | head -n 1 | cut -d'"' -f4)
             fi
-            curl -s -X PUT "http://155.117.234.69:5984/mecav_db_main/app_release/MechaveWS.apk?rev=$REV" \
+            curl -s -X PUT "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk?rev=$REV" \
               -H "Content-Type: application/vnd.android.package-archive" \
               --data-binary @"$APK_PATH" || true
-            echo "APK deployed."
+            echo "APK deployed to mecav_releases."
           fi
 
       - name: Upload APK
@@ -148,28 +148,28 @@ jobs:
         run: |
           $exe = Get-ChildItem -Path dist/*.exe | Select-Object -First 1
           if ($exe) {
-            Write-Host "Publishing Windows Setup to CouchDB..."
+            Write-Host "Publishing Windows Setup to CouchDB (mecav_releases)..."
             try {
-              $doc = Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_db_main/app_release" -Method Get -ErrorAction SilentlyContinue
+              $doc = Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_releases/app_release" -Method Get -ErrorAction SilentlyContinue
               $rev = $doc._rev
             } catch {
-              $res = Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_db_main/app_release" -Method Put -Body '{"description":"MechaveWS Application Release Attachments"}' -ContentType "application/json"
+              $res = Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_releases/app_release" -Method Put -Body '{"description":"MechaveWS Application Release Attachments"}' -ContentType "application/json"
               $rev = $res.rev
             }
             $bytes = [System.IO.File]::ReadAllBytes($exe.FullName)
-            Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_db_main/app_release/MechaveWS-Setup.exe?rev=$rev" -Method Put -Body $bytes -ContentType "application/x-msdownload"
+            Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS-Setup.exe?rev=$rev" -Method Put -Body $bytes -ContentType "application/x-msdownload"
             Write-Host "Windows Setup deployed successfully."
           }
 
-          # به‌روزرسانی سند اطلاعات نسخه در دیتابیس
+          # به‌روزرسانی سند اطلاعات نسخه در دیتابیس ریلیزها
           try {
-            $vdoc = Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_db_main/app_version_info" -Method Get -ErrorAction SilentlyContinue
+            $vdoc = Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_releases/app_version_info" -Method Get -ErrorAction SilentlyContinue
             $vrev = $vdoc._rev
           } catch { $vrev = $null }
           $vdata = Get-Content version.json -Raw -Encoding UTF8 | ConvertFrom-Json
           if ($vrev) { $vdata | Add-Member -NotePropertyName "_rev" -NotePropertyValue $vrev -Force }
           $body = [System.Text.Encoding]::UTF8.GetBytes(($vdata | ConvertTo-Json))
-          Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_db_main/app_version_info" -Method Put -Body $body -ContentType "application/json; charset=utf-8"
+          Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_releases/app_version_info" -Method Put -Body $body -ContentType "application/json; charset=utf-8"
 
       - name: Upload Windows Setup
         uses: actions/upload-artifact@v4

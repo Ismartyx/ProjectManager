@@ -1,7 +1,7 @@
 // سیستم مدیریت نسخه و بررسی خودکار بروزرسانی
 const VersionManager = {
-    CURRENT_VERSION: "1.0.5",
-    CURRENT_VERSION_CODE: 10005,
+    CURRENT_VERSION: "1.0.6",
+    CURRENT_VERSION_CODE: 10006,
 
     init: function() {
         const verEl = document.getElementById('app-current-version-text');
@@ -28,12 +28,12 @@ const VersionManager = {
         try {
             let data = null;
 
-            // ۱. تلاش اول: بررسی از مخزن دیتابیس لوکال یا آنلاین (پشتیبانی آفلاین/آنلاین)
+            // ۱. تلاش اول: بررسی از مخزن ریلیزهای دیتابیس لوکال یا آنلاین
             try {
-                const couchDbUrl = (typeof DBManager !== 'undefined' && DBManager.getRemoteUrl) 
-                    ? DBManager.getRemoteUrl() 
-                    : 'http://155.117.234.69:5984/mecav_db_main';
-                const vRes = await fetch(`${couchDbUrl}/app_version_info?t=${Date.now()}`);
+                const couchDbBase = (typeof PouchAdapter !== 'undefined' && PouchAdapter.activeUrl) 
+                    ? PouchAdapter.activeUrl.replace(/\/[^/]+$/, '')
+                    : 'http://155.117.234.69:5984';
+                const vRes = await fetch(`${couchDbBase}/mecav_releases/app_version_info?t=${Date.now()}`);
                 if (vRes.ok) {
                     data = await vRes.json();
                 }
@@ -89,7 +89,7 @@ const VersionManager = {
 
     showUpdatePrompt: function(info, silent = false) {
         const isWin = Boolean(window.electronAPI && window.electronAPI.isElectron);
-        let targetUrl = info.apkUrl || 'http://155.117.234.69:5984/mecav_db_main/app_release/MechaveWS.apk';
+        let targetUrl = info.apkUrl || 'http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk';
         if (isWin && info.winUrl) {
             targetUrl = info.winUrl;
         }

@@ -560,8 +560,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.reloadProjectsInDropdown = async function(user) {
         let projects = await DBManager.getProjects(user.id);
+        let isAdmin = user && (user.role === 'admin' || isSameUser(user.id, '100'));
         let projData = projects.filter(p => !p.isArchived).map(p => ({ 
-            text: p.title, value: p._id, rawId: p._id, canDelete: (p.creatorId === user.id || user.role === 'admin') 
+            text: p.title, 
+            value: p._id, 
+            rawId: p._id, 
+            canDelete: (isAdmin || isSameUser(p.creatorId, user.id)) 
         }));
         projData.unshift({ text: '➕ تعریف پروژه جدید...', value: 'ADD_NEW_PROJECT', canDelete: false });
         setupCustomSelect('taskProjectSelectWrapper', projData, 'پروژه مرتبط...', async (projId) => {
@@ -1267,7 +1271,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return (b.isImportant ? 1 : 0) - (a.isImportant ? 1 : 0);
             });
 
-            let btnArchive = (currentUser.role === 'admin' && !showArchived) ? `<button class="btn btn-small btn-secondary" onclick="event.stopPropagation(); window.archiveProject('${proj._id}')" style="padding:4px 10px; font-size:0.8rem;">بستن و آرشیو</button>` : '';
+            let isAdmin = currentUser.role === 'admin' || isSameUser(currentUser.id, '100');
+            let projectActionBtns = '';
+            if (isAdmin) {
+                projectActionBtns = `
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        ${!showArchived ? `<button class="btn btn-small btn-secondary" onclick="event.stopPropagation(); window.archiveProject('${proj._id}')" style="padding:4px 8px; font-size:0.75rem;">آرشیو</button>` : ''}
+                        <button class="btn btn-small" onclick="event.stopPropagation(); window.deleteProjectById('${proj._id}', '${proj.title}')" style="padding:4px 8px; font-size:0.75rem; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); border-radius:8px;" title="حذف کامل این پروژه">🗑️ حذف</button>
+                    </div>
+                `;
+            }
             
             let isCollapsed = searchTerm ? false : collapsedList.includes(proj._id);
 
@@ -1278,7 +1291,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <button class="btn-quick-add" onclick="event.stopPropagation(); window.quickAddTask('${proj._id}', '${proj.title}')" title="افزودن تسک به این پروژه">➕</button>
                         📁 ${proj.title} <span style="font-size:0.8rem; color: var(--primary); margin-right:5px;">(${projTasks.length})</span> ${unreadBadgeInHeader}
                     </div>
-                    ${btnArchive}
+                    ${projectActionBtns}
                 </div>
                 <div class="project-tasks-container ${isCollapsed ? 'collapsed' : ''}">`;
             
@@ -1334,6 +1347,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(isConfirmed) {
             let p = (await DBManager.getProjects()).find(x => x._id === id);
             if (p) { p.isArchived = true; await DBManager.saveProject(p); renderDashboard(); }
+        }
+    };
+
+    window.deleteProjectById = async function(id, title) {
+        let isConfirmed = await showCustomModal({ 
+            title: 'حذف کامل پروژه', 
+            message: `آیا از حذف کامل پروژه «${title}» مطمئن هستید؟ با حذف این پروژه، تسک‌های داخل آن نیز از داشبورد خارج می‌شوند.`, 
+            type: 'confirm',
+            okText: 'بله، حذف شود'
+        });
+        if (isConfirmed) {
+            await DBManager.deleteProject(id);
+            showToast('پروژه با موفقیت حذف شد.');
+            let user = AuthManager.getCurrentUser();
+            if (user) window.reloadProjectsInDropdown(user);
+            renderDashboard();
         }
     };
 

@@ -23,6 +23,10 @@ const DBManager = {
     getProjects: async function(userId) { 
         let allProjs = await this.adapter.getItemsByType('project');
         if (!userId) return allProjs;
+        let currentUser = (typeof AuthManager !== 'undefined' && AuthManager.getCurrentUser) ? AuthManager.getCurrentUser() : null;
+        if (currentUser && (currentUser.role === 'admin' || currentUser.id === '100' || currentUser.id === 'admin')) {
+            return allProjs;
+        }
         return allProjs.filter(p => p.isGlobal || p.creatorId === userId || (userId === '100' && p.creatorId === 'admin') || !p.creatorId);
     },
 
