@@ -82,6 +82,45 @@ if (!gotTheLock) {
         }
     });
 
+    // دانلود مستقیم فایل نصبی ویندوز درون خود برنامه همراه با درصد پیشرفت
+    ipcMain.on('mecav-download-update', (event, url) => {
+        const http = require('http');
+        const https = require('https');
+        const fs = require('fs');
+        try {
+            const tempFile = path.join(app.getPath('temp'), 'MechaveWS-Setup.exe');
+            const fileStream = fs.createWriteStream(tempFile);
+            const client = url.startsWith('https') ? https : http;
+
+            client.get(url, (res) => {
+                const total = parseInt(res.headers['content-length'] || '0', 10);
+                let downloaded = 0;
+
+                res.on('data', (chunk) => {
+                    downloaded += chunk.length;
+                    fileStream.write(chunk);
+                    if (total > 0) {
+                        const percent = Math.round((downloaded / total) * 100);
+                        event.sender.send('mecav-download-progress', { status: 'progress', percent, downloaded, total });
+                    }
+                });
+
+                res.on('end', () => {
+                    fileStream.end();
+                    event.sender.send('mecav-download-progress', { status: 'completed' });
+                    setTimeout(() => {
+                        shell.openPath(tempFile);
+                    }, 600);
+                });
+            }).on('error', (err) => {
+                fileStream.close();
+                event.sender.send('mecav-download-progress', { status: 'error', message: err.message });
+            });
+        } catch (e) {
+            event.sender.send('mecav-download-progress', { status: 'error', message: e.message });
+        }
+    });
+
     app.whenReady().then(() => {
         createWindow();
 

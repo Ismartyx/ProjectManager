@@ -15,5 +15,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
         } catch (e) {
             window.open(url, '_blank');
         }
+    },
+    downloadUpdate: (url, onProgress) => {
+        ipcRenderer.removeAllListeners('mecav-download-progress');
+        ipcRenderer.on('mecav-download-progress', (event, data) => {
+            if (typeof onProgress === 'function') onProgress(data);
+        });
+        ipcRenderer.send('mecav-download-update', url);
     }
 });

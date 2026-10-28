@@ -1,7 +1,7 @@
 // سیستم مدیریت نسخه و بررسی خودکار بروزرسانی
 const VersionManager = {
-    CURRENT_VERSION: "1.0.7",
-    CURRENT_VERSION_CODE: 10007,
+    CURRENT_VERSION: "1.0.8",
+    CURRENT_VERSION_CODE: 10008,
 
     init: function() {
         const verEl = document.getElementById('app-current-version-text');
@@ -28,12 +28,17 @@ const VersionManager = {
         try {
             let data = null;
 
-            // ۱. تلاش اول: بررسی از مخزن ریلیزهای دیتابیس لوکال یا آنلاین
+            // ۱. تلاش اول: بررسی از مخزن دیتابیس لوکال یا آنلاین
             try {
                 const couchDbBase = (typeof PouchAdapter !== 'undefined' && PouchAdapter.activeUrl) 
                     ? PouchAdapter.activeUrl.replace(/\/[^/]+$/, '')
                     : 'http://155.117.234.69:5984';
-                const vRes = await fetch(`${couchDbBase}/mecav_releases/app_version_info?t=${Date.now()}`);
+                
+                // ابتدا بررسی از مخزن ریلیزها
+                let vRes = await fetch(`${couchDbBase}/mecav_releases/app_version_info?t=${Date.now()}`);
+                if (!vRes.ok) {
+                    vRes = await fetch(`${couchDbBase}/mecav_db_main/app_version_info?t=${Date.now()}`);
+                }
                 if (vRes.ok) {
                     data = await vRes.json();
                 }
@@ -77,12 +82,152 @@ const VersionManager = {
 
     startDirectUpdate: function(targetUrl) {
         if (!targetUrl) return;
-        // در اندروید (Cordova) مستقیماً به Intent سیستم واگذار می‌شود تا دانلود منیجر بومی آن را دریافت و نصب کند
-        if (window.cordova) {
-            window.open(targetUrl, '_system');
-        } else if (window.electronAPI && typeof window.electronAPI.openExternal === 'function') {
-            window.electronAPI.openExternal(targetUrl);
-        } else {
+
+        let banner = document.getElementById('app-update-banner');
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'app-update-banner';
+            document.body.appendChild(banner);
+        }
+
+        banner.style.cssText = `
+            position: fixed;
+            bottom: 24px;
+            left: 20px;
+            right: 20px;
+            max-width: 460px;
+            margin: 0 auto;
+            background: var(--bg-card, #1e293b);
+            border: 2px solid var(--accent, #38bdf8);
+            color: var(--text-main, #f8fafc);
+            padding: 16px 20px;
+            border-radius: 16px;
+            box-shadow: 0 16px 36px rgba(0,0,0,0.6);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            direction: rtl;
+            font-family: inherit;
+        `;
+
+        banner.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <b style="color:var(--accent, #38bdf8); font-size:1rem; display:flex; align-items:center; gap:6px;">
+                    📥 در حال دانلود و دریافت نسخه جدید...
+                </b>
+                <span id="updatePercentLabel" style="font-weight:bold; color:var(--text-main, #fff); font-size:0.95rem;">0%</span>
+            </div>
+            <div style="width:100%; height:8px; background:rgba(255,255,255,0.12); border-radius:10px; overflow:hidden; position:relative;">
+                <div id="updateProgressBarFill" style="width:0%; height:100%; background:linear-gradient(90deg, #38bdf8, #10b981); border-radius:10px; transition:width 0.2s ease;"></div>
+            </div>
+            <div id="updateStatusText" style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-muted, #94a3b8);">
+                <span>در حال اتصال به سرور...</span>
+                <span id="updateSizeLabel"></span>
+            </div>
+        `;
+
+        const updateUI = (percent, downloaded, total) => {
+            const pctLabel = document.getElementById('updatePercentLabel');
+            const barFill = document.getElementById('updateProgressBarFill');
+            const statusText = document.getElementById('updateStatusText');
+            const sizeLabel = document.getElementById('updateSizeLabel');
+
+            if (pctLabel) pctLabel.innerText = Math.round(percent) + '%';
+            if (barFill) barFill.style.width = Math.min(100, Math.max(0, percent)) + '%';
+            if (sizeLabel && total > 0) {
+                const dlMB = (downloaded / (1024 * 1024)).toFixed(1);
+                const totMB = (total / (1024 * 1024)).toFixed(1);
+                sizeLabel.innerText = `${dlMB} مگابایت از ${totMB} مگابایت`;
+            }
+            if (statusText) {
+                statusText.querySelector('span').innerText = percent >= 100 
+                    ? '✅ دانلود کامل شد! در حال باز کردن نصاب...' 
+                    : 'در حال دریافت بسته بروزرسانی...';
+            }
+        };
+
+        const finishUI = () => {
+            updateUI(100, 0, 0);
+            const statusText = document.getElementById('updateStatusText');
+            if (statusText) statusText.querySelector('span').innerText = '✅ دانلود کامل شد. در حال باز کردن پنجره نصب...';
+            setTimeout(() => {
+                if (banner) banner.remove();
+            }, 4000);
+        };
+
+        const errorUI = (msg) => {
+            const statusText = document.getElementById('updateStatusText');
+            if (statusText) {
+                statusText.innerHTML = `<span style="color:#ef4444;">❌ خطا: ${msg || 'عدم دسترسی به فایل'}</span>`;
+            }
+            setTimeout(() => {
+                window.open(targetUrl, '_blank');
+            }, 2000);
+        };
+
+        // ۱. پلتفرم اندروید (Cordova بومی با پلاگین اختصاصی MecavNotification)
+        if (window.MecavNotification && typeof window.MecavNotification.downloadAndInstall === 'function') {
+            window.MecavNotification.downloadAndInstall(
+                targetUrl,
+                function(percent, downloaded, total) {
+                    updateUI(percent, downloaded, total);
+                },
+                function(res) {
+                    finishUI();
+                },
+                function(err) {
+                    console.warn('[Update] خطا در دانلود نیتیو اندروید:', err);
+                    errorUI(err);
+                }
+            );
+            return;
+        }
+
+        // ۲. پلتفرم ویندوز (Electron بومی)
+        if (window.electronAPI && typeof window.electronAPI.downloadUpdate === 'function') {
+            window.electronAPI.downloadUpdate(targetUrl, function(data) {
+                if (data.status === 'progress') {
+                    updateUI(data.percent, data.downloaded, data.total);
+                } else if (data.status === 'completed') {
+                    finishUI();
+                } else if (data.status === 'error') {
+                    errorUI(data.message);
+                }
+            });
+            return;
+        }
+
+        // ۳. پلتفرم وب / مرورگر استاندارد
+        try {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', targetUrl, true);
+            xhr.responseType = 'blob';
+            xhr.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    updateUI(percent, e.loaded, e.total);
+                }
+            };
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    finishUI();
+                    const blob = xhr.response;
+                    const a = document.createElement('a');
+                    a.href = window.URL.createObjectURL(blob);
+                    a.download = targetUrl.split('/').pop() || 'MechaveWS.apk';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                } else {
+                    errorUI('پاسخ سرور: ' + xhr.status);
+                }
+            };
+            xhr.onerror = function() {
+                errorUI('خطای ارتباط با سرور');
+            };
+            xhr.send();
+        } catch (e) {
             window.open(targetUrl, '_blank');
         }
     },
@@ -158,7 +303,7 @@ const VersionManager = {
             </div>
             <div style="font-size:0.85rem; color:var(--text-muted); line-height:1.5;">${info.changelog || 'بهبودها و رفع باگ‌های جدید در این نسخه اعمال شده است.'}</div>
             <div style="display:flex; gap:10px; margin-top:4px;">
-                <button onclick="VersionManager.startDirectUpdate('${targetUrl}'); this.closest('#app-update-banner').remove();" class="btn btn-primary btn-small" style="flex:1; text-align:center; margin:0; padding:8px 14px; font-weight:bold; cursor:pointer;">
+                <button onclick="VersionManager.startDirectUpdate('${targetUrl}');" class="btn btn-primary btn-small" style="flex:1; text-align:center; margin:0; padding:8px 14px; font-weight:bold; cursor:pointer;">
                     📥 دانلود و نصب مستقیم
                 </button>
                 <button onclick="this.closest('#app-update-banner').remove()" class="btn btn-secondary btn-small" style="margin:0; padding:8px 14px; cursor:pointer;">

@@ -1,8 +1,8 @@
 {
-  "version": "1.0.7",
-  "versionCode": 10007,
+  "version": "1.0.8",
+  "versionCode": 10008,
   "releaseDate": "1405/08/07",
-  "changelog": "افزودن اسپلش اسکرین و انیمیشن لودینگ اختصاصی با لوگوی مکاو و جایگزینی با لوگوی پیش‌فرض",
+  "changelog": "دانلود مستقیم درون‌برنامه‌ای با نوار پیشرفت، اجرای خودکار نصاب بدون باز شدن مرورگر، و ارتقای بدون نیاز به حذف نسخه قبلی",
   "apkUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk",
   "winUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS-Setup.exe"
 }

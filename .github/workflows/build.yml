@@ -92,7 +92,7 @@ jobs:
           });
           '
 
-          # فعال کردن مجوز ارتباط با شبکه محلی (HTTP / پورت 5984) مستقیم در AndroidManifest.xml
+          # فعال کردن مجوز ارتباط با شبکه محلی و نصاب مستقیم فایل در AndroidManifest.xml
           node -e '
           const fs = require("fs");
           const manifestPath = "platforms/android/app/src/main/AndroidManifest.xml";
@@ -103,7 +103,19 @@ jobs:
           if (!content.includes("POST_NOTIFICATIONS")) {
               content = content.replace("</manifest>", "    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n    <uses-permission android:name=\"android.permission.VIBRATE\" />\n    <uses-permission android:name=\"android.permission.WAKE_LOCK\" />\n</manifest>");
           }
+          if (!content.includes("REQUEST_INSTALL_PACKAGES")) {
+              content = content.replace("</manifest>", "    <uses-permission android:name=\"android.permission.REQUEST_INSTALL_PACKAGES\" />\n</manifest>");
+          }
+          if (!content.includes("FileProvider")) {
+              const providerXml = `\n        <provider android:name="androidx.core.content.FileProvider" android:authorities="com.mechave.ws.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" /></provider>\n    </application>`;
+              content = content.replace("</application>", providerXml);
+          }
           fs.writeFileSync(manifestPath, content, "utf8");
+
+          const xmlDir = "platforms/android/app/src/main/res/xml";
+          fs.mkdirSync(xmlDir, { recursive: true });
+          const pathsXml = `<?xml version="1.0" encoding="utf-8"?><paths xmlns:android="http://schemas.android.com/apk/res/android"><external-files-path name="ext_files" path="." /><external-path name="ext_path" path="." /><files-path name="int_files" path="." /><cache-path name="int_cache" path="." /></paths>`;
+          fs.writeFileSync(`${xmlDir}/file_paths.xml`, pathsXml, "utf8");
           '
 
           # کپی کلید امضای دائمی و تنظیمات به داخل پوشه بیلد

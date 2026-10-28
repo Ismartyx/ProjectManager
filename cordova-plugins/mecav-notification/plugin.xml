@@ -3,7 +3,7 @@
         id="cordova-plugin-mecav-notification"
         version="1.0.0">
     <name>MecavNotification</name>
-    <description>Native Android Notification plugin for MecavWS</description>
+    <description>Native Android Notification & In-App Updater plugin for MecavWS</description>
     <license>MIT</license>
 
     <js-module src="www/MecavNotification.js" name="MecavNotification">
@@ -21,8 +21,22 @@
             <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
             <uses-permission android:name="android.permission.VIBRATE" />
             <uses-permission android:name="android.permission.WAKE_LOCK" />
+            <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
         </config-file>
 
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <provider
+                android:name="androidx.core.content.FileProvider"
+                android:authorities="${applicationId}.fileprovider"
+                android:exported="false"
+                android:grantUriPermissions="true">
+                <meta-data
+                    android:name="android.support.FILE_PROVIDER_PATHS"
+                    android:resource="@xml/file_paths" />
+            </provider>
+        </config-file>
+
+        <resource-file src="src/android/res/xml/file_paths.xml" target="res/xml/file_paths.xml" />
         <source-file src="src/android/MecavNotification.java" target-dir="src/com/mechave/ws" />
     </platform>
 </plugin>
