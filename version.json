@@ -1,8 +1,8 @@
 {
-  "version": "1.0.14",
-  "versionCode": 10014,
+  "version": "1.0.15",
+  "versionCode": 10015,
   "releaseDate": "1405/08/07",
-  "changelog": "رفع کامل گیر کردن نوار وضعیت شبکه در ویندوز، تخصیص کاراکترهای نمادین اختصاصی به تمام کاربران و حذف دایره‌های تک‌حرفی، و فعال‌سازی صفحه درباره ما (About) با کلیک روی لوگو در تمامی دستگاه‌ها",
+  "changelog": "رفع کامل خطای تجزیه بسته در اندروید (There was a problem parsing the package) با بازسازی امضای سه‌گانه v1, v2, v3، ابزارهای پایدار بیلد و ارتقای امنیت نصب",
   "apkUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk",
   "winUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS-Setup.exe"
 }

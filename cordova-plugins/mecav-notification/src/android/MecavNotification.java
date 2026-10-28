@@ -360,10 +360,16 @@ public class MecavNotification extends CordovaPlugin {
             intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                List<ResolveInfo> resInfoList = context.getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
-                for (ResolveInfo resolveInfo : resInfoList) {
-                    String packageName = resolveInfo.activityInfo.packageName;
-                    context.grantUriPermission(packageName, apkUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                int flags = PackageManager.MATCH_DEFAULT_ONLY;
+                List<ResolveInfo> resInfoList = context.getPackageManager().queryIntentActivities(intent, flags);
+                if (resInfoList == null || resInfoList.isEmpty()) {
+                    resInfoList = context.getPackageManager().queryIntentActivities(intent, 0);
+                }
+                if (resInfoList != null) {
+                    for (ResolveInfo resolveInfo : resInfoList) {
+                        String packageName = resolveInfo.activityInfo.packageName;
+                        context.grantUriPermission(packageName, apkUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    }
                 }
             }
 

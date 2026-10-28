@@ -63,6 +63,8 @@ jobs:
               <preference name="AndroidWindowSplashScreenBackground" value="#0f172a" />
               <preference name="SplashScreenDelay" value="0" />
               <platform name="android">
+                  <preference name="android-minSdkVersion" value="24" />
+                  <preference name="android-targetSdkVersion" value="34" />
                   <icon src="icon.png" />
                   <preference name="AndroidWindowSplashScreenAnimatedIcon" value="icon.png" />
                   <preference name="AndroidWindowSplashScreenBackground" value="#0f172a" />
@@ -106,6 +108,10 @@ jobs:
           if (!content.includes("REQUEST_INSTALL_PACKAGES")) {
               content = content.replace("</manifest>", "    <uses-permission android:name=\"android.permission.REQUEST_INSTALL_PACKAGES\" />\n</manifest>");
           }
+          if (!content.includes("vnd.android.package-archive")) {
+              const queriesXml = `\n    <queries>\n        <intent>\n            <action android:name="android.intent.action.VIEW" />\n            <data android:mimeType="application/vnd.android.package-archive" />\n        </intent>\n    </queries>\n</manifest>`;
+              content = content.replace("</manifest>", queriesXml);
+          }
           if (!content.includes("FileProvider")) {
               const providerXml = `\n        <provider android:name="androidx.core.content.FileProvider" android:authorities="com.mechave.ws.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" /></provider>\n    </application>`;
               content = content.replace("</application>", providerXml);
@@ -118,41 +124,35 @@ jobs:
           fs.writeFileSync(`${xmlDir}/file_paths.xml`, pathsXml, "utf8");
           '
 
-          # کپی کلید امضای دائمی و تنظیمات به داخل پوشه بیلد
-          cp ../signing/mecav-release.keystore ./mecav-release.keystore
-          cp ../build.json ./build.json
+          # بیلد پکیج خام و استاندارد ریلیز اندروید
+          cordova build android --release -- --packageType=apk
 
-          cordova build android --release --buildConfig=build.json -- --packageType=apk
-
-          # امضای معتبر و تضمینی با apksigner و zipalign برای رفع خطای Problem Parsing the Package
-          ZIPALIGN=$(find $ANDROID_HOME/build-tools -name zipalign | sort -V | tail -n 1)
-          APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner | sort -V | tail -n 1)
+          # یافتن ابزارهای پایدار اندروید 14 (34.0.0) به جای بیلدتولز آزمایشی
+          BUILD_TOOLS=$(find $ANDROID_HOME/build-tools -name "34.*" | sort -V | tail -n 1)
+          if [ -z "$BUILD_TOOLS" ]; then
+            BUILD_TOOLS=$(ls -d $ANDROID_HOME/build-tools/* | grep -v '3[5-9]' | sort -V | tail -n 1)
+          fi
+          ZIPALIGN="$BUILD_TOOLS/zipalign"
+          APKSIGNER="$BUILD_TOOLS/apksigner"
+          echo "Selected stable Build-Tools: $BUILD_TOOLS"
           echo "ZIPALIGN path: $ZIPALIGN"
           echo "APKSIGNER path: $APKSIGNER"
 
-          RAW_APK=$(find platforms/android/app/build/outputs/apk/ -name "*release*.apk" ! -name "*unsigned*" | head -n 1)
-          if [ -z "$RAW_APK" ]; then
-            RAW_APK=$(find platforms/android/app/build/outputs/apk/ -name "*.apk" | head -n 1)
-          fi
+          RAW_APK=$(find platforms/android/app/build/outputs/apk/ -name "*.apk" | head -n 1)
           echo "Found raw APK: $RAW_APK"
 
           mkdir -p signed_out
-          if [ -n "$ZIPALIGN" ] && [ -x "$ZIPALIGN" ]; then
-            $ZIPALIGN -f -p 4 "$RAW_APK" signed_out/aligned.apk || cp "$RAW_APK" signed_out/aligned.apk
-          else
-            cp "$RAW_APK" signed_out/aligned.apk
-          fi
+          $ZIPALIGN -f -p 4 "$RAW_APK" signed_out/aligned.apk
 
-          if [ -n "$APKSIGNER" ] && [ -x "$APKSIGNER" ]; then
-            echo "Signing APK with apksigner (v1, v2, v3 schemes)..."
-            $APKSIGNER sign --ks mecav-release.keystore --ks-key-alias mecav --ks-pass pass:mecavworkshop --key-pass pass:mecavworkshop --out signed_out/MechaveWS.apk signed_out/aligned.apk
-            echo "Verifying signature:"
-            $APKSIGNER verify --verbose signed_out/MechaveWS.apk
-            APK_PATH="signed_out/MechaveWS.apk"
-          else
-            echo "APKSIGNER not found, using raw apk"
-            APK_PATH="$RAW_APK"
-          fi
+          echo "Signing APK with apksigner (enforcing v1 JAR signing, v2 APK Scheme, and v3 Scheme)..."
+          $APKSIGNER sign --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true \
+            --ks ../signing/mecav-release.keystore --ks-key-alias mecav \
+            --ks-pass pass:mecavworkshop --key-pass pass:mecavworkshop \
+            --out signed_out/MechaveWS.apk signed_out/aligned.apk
+
+          echo "Verifying signature across all schemes:"
+          $APKSIGNER verify --verbose signed_out/MechaveWS.apk
+          APK_PATH="signed_out/MechaveWS.apk"
 
           # بارگذاری خودکار فایل نصبی جدید در سرور دیتابیس (مخزن ریلیزهای مجزا جهت جلوگیری از سنگین شدن دیتابیس تسک‌ها)
           if [ -n "$APK_PATH" ] && [ -f "$APK_PATH" ]; then
