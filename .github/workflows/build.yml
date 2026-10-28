@@ -213,27 +213,40 @@ jobs:
           $exe = Get-ChildItem -Path dist/*.exe | Select-Object -First 1
           if ($exe) {
             Write-Host "Publishing Windows Setup to CouchDB (mecav_releases)..."
-            try {
-              $doc = Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_releases/app_release" -Method Get -ErrorAction SilentlyContinue
-              $rev = $doc._rev
-            } catch {
-              $res = Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_releases/app_release" -Method Put -Body '{"description":"MechaveWS Application Release Attachments"}' -ContentType "application/json"
-              $rev = $res.rev
+            for ($attempt = 1; $attempt -le 4; $attempt++) {
+              try {
+                $doc = curl.exe -s "http://155.117.234.69:5984/mecav_releases/app_release" | ConvertFrom-Json
+                $rev = $doc._rev
+                if (-not $rev) {
+                  curl.exe -s -X PUT "http://155.117.234.69:5984/mecav_releases/app_release" -H "Content-Type: application/json" -d "{\`"description\`":\`"MechaveWS Application Release Attachments\`"}"
+                  $doc = curl.exe -s "http://155.117.234.69:5984/mecav_releases/app_release" | ConvertFrom-Json
+                  $rev = $doc._rev
+                }
+                $res = curl.exe -s -X PUT "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS-Setup.exe?rev=$rev" -H "Content-Type: application/x-msdownload" --data-binary "@$($exe.FullName)"
+                Write-Host "Upload result: $res"
+                if ($res -like '*"ok":true*') {
+                  Write-Host "Windows Setup deployed successfully."
+                  break
+                } else {
+                  Start-Sleep -Seconds 3
+                }
+              } catch {
+                Write-Host "Attempt $attempt error: $_"
+                Start-Sleep -Seconds 3
+              }
             }
-            $bytes = [System.IO.File]::ReadAllBytes($exe.FullName)
-            Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS-Setup.exe?rev=$rev" -Method Put -Body $bytes -ContentType "application/x-msdownload"
-            Write-Host "Windows Setup deployed successfully."
           }
 
           # به‌روزرسانی سند اطلاعات نسخه در دیتابیس ریلیزها
           try {
-            $vdoc = Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_releases/app_version_info" -Method Get -ErrorAction SilentlyContinue
+            $vdoc = curl.exe -s "http://155.117.234.69:5984/mecav_releases/app_version_info" | ConvertFrom-Json
             $vrev = $vdoc._rev
           } catch { $vrev = $null }
           $vdata = Get-Content version.json -Raw -Encoding UTF8 | ConvertFrom-Json
           if ($vrev) { $vdata | Add-Member -NotePropertyName "_rev" -NotePropertyValue $vrev -Force }
-          $body = [System.Text.Encoding]::UTF8.GetBytes(($vdata | ConvertTo-Json))
-          Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_releases/app_version_info" -Method Put -Body $body -ContentType "application/json; charset=utf-8"
+          $jsonStr = $vdata | ConvertTo-Json -Compress
+          $bytes = [System.Text.Encoding]::UTF8.GetBytes($jsonStr)
+          Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_releases/app_version_info" -Method Put -Body $bytes -ContentType "application/json; charset=utf-8" -ErrorAction SilentlyContinue
 
       - name: Upload Windows Setup
         uses: actions/upload-artifact@v4

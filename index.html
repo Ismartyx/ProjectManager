@@ -33,12 +33,22 @@
         </div>
     </div>
 
-    <!-- نوار وضعیت شبکه که در جای درستی قرار گرفت -->
+    <!-- نوار عنوان مینیمال و یکپارچه اختصاصی در اپلیکیشن ویندوز (مشابه تلگرام دسکتاپ) -->
+    <div id="electron-titlebar" class="electron-titlebar">
+        <div class="electron-titlebar-drag">
+            <div class="electron-titlebar-brand">
+                <img src="icon-192.png" alt="Mecav" class="electron-titlebar-icon">
+                <span class="electron-titlebar-text">مدیریت پروژه مکاو</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- نوار وضعیت شبکه -->
     <div id="connection-status" style="padding: 5px 10px; text-align: center; font-size: 13px; font-weight: bold; background: #ffc107; color: #000; position: fixed; top: 0; left: 0; right: 0; z-index: 99999; transform: translateY(-100%); transition: transform 0.4s;">
         ⏳ در حال بررسی وضعیت شبکه...
     </div>
 
-    <header class="app-header" style="margin-top: 25px;">
+    <header class="app-header">
         <h1 id="header-title">کارهای مکاو</h1>
         <div class="header-actions">
             <button id="btnThemeToggle" class="icon-btn" title="تغییر تم شب و روز">☀️</button>
@@ -67,9 +77,14 @@
         <div id="login-view" class="view-section">
             <div class="form-container card">
                 <h2>ورود به حساب</h2>
+                <div id="lockedUserBanner" style="display: none; background: rgba(56, 189, 248, 0.1); border: 1px solid var(--primary); border-radius: 12px; padding: 12px 14px; margin-bottom: 15px; text-align: center;">
+                    <div style="font-weight: bold; color: var(--primary); font-size: 0.95rem; margin-bottom: 4px;">🔒 برنامه قفل شده است</div>
+                    <div id="lockedUserNameText" style="font-size: 0.82rem; color: var(--text-main); margin-bottom: 4px;">جهت ادامه کار، فقط رمز عبور را وارد کنید:</div>
+                </div>
                 <input type="text" id="personnelCodeInput" placeholder="کد پرسنلی" inputmode="numeric" />
                 <input type="password" id="nationalCodeInput" placeholder="رمز عبور" />
                 <button id="btnLogin" class="btn btn-primary">ورود</button>
+                <button id="btnSwitchUser" class="btn btn-secondary btn-small" style="display: none; margin-top: 10px; width: 100%;">👤 ورود با کاربر دیگر</button>
             </div>
         </div>
 
@@ -126,6 +141,29 @@
                     <input type="password" id="myOldPassword" placeholder="رمز عبور فعلی..." style="margin-bottom: 8px;" />  
                     <input type="password" id="myNewPassword" placeholder="رمز جدید..." />
                     <button id="btnChangeMyPass" class="btn btn-primary">ثبت</button>
+                </div>
+
+                <div class="card" style="border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <h3 style="color: var(--primary); margin-top: 0;">🔒 قفل خودکار برنامه (عدم فعالیت)</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
+                        جهت حفظ امنیت در ویندوز و سیستم، در صورت عدم استفاده از برنامه، صفحه قفل شده و به فرم ورود بازمی‌گردد (کد پرسنلی شما باقی می‌ماند و فقط کافیست رمز عبور را مجدداً وارد کنید).
+                    </p>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <select id="selectAutoLockTimeout" style="flex: 1; min-width: 170px; margin: 0; padding: 8px 12px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px;">
+                            <option value="0">❌ غیرفعال</option>
+                            <option value="1">⏱️ ۱ دقیقه</option>
+                            <option value="3">⏱️ ۳ دقیقه</option>
+                            <option value="5">⏱️ ۵ دقیقه</option>
+                            <option value="10">⏱️ ۱۰ دقیقه</option>
+                            <option value="15">⏱️ ۱۵ دقیقه</option>
+                            <option value="30">⏱️ ۳۰ دقیقه</option>
+                            <option value="60">⏱️ ۱ ساعت</option>
+                        </select>
+                        <button id="btnLockAppNow" class="btn btn-secondary btn-small" style="margin: 0; display: inline-flex; align-items: center; gap: 6px;">
+                            🔒 قفل فوری
+                        </button>
+                    </div>
+                    <div id="autoLockStatusText" style="font-size: 0.8rem; margin-top: 8px; color: var(--text-muted);"></div>
                 </div>
 
                 <div class="card" style="border: 1px solid var(--accent); margin-bottom: 15px;">
@@ -326,6 +364,7 @@
     <script src="js/db/adapter-pouch.js"></script>
     <script src="js/db/db-manager.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/auto-lock.js"></script>
     <script src="js/version.js"></script>
     <script src="js/app.js"></script>
 </body>

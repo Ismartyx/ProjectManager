@@ -22,5 +22,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
             if (typeof onProgress === 'function') onProgress(data);
         });
         ipcRenderer.send('mecav-download-update', url);
+    },
+    updateTitleBarOverlay: (color, symbolColor) => {
+        try {
+            ipcRenderer.send('mecav-update-titlebar-overlay', { color, symbolColor });
+        } catch (e) {}
     }
 });

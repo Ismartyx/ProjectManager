@@ -183,6 +183,93 @@
     --accent: #e2e8f0;
 }
 
+/* ============================================================
+   اسکرول‌بار مینیمال و فوق‌العاده شیک (مشابه تلگرام دسکتاپ)
+   ============================================================ */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.22);
+    border-radius: 9999px;
+    transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.45);
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: var(--primary, #38bdf8);
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
+}
+
+/* ============================================================
+   نوار عنوان مینیمال و اختصاصی الکترون ویندوز (مشابه تلگرام دسکتاپ)
+   ============================================================ */
+.electron-titlebar {
+    display: none;
+    height: 36px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+body.is-electron .electron-titlebar {
+    display: flex;
+}
+
+body.is-electron {
+    padding-top: 36px;
+}
+
+.electron-titlebar-drag {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    margin-right: 140px; /* فضای امن دکمه‌های بستن/کوچک‌نمایی ویندوز در سمت راست */
+    -webkit-app-region: drag;
+    cursor: default;
+}
+
+.electron-titlebar-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    font-weight: bold;
+    color: var(--text-muted);
+}
+
+.electron-titlebar-icon {
+    width: 17px;
+    height: 17px;
+    border-radius: 4px;
+}
+
 /* ==========================================
    قوانین کلی و پایه
    ========================================== */

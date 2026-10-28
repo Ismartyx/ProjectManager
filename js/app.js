@@ -435,6 +435,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
+        // تنظیمات قفل خودکار و امنیت برنامه (عدم فعالیت)
+        const selectAutoLock = document.getElementById('selectAutoLockTimeout');
+        const btnLockAppNow = document.getElementById('btnLockAppNow');
+
+        if (typeof AutoLockManager !== 'undefined') {
+            AutoLockManager.updateSettingsStatusText();
+        }
+
+        if (selectAutoLock && !selectAutoLock.dataset.bound) {
+            selectAutoLock.dataset.bound = "true";
+            selectAutoLock.addEventListener('change', () => {
+                const val = parseInt(selectAutoLock.value, 10);
+                if (typeof AutoLockManager !== 'undefined') {
+                    AutoLockManager.setTimeoutMinutes(val);
+                }
+                showToast(val > 0 ? `قفل خودکار پس از ${val} دقیقه عدم فعالیت فعال شد.` : 'قفل خودکار غیرفعال شد.');
+            });
+        }
+
+        if (btnLockAppNow && !btnLockAppNow.dataset.bound) {
+            btnLockAppNow.dataset.bound = "true";
+            btnLockAppNow.addEventListener('click', () => {
+                if (typeof AutoLockManager !== 'undefined') {
+                    AutoLockManager.lock();
+                }
+            });
+        }
+
         const adminSec = document.getElementById('admin-settings-section');
         if (!adminSec) return;
 
@@ -618,6 +646,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         showToast('تگ اضافه شد.');
     };
 
+    function syncElectronTitlebarTheme() {
+        if (window.electronAPI && typeof window.electronAPI.updateTitleBarOverlay === 'function') {
+            const isDark = document.body.getAttribute('data-theme') !== 'light';
+            const bgCard = getComputedStyle(document.body).getPropertyValue('--bg-card').trim() || (isDark ? '#131b2e' : '#ffffff');
+            const textMuted = isDark ? '#94a3b8' : '#64748b';
+            window.electronAPI.updateTitleBarOverlay(bgCard, textMuted);
+        }
+    }
+
+    if (window.electronAPI && window.electronAPI.isElectron) {
+        document.body.classList.add('is-electron');
+        setTimeout(syncElectronTitlebarTheme, 200);
+    }
+
     const btnThemeToggle = document.getElementById('btnThemeToggle');
     let currentTheme = localStorage.getItem('pm_theme') || 'dark';
     document.body.setAttribute('data-theme', currentTheme);
@@ -628,6 +670,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.body.setAttribute('data-theme', currentTheme);
             localStorage.setItem('pm_theme', currentTheme);
             btnThemeToggle.innerText = currentTheme === 'dark' ? '☀️' : '🌙';
+            syncElectronTitlebarTheme();
         });
     }
 
@@ -636,6 +679,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ==========================================
     let currentPalette = localStorage.getItem('pm_theme_palette') || 'ocean';
     document.body.setAttribute('data-palette', currentPalette);
+
+        applyPalette: function() {
+            // Placeholder
+        }
+    };
 
     function applyPalette(palId) {
         currentPalette = palId;
@@ -659,6 +707,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 btn.style.fontWeight = 'normal';
             }
         });
+
+        syncElectronTitlebarTheme();
     }
 
     applyPalette(currentPalette);
@@ -713,6 +763,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let pendingCommentImage = null;
 
     setupSettingsUI();
+    if (typeof AutoLockManager !== 'undefined') {
+        AutoLockManager.init();
+    }
 
     function checkLoginStatus() {
         let user = AuthManager.getCurrentUser();
@@ -752,9 +805,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 NotificationManager.stopListening();
             }
             loginView.style.display = 'block'; 
+            if (typeof AutoLockManager !== 'undefined') {
+                AutoLockManager.applyLockedUI();
+            }
         }
         setTimeout(hideAppSplash, 350);
     }
+    window.checkLoginStatus = checkLoginStatus;
 
     function hideAppSplash() {
         const splash = document.getElementById('app-splash-overlay');
@@ -851,6 +908,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             // اگر دیتابیس محلی خالی است، صبر می‌کنیم تا سینک از سرور کامل شود
             await AuthManager.syncFromDBWithWait();
             AuthManager.login(pCode, nCode);
+            if (typeof AutoLockManager !== 'undefined') {
+                AutoLockManager.unlock();
+            }
             document.getElementById('personnelCodeInput').value = '';
             document.getElementById('nationalCodeInput').value = '';
             showToast("با موفقیت وارد شدید.");
@@ -872,6 +932,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     
     document.getElementById('btnLogout').addEventListener('click', () => { AuthManager.logout(); checkLoginStatus(); });
+    
+    const btnSwitchUser = document.getElementById('btnSwitchUser');
+    if (btnSwitchUser && !btnSwitchUser.dataset.bound) {
+        btnSwitchUser.dataset.bound = "true";
+        btnSwitchUser.addEventListener('click', () => {
+            if (typeof AutoLockManager !== 'undefined') {
+                AutoLockManager.clearLockedUser();
+            }
+        });
+    }
     
     const btnSettingsEl = document.getElementById('btnSettings');
     if(btnSettingsEl) {

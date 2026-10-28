@@ -21,7 +21,8 @@ if (!gotTheLock) {
     });
 
     function createWindow() {
-        mainWindow = new BrowserWindow({
+        const isWindows = process.platform === 'win32';
+        const windowOptions = {
             width: 1200,
             height: 800,
             minWidth: 360,
@@ -36,7 +37,19 @@ if (!gotTheLock) {
                 webSecurity: false, // دسترسی مستقیم به شبکه محلی و اینترنت بدون محدودیت CORS
                 allowRunningInsecureContent: true
             }
-        });
+        };
+
+        // فعال‌سازی نوار عنوان مدرن، مینیمال و یکپارچه در ویندوز (مشابه تلگرام دسکتاپ)
+        if (isWindows) {
+            windowOptions.titleBarStyle = 'hidden';
+            windowOptions.titleBarOverlay = {
+                color: '#0f172a',
+                symbolColor: '#94a3b8',
+                height: 36
+            };
+        }
+
+        mainWindow = new BrowserWindow(windowOptions);
 
         // باز کردن لینک‌های خارجی در مرورگر اصلی سیستم
         mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -53,6 +66,18 @@ if (!gotTheLock) {
             mainWindow = null;
         });
     }
+
+    // به‌روزرسانی رنگ نوار عنوان ویندوز متناسب با تم یا پالت انتخابی
+    ipcMain.on('mecav-update-titlebar-overlay', (event, { color, symbolColor }) => {
+        try {
+            if (mainWindow && mainWindow.setTitleBarOverlay) {
+                mainWindow.setTitleBarOverlay({
+                    color: color || '#0f172a',
+                    symbolColor: symbolColor || '#94a3b8'
+                });
+            }
+        } catch (e) {}
+    });
 
     // شنود اعلان‌های نیتیو ویندوز از صفحه برنامه
     ipcMain.on('mecav-show-notification', (event, { title, body }) => {

@@ -1,8 +1,8 @@
 {
-  "version": "1.0.10",
-  "versionCode": 10010,
+  "version": "1.0.11",
+  "versionCode": 10011,
   "releaseDate": "1405/08/07",
-  "changelog": "رفع کامل خطای تجزیه پکیج نصبی اندروید (Problem Parsing the Package) با امضای رسمی v1/v2/v3 و هماهنگی مجوزهای FileProvider",
+  "changelog": "قفل خودکار هوشمند برنامه پس از مدت تعیین‌شده عدم فعالیت، نوار عنوان مینیمال و یکپارچه ویندوز (مشابه تلگرام دسکتاپ)، و اسکرول‌بار باریک و مدرن",
   "apkUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk",
   "winUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS-Setup.exe"
 }
