@@ -14,6 +14,12 @@ var MecavNotification = {
         }, function(err) {
             if (typeof onError === 'function') onError(err);
         }, 'MecavNotification', 'downloadAndInstall', [apkUrl]);
+    },
+    startBackgroundListener: function(serverUrl, topic, onSuccess, onError) {
+        exec(onSuccess, onError, 'MecavNotification', 'startBackgroundListener', [serverUrl, topic]);
+    },
+    stopBackgroundListener: function(onSuccess, onError) {
+        exec(onSuccess, onError, 'MecavNotification', 'stopBackgroundListener', []);
     }
 };
 

@@ -237,16 +237,24 @@ jobs:
             }
           }
 
-          # به‌روزرسانی سند اطلاعات نسخه در دیتابیس ریلیزها
+          # به‌روزرسانی سند اطلاعات نسخه در هر دو مخزن دیتابیس آنلاین
           try {
-            $vdoc = curl.exe -s "http://155.117.234.69:5984/mecav_releases/app_version_info" | ConvertFrom-Json
-            $vrev = $vdoc._rev
-          } catch { $vrev = $null }
-          $vdata = Get-Content version.json -Raw -Encoding UTF8 | ConvertFrom-Json
-          if ($vrev) { $vdata | Add-Member -NotePropertyName "_rev" -NotePropertyValue $vrev -Force }
-          $jsonStr = $vdata | ConvertTo-Json -Compress
-          $bytes = [System.Text.Encoding]::UTF8.GetBytes($jsonStr)
-          Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_releases/app_version_info" -Method Put -Body $bytes -ContentType "application/json; charset=utf-8" -ErrorAction SilentlyContinue
+            $vdoc1 = curl.exe -s "http://155.117.234.69:5984/mecav_releases/app_version_info" | ConvertFrom-Json
+            $vrev1 = $vdoc1._rev
+          } catch { $vrev1 = $null }
+          $vdata1 = Get-Content version.json -Raw -Encoding UTF8 | ConvertFrom-Json
+          if ($vrev1) { $vdata1 | Add-Member -NotePropertyName "_rev" -NotePropertyValue $vrev1 -Force }
+          $bytes1 = [System.Text.Encoding]::UTF8.GetBytes(($vdata1 | ConvertTo-Json -Compress))
+          Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_releases/app_version_info" -Method Put -Body $bytes1 -ContentType "application/json; charset=utf-8" -ErrorAction SilentlyContinue
+
+          try {
+            $vdoc2 = curl.exe -s "http://155.117.234.69:5984/mecav_db_main/app_version_info" | ConvertFrom-Json
+            $vrev2 = $vdoc2._rev
+          } catch { $vrev2 = $null }
+          $vdata2 = Get-Content version.json -Raw -Encoding UTF8 | ConvertFrom-Json
+          if ($vrev2) { $vdata2 | Add-Member -NotePropertyName "_rev" -NotePropertyValue $vrev2 -Force }
+          $bytes2 = [System.Text.Encoding]::UTF8.GetBytes(($vdata2 | ConvertTo-Json -Compress))
+          Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_db_main/app_version_info" -Method Put -Body $bytes2 -ContentType "application/json; charset=utf-8" -ErrorAction SilentlyContinue
 
       - name: Upload Windows Setup
         uses: actions/upload-artifact@v4

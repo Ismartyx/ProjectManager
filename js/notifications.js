@@ -328,6 +328,14 @@ const NotificationManager = {
         // اگر سرور آنلاین تنظیم شده بود، با استاندارد جهانی EventSource بدون هیچ نرم‌افزار اضافی گوش بدهد
         if (serverUrl) {
             const topic = this.getUserTopic(userId);
+
+            // ۱. فعال‌سازی شنونده بومی جاوا در اندروید جهت دریافت ۲۴ ساعته اعلان در پس‌زمینه و بسته بودن برنامه
+            if (window.MecavNotification && typeof window.MecavNotification.startBackgroundListener === 'function') {
+                window.MecavNotification.startBackgroundListener(serverUrl, topic);
+            } else if (window.cordova && typeof window.cordova.exec === 'function') {
+                window.cordova.exec(null, null, "MecavNotification", "startBackgroundListener", [serverUrl, topic]);
+            }
+
             try {
                 this._eventSource = new EventSource(`${serverUrl}/${topic}/sse`);
                 this._eventSource.onmessage = (event) => {
@@ -359,6 +367,14 @@ const NotificationManager = {
             try { this._eventSource.close(); } catch (e) {}
             this._eventSource = null;
         }
+
+        // توقف شنونده بومی اندروید
+        if (window.MecavNotification && typeof window.MecavNotification.stopBackgroundListener === 'function') {
+            window.MecavNotification.stopBackgroundListener();
+        } else if (window.cordova && typeof window.cordova.exec === 'function') {
+            window.cordova.exec(null, null, "MecavNotification", "stopBackgroundListener", []);
+        }
+
         this._activeUserId = null;
         this._lastTasksMap = null;
     },

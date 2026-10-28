@@ -144,6 +144,30 @@
                 </div>
 
                 <div class="card" style="border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <h3 style="color: var(--primary); margin-top: 0;">👤 تصویر و کاراکتر پروفایل (مشابه تلگرام)</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+                        تصویر شخصی یا کاراکتر دلخواه خود را انتخاب کنید تا در کنار گزارش‌ها، نظرات و وظایف شما نمایش داده شود:
+                    </p>
+                    
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 14px; flex-wrap: wrap;">
+                        <div id="currentUserAvatarPreview" class="user-avatar-preview-box">
+                            <span id="avatarPreviewContent" style="font-size: 2.2rem;">👨‍🔧</span>
+                        </div>
+                        <div style="flex: 1; min-width: 170px;">
+                            <div id="avatarUserDisplayName" style="font-weight: bold; font-size: 1rem; color: var(--text-main); margin-bottom: 4px;">نام کاربر</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">تصویر شخصی از گالری یا کاراکترهای آماده:</div>
+                            <label class="btn btn-primary btn-small" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0; padding: 6px 12px;">
+                                📷 انتخاب عکس از گالری
+                                <input type="file" id="avatarFileInput" accept="image/*" style="display: none;">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="font-size: 0.8rem; font-weight: bold; color: var(--text-muted); margin-bottom: 8px;">کاراکترهای آماده:</div>
+                    <div class="avatar-presets-grid" id="avatarPresetsGrid"></div>
+                </div>
+
+                <div class="card" style="border: 1px solid var(--border-color); margin-bottom: 15px;">
                     <h3 style="color: var(--primary); margin-top: 0;">🔒 قفل خودکار برنامه (عدم فعالیت)</h3>
                     <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
                         جهت حفظ امنیت در ویندوز و سیستم، در صورت عدم استفاده از برنامه، صفحه قفل شده و به فرم ورود بازمی‌گردد (کد پرسنلی شما باقی می‌ماند و فقط کافیست رمز عبور را مجدداً وارد کنید).
@@ -247,6 +271,29 @@
                         <input type="password" id="newUserNatCode" placeholder="رمز اولیه" inputmode="numeric" />
                         <button id="btnAddUser" class="btn btn-success">ثبت</button>
                     </div>
+
+                    <div class="card" style="border: 1px solid var(--accent); margin-bottom: 15px;">
+                        <h3 style="color: var(--accent); margin-top: 0;">📝 ویرایش اطلاعات درباره ما (About Us)</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
+                            اطلاعاتی که هنگام کلیک پرسنل روی لوگوی مکاو نمایش داده می‌شود:
+                        </p>
+                        <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 4px;">عنوان سامانه:</label>
+                        <input type="text" id="adminAboutTitle" placeholder="مدیریت کارگاه مکاو" style="margin-bottom: 10px;" />
+                        
+                        <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 4px;">آدرس وب‌سایت:</label>
+                        <input type="text" id="adminAboutSite" placeholder="https://mechave.ir" style="direction: ltr; text-align: left; margin-bottom: 10px;" />
+                        
+                        <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 4px;">متن معرفی و توضیحات:</label>
+                        <textarea id="adminAboutDesc" placeholder="توضیحات کوتاه درباره کارگاه و نرم‌افزار..." style="min-height: 60px; margin-bottom: 10px;"></textarea>
+                        
+                        <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 4px;">تلفن / پشتیبانی:</label>
+                        <input type="text" id="adminAboutPhone" placeholder="021-xxxxxxxx" style="direction: ltr; text-align: left; margin-bottom: 10px;" />
+                        
+                        <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 4px;">آیدی ارتباط (تلگرام/ایتا):</label>
+                        <input type="text" id="adminAboutSocial" placeholder="@mechave" style="direction: ltr; text-align: left; margin-bottom: 12px;" />
+                        
+                        <button id="btnSaveAdminAbout" class="btn btn-primary" style="margin: 0; width: 100%;">ذخیره اطلاعات درباره ما</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -346,6 +393,62 @@
                     <div class="custom-options"></div>
                 </div>
                 <button id="btnRequestTransfer" class="btn btn-secondary btn-small" style="width: 100%;">درخواست ارجاع</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- پنجره اختصاصی درباره کارگاه مکاو (About Modal) با تم نارنجی mechave.ir -->
+    <div id="aboutModal" class="modal-overlay" style="display:none; backdrop-filter: blur(14px); background: rgba(5, 8, 16, 0.75);">
+        <div class="modal-content about-modal-content">
+            <button class="about-modal-close" id="btnCloseAboutModal">&times;</button>
+            
+            <div class="about-hero">
+                <div class="about-mecav-anim">
+                    <svg class="gear-cog gear-outer" viewBox="0 0 100 100" width="80" height="80">
+                        <circle cx="50" cy="50" r="32" stroke="#ea580c" stroke-width="6" fill="none" stroke-dasharray="8 6" />
+                        <circle cx="50" cy="50" r="16" fill="#f97316" />
+                    </svg>
+                    <svg class="gear-cog gear-inner" viewBox="0 0 100 100" width="46" height="46">
+                        <circle cx="50" cy="50" r="26" stroke="#fbbf24" stroke-width="5" fill="none" stroke-dasharray="6 4" />
+                        <circle cx="50" cy="50" r="8" fill="#fbbf24" />
+                    </svg>
+                    <div class="about-logo-wrapper">
+                        <img src="icon-192.png" alt="Mecav" class="about-logo-img">
+                    </div>
+                </div>
+
+                <h2 id="aboutModalTitle" class="about-brand-title">مدیریت کارگاه مکاو</h2>
+                <div class="about-version-badge">
+                    نسخه <span id="aboutModalVersion">1.0.12</span>
+                </div>
+            </div>
+
+            <div class="about-body">
+                <p id="aboutModalDesc" class="about-desc">
+                    سامانه هوشمند مدیریت پروژه، فرآیندهای تولید، ارجاع وظایف و کنترل کیفیت کارگاه مکاو.
+                </p>
+
+                <div class="about-details-card">
+                    <div class="about-info-row">
+                        <span class="about-info-label">🌐 وب‌سایت رسمی:</span>
+                        <a href="https://mechave.ir" id="aboutModalSiteLink" class="about-site-link" target="_blank" rel="noopener">
+                            <span>mechave.ir</span>
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                        </a>
+                    </div>
+                    <div class="about-info-row" id="aboutPhoneRow">
+                        <span class="about-info-label">📞 تماس / پشتیبانی:</span>
+                        <span id="aboutModalPhone" class="about-info-val" style="direction:ltr;">—</span>
+                    </div>
+                    <div class="about-info-row" id="aboutSocialRow">
+                        <span class="about-info-label">💬 ارتباط مستقیم:</span>
+                        <span id="aboutModalSocial" class="about-info-val">@mechave</span>
+                    </div>
+                </div>
+
+                <div class="about-footer-slogan">
+                    Mecav Workshop Management System &bull; All Rights Reserved
+                </div>
             </div>
         </div>
     </div>

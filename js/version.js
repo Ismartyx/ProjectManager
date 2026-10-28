@@ -1,7 +1,7 @@
 // سیستم مدیریت نسخه و بررسی خودکار بروزرسانی
 const VersionManager = {
-    CURRENT_VERSION: "1.0.11",
-    CURRENT_VERSION_CODE: 10011,
+    CURRENT_VERSION: "1.0.12",
+    CURRENT_VERSION_CODE: 10012,
 
     init: function() {
         const verEl = document.getElementById('app-current-version-text');
@@ -26,38 +26,43 @@ const VersionManager = {
         }
 
         try {
-            let data = null;
+            let candidates = [];
+            const timestamp = Date.now();
 
-            // ۱. تلاش اول: بررسی از مخزن دیتابیس لوکال یا آنلاین
-            try {
-                const couchDbBase = (typeof PouchAdapter !== 'undefined' && PouchAdapter.activeUrl) 
-                    ? PouchAdapter.activeUrl.replace(/\/[^/]+$/, '')
-                    : 'http://155.117.234.69:5984';
-                
-                // ابتدا بررسی از مخزن ریلیزها
-                let vRes = await fetch(`${couchDbBase}/mecav_releases/app_version_info?t=${Date.now()}`);
-                if (!vRes.ok) {
-                    vRes = await fetch(`${couchDbBase}/mecav_db_main/app_version_info?t=${Date.now()}`);
-                }
-                if (vRes.ok) {
-                    data = await vRes.json();
-                }
-            } catch (e) {}
+            const endpoints = [
+                `http://155.117.234.69:5984/mecav_releases/app_version_info?t=${timestamp}`,
+                `http://155.117.234.69:5984/mecav_db_main/app_version_info?t=${timestamp}`,
+                `https://raw.githubusercontent.com/Ismartyx/ProjectManager/main/version.json?t=${timestamp}`
+            ];
 
-            // ۲. تلاش دوم: در صورت عدم دسترسی به دیتابیس، بررسی از گیت‌هاب
-            if (!data) {
+            if (typeof PouchAdapter !== 'undefined' && PouchAdapter.activeUrl) {
+                const couchDbBase = PouchAdapter.activeUrl.replace(/\/[^/]+$/, '');
+                if (couchDbBase && !couchDbBase.includes('155.117.234.69')) {
+                    endpoints.unshift(`${couchDbBase}/mecav_releases/app_version_info?t=${timestamp}`);
+                    endpoints.unshift(`${couchDbBase}/mecav_db_main/app_version_info?t=${timestamp}`);
+                }
+            }
+
+            // بررسی همزمان تمام منابع و انتخاب آخرین نسخه موجود
+            await Promise.allSettled(endpoints.map(async (url) => {
                 try {
-                    const endpoint = 'https://raw.githubusercontent.com/Ismartyx/ProjectManager/main/version.json?t=' + Date.now();
-                    const res = await fetch(endpoint, { cache: 'no-store' });
+                    const res = await fetch(url, { cache: 'no-store' });
                     if (res.ok) {
-                        data = await res.json();
+                        const json = await res.json();
+                        if (json && (json.versionCode || json.version)) {
+                            candidates.push(json);
+                        }
                     }
                 } catch (e) {}
-            }
+            }));
 
-            if (!data) {
+            if (candidates.length === 0) {
                 throw new Error('عدم دریافت اطلاعات نسخه از سرور');
             }
+
+            // مرتب‌سازی بر اساس بالاترین versionCode
+            candidates.sort((a, b) => (b.versionCode || 0) - (a.versionCode || 0));
+            const data = candidates[0];
 
             if (data && data.versionCode > this.CURRENT_VERSION_CODE) {
                 if (statusEl) {
@@ -78,6 +83,7 @@ const VersionManager = {
                 statusEl.style.color = 'var(--danger)';
             }
         }
+    },
     },
 
     startDirectUpdate: function(targetUrl) {

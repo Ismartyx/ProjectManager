@@ -126,7 +126,7 @@ const AuthManager = {
         if (!user) throw new Error("کاربری با این کد پرسنلی یافت نشد.");
         if (user.pin !== nationalCode) throw new Error("رمز عبور اشتباه است.");
 
-        this.currentUser = { id: user.id, name: user.name, role: user.role, canAssignTasks: user.canAssignTasks };
+        this.currentUser = { id: user.id, name: user.name, role: user.role, canAssignTasks: user.canAssignTasks, avatar: user.avatar || null };
         localStorage.setItem('pm_currentUser', JSON.stringify(this.currentUser));
         return true;
     },
@@ -150,6 +150,7 @@ const AuthManager = {
                 this.currentUser.name = latest.name;
                 this.currentUser.role = latest.role;
                 this.currentUser.canAssignTasks = Boolean(latest.canAssignTasks);
+                this.currentUser.avatar = latest.avatar || null;
                 localStorage.setItem('pm_currentUser', JSON.stringify(this.currentUser));
             }
         }

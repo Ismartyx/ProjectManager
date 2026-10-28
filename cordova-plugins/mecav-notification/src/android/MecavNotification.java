@@ -69,6 +69,10 @@ public class MecavNotification extends CordovaPlugin {
         }
     }
 
+    private static Thread bgWorkerThread = null;
+    private static volatile boolean isWorkerRunning = false;
+    private static String activeTopic = null;
+
     @Override
     public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
         if ("show".equals(action)) {
@@ -89,8 +93,134 @@ public class MecavNotification extends CordovaPlugin {
             }
             downloadAndInstallApk(apkUrl, callbackContext);
             return true;
+        } else if ("startBackgroundListener".equals(action)) {
+            final String serverUrl = args.optString(0, "http://155.117.234.69:8080");
+            final String topic = args.optString(1, "");
+            startNativeListener(serverUrl, topic);
+            callbackContext.success();
+            return true;
+        } else if ("stopBackgroundListener".equals(action)) {
+            stopNativeListener();
+            callbackContext.success();
+            return true;
         }
         return false;
+    }
+
+    private synchronized void startNativeListener(final String serverUrl, final String topic) {
+        if (topic == null || topic.isEmpty()) return;
+        if (isWorkerRunning && topic.equals(activeTopic) && bgWorkerThread != null && bgWorkerThread.isAlive()) {
+            return;
+        }
+
+        stopNativeListener();
+        isWorkerRunning = true;
+        activeTopic = topic;
+
+        final Context appContext = cordova.getActivity().getApplicationContext();
+        final Class<?> activityClass = cordova.getActivity().getClass();
+
+        bgWorkerThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (isWorkerRunning) {
+                    HttpURLConnection conn = null;
+                    java.io.BufferedReader reader = null;
+                    try {
+                        String cleanUrl = serverUrl.replaceAll("/+$", "") + "/" + topic + "/sse";
+                        URL url = new URL(cleanUrl);
+                        conn = (HttpURLConnection) url.openConnection();
+                        conn.setRequestMethod("GET");
+                        conn.setRequestProperty("Accept", "text/event-stream");
+                        conn.setRequestProperty("Cache-Control", "no-cache");
+                        conn.setConnectTimeout(20000);
+                        conn.setReadTimeout(0); // بی‌نهایت برای گوش دادن زنده در پس‌زمینه
+                        conn.connect();
+
+                        reader = new java.io.BufferedReader(new java.io.InputStreamReader(conn.getInputStream(), "UTF-8"));
+                        String line;
+                        while (isWorkerRunning && (line = reader.readLine()) != null) {
+                            if (line.startsWith("data:")) {
+                                String jsonStr = line.substring(5).trim();
+                                if (!jsonStr.isEmpty()) {
+                                    try {
+                                        JSONObject obj = new JSONObject(jsonStr);
+                                        String eventType = obj.optString("event");
+                                        if (!"keepalive".equals(eventType) && !"open".equals(eventType)) {
+                                            String title = obj.optString("title", "اعلان جدید مکاو");
+                                            String message = obj.optString("message", "");
+                                            showNotificationFromService(appContext, activityClass, title, message);
+                                        }
+                                    } catch (Exception ignored) {}
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        // در صورت قطعی اینترنت، ۳ ثانیه صبر کرده و مجدد وصل می‌شود
+                    } finally {
+                        try { if (reader != null) reader.close(); } catch (Exception ignored) {}
+                        try { if (conn != null) conn.disconnect(); } catch (Exception ignored) {}
+                    }
+
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException ie) {
+                        break;
+                    }
+                }
+            }
+        }, "MecavNativeNtfyWorker");
+        bgWorkerThread.setDaemon(true);
+        bgWorkerThread.start();
+    }
+
+    private synchronized void stopNativeListener() {
+        isWorkerRunning = false;
+        activeTopic = null;
+        if (bgWorkerThread != null) {
+            bgWorkerThread.interrupt();
+            bgWorkerThread = null;
+        }
+    }
+
+    private static void showNotificationFromService(Context context, Class<?> activityClass, String title, String body) {
+        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager == null) return;
+
+        Intent intent = new Intent(context, activityClass);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        
+        int reqCode = notifCounter.incrementAndGet();
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+            context,
+            reqCode,
+            intent,
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.M 
+                ? (PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE) 
+                : PendingIntent.FLAG_UPDATE_CURRENT
+        );
+
+        int iconRes = context.getResources().getIdentifier("ic_launcher", "mipmap", context.getPackageName());
+        if (iconRes == 0) {
+            iconRes = context.getResources().getIdentifier("icon", "drawable", context.getPackageName());
+        }
+        if (iconRes == 0) {
+            iconRes = android.R.drawable.ic_dialog_info;
+        }
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(iconRes)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setAutoCancel(true)
+            .setVibrate(new long[]{100, 200, 100, 250})
+            .setDefaults(NotificationCompat.DEFAULT_SOUND | NotificationCompat.DEFAULT_VIBRATE | NotificationCompat.DEFAULT_LIGHTS)
+            .setContentIntent(pendingIntent);
+
+        manager.notify(reqCode, builder.build());
     }
 
     private void showNotification(String title, String body) {

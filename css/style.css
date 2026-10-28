@@ -1427,3 +1427,297 @@ input:focus, textarea:focus {
     50% { width: 60%; }
     100% { left: 100%; width: 30%; }
 }
+
+/* ============================================================
+   قابلیت چیدمان و درگ اند دراپ پروژه‌ها (موس و تاچ گوشی)
+   ============================================================ */
+.project-group.is-dragging {
+    opacity: 0.4;
+    border: 2px dashed var(--primary);
+    transform: scale(0.98);
+}
+
+.project-group.drag-over {
+    border-top: 3px solid var(--accent);
+    transform: translateY(-2px);
+}
+
+.project-group.touch-dragging {
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+    border: 2px solid var(--primary);
+    transform: scale(1.02);
+    z-index: 1000;
+}
+
+.project-drag-handle {
+    cursor: grab;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 7px;
+    margin-left: 6px;
+    color: var(--text-muted);
+    font-size: 1.15rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+
+.project-drag-handle:hover,
+.project-drag-handle:active {
+    color: var(--primary);
+    background: rgba(56, 189, 248, 0.12);
+}
+
+/* ============================================================
+   پنجره درباره ما (About Modal) - هویت بصری نارنجی mechave.ir
+   ============================================================ */
+.about-modal-content {
+    max-width: 420px;
+    width: 90%;
+    padding: 28px 24px;
+    border-radius: 24px;
+    background: linear-gradient(145deg, #181d2c, #0e121d);
+    border: 1px solid rgba(249, 115, 22, 0.35);
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(249, 115, 22, 0.15);
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+}
+
+.about-modal-close {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    color: #94a3b8;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.about-modal-close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.about-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+/* انیمیشن چرخ‌دنده‌های مکانیکی و پالس لوگو */
+.about-mecav-anim {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gear-cog {
+    position: absolute;
+    pointer-events: none;
+}
+
+.gear-outer {
+    animation: rotateGearCw 14s linear infinite;
+}
+
+.gear-inner {
+    animation: rotateGearCcw 8s linear infinite;
+}
+
+@keyframes rotateGearCw {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes rotateGearCcw {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(-360deg); }
+}
+
+.about-logo-wrapper {
+    position: relative;
+    z-index: 2;
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+    background: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #f97316;
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
+}
+
+.about-logo-img {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+}
+
+.about-brand-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+    color: #f8fafc;
+    background: linear-gradient(135deg, #f8fafc, #fed7aa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.about-version-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 12px;
+    background: rgba(249, 115, 22, 0.15);
+    border: 1px solid rgba(249, 115, 22, 0.4);
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #f97316;
+}
+
+.about-desc {
+    font-size: 0.88rem;
+    color: #cbd5e1;
+    line-height: 1.6;
+    margin: 0 0 16px 0;
+}
+
+.about-details-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.about-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.84rem;
+}
+
+.about-info-label {
+    color: #94a3b8;
+}
+
+.about-site-link {
+    color: #f97316;
+    font-weight: bold;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.2s;
+}
+
+.about-site-link:hover {
+    color: #ea580c;
+    text-decoration: underline;
+}
+
+.about-info-val {
+    color: #f1f5f9;
+    font-weight: 500;
+}
+
+.about-footer-slogan {
+    font-size: 0.72rem;
+    color: #64748b;
+    letter-spacing: 0.3px;
+}
+
+/* ============================================================
+   سیستم تصویر و کاراکتر پروفایل (مشابه تلگرام)
+   ============================================================ */
+.user-avatar-preview-box {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: var(--bg-input);
+    border: 2px solid var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    flex-shrink: 0;
+}
+
+.user-avatar-preview-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-presets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.avatar-preset-btn {
+    height: 52px;
+    border-radius: 14px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    font-size: 1.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.avatar-preset-btn:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary);
+    background: rgba(56, 189, 248, 0.1);
+}
+
+.avatar-preset-btn.active {
+    border-color: var(--primary);
+    background: rgba(56, 189, 248, 0.2);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.user-avatar-thumb {
+    border-radius: 50%;
+    object-fit: cover;
+    display: inline-block;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+#mecavLoginLogo, .app-header h1, .electron-titlebar-brand {
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+#mecavLoginLogo:hover, .app-header h1:hover, .electron-titlebar-brand:hover {
+    transform: scale(1.02);
+    opacity: 0.9;
+}

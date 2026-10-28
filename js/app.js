@@ -195,6 +195,29 @@ function getUserColor(userId) {
     return colors[Math.abs(hash) % colors.length];
 }
 
+function getUserAvatar(userId) {
+    if (!userId) return null;
+    let uList = (typeof AuthManager !== 'undefined' && AuthManager.usersList) ? AuthManager.usersList : [];
+    let user = uList.find(u => isSameUser(u.id, userId));
+    return user ? user.avatar : null;
+}
+
+function getUserAvatarHtml(userId, size = 24) {
+    const avatar = getUserAvatar(userId);
+    const uColor = getUserColor(userId);
+    const name = findUserName(userId);
+    const initial = name ? name.trim().charAt(0) : '?';
+
+    if (avatar) {
+        if (avatar.startsWith('data:image') || avatar.startsWith('http')) {
+            return `<img src="${avatar}" class="user-avatar-thumb" style="width:${size}px; height:${size}px; margin-left:6px;" alt="" />`;
+        } else {
+            return `<span class="user-avatar-thumb" style="display:inline-flex; align-items:center; justify-content:center; width:${size}px; height:${size}px; background:var(--bg-input); font-size:${Math.round(size * 0.65)}px; border:1px solid var(--border-color); margin-left:6px;">${avatar}</span>`;
+        }
+    }
+    return `<span class="user-avatar-thumb" style="display:inline-flex; align-items:center; justify-content:center; width:${size}px; height:${size}px; background:${uColor}; color:#fff; font-size:${Math.round(size * 0.52)}px; font-weight:bold; margin-left:6px;">${initial}</span>`;
+}
+
 function setupCustomSelect(wrapperId, dataArray, placeholder, onDeleteClick = null, userObj = null) {
     const wrapper = document.getElementById(wrapperId);
     if(!wrapper) return;
@@ -463,6 +486,107 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
+        // ==========================================
+        // تنظیمات آواتار و کاراکتر پروفایل کاربر (تلگرامی)
+        // ==========================================
+        const PRESET_AVATARS = [
+            { icon: '👨‍🔧', label: 'مکانیک' },
+            { icon: '👷', label: 'مهندس' },
+            { icon: '🧑‍💻', label: 'فنی' },
+            { icon: '👨‍💼', label: 'مدیر' },
+            { icon: '👩‍🔧', label: 'کارشناس' },
+            { icon: '🤖', label: 'مکاو' },
+            { icon: '⚡', label: 'برق' },
+            { icon: '🏎️', label: 'صنعتی' },
+            { icon: '🚀', label: 'نوآور' },
+            { icon: '👑', label: 'ارشد' }
+        ];
+
+        function refreshUserAvatarSettingsUI() {
+            const user = AuthManager.getCurrentUser();
+            if (!user) return;
+
+            const previewBox = document.getElementById('currentUserAvatarPreview');
+            const nameEl = document.getElementById('avatarUserDisplayName');
+            const grid = document.getElementById('avatarPresetsGrid');
+
+            if (nameEl) nameEl.innerText = user.name;
+            if (previewBox) {
+                const av = user.avatar;
+                if (av && (av.startsWith('data:image') || av.startsWith('http'))) {
+                    previewBox.innerHTML = `<img src="${av}" alt="" style="width:100%; height:100%; object-fit:cover;" />`;
+                } else if (av) {
+                    previewBox.innerHTML = `<span style="font-size:2.2rem;">${av}</span>`;
+                } else {
+                    previewBox.innerHTML = `<span style="font-size:2.2rem;">👨‍🔧</span>`;
+                }
+            }
+
+            if (grid) {
+                grid.innerHTML = '';
+                PRESET_AVATARS.forEach(p => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'avatar-preset-btn' + (user.avatar === p.icon ? ' active' : '');
+                    btn.innerText = p.icon;
+                    btn.title = p.label;
+                    btn.onclick = async () => {
+                        await updateUserAvatar(p.icon);
+                        refreshUserAvatarSettingsUI();
+                        showToast(`کاراکتر ${p.label} به عنوان تصویر شما ذخیره شد.`);
+                    };
+                    grid.appendChild(btn);
+                });
+            }
+        }
+
+        async function updateUserAvatar(avatarValue) {
+            let user = AuthManager.getCurrentUser();
+            if (!user) return;
+            user.avatar = avatarValue;
+            localStorage.setItem('pm_currentUser', JSON.stringify(user));
+
+            let u = AuthManager.usersList.find(x => isSameUser(x.id, user.id));
+            if (u) {
+                u.avatar = avatarValue;
+                AuthManager.saveUsers();
+            }
+            checkLoginStatus();
+        }
+
+        refreshUserAvatarSettingsUI();
+
+        const fileInput = document.getElementById('avatarFileInput');
+        if (fileInput && !fileInput.dataset.bound) {
+            fileInput.dataset.bound = "true";
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const img = new Image();
+                    img.onload = async function() {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 128;
+                        canvas.height = 128;
+                        const ctx = canvas.getContext('2d');
+                        let minDim = Math.min(img.width, img.height);
+                        let sx = (img.width - minDim) / 2;
+                        let sy = (img.height - minDim) / 2;
+                        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, 128, 128);
+
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                        await updateUserAvatar(dataUrl);
+                        refreshUserAvatarSettingsUI();
+                        showToast('تصویر پروفایل شما با موفقیت ذخیره شد.');
+                    };
+                    img.src = evt.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
         const adminSec = document.getElementById('admin-settings-section');
         if (!adminSec) return;
 
@@ -509,6 +633,65 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let saved = NotificationManager.setServerUrl(val);
                 serverPushUrlInput.value = saved;
                 showToast(saved ? "آدرس سرور اعلان‌ها ذخیره شد." : "آدرس سرور اعلان‌ها پاک شد.");
+            });
+        }
+
+        // تنظیم و ذخیره اطلاعات درباره ما در پنل ادمین
+        const adminAboutTitle = document.getElementById('adminAboutTitle');
+        const adminAboutSite = document.getElementById('adminAboutSite');
+        const adminAboutDesc = document.getElementById('adminAboutDesc');
+        const adminAboutPhone = document.getElementById('adminAboutPhone');
+        const adminAboutSocial = document.getElementById('adminAboutSocial');
+        const btnSaveAdminAbout = document.getElementById('btnSaveAdminAbout');
+
+        async function loadAdminAboutFields() {
+            let info = {
+                title: 'مدیریت کارگاه مکاو',
+                site: 'https://mechave.ir',
+                desc: 'سامانه هوشمند مدیریت پروژه، فرآیندهای تولید، ارجاع وظایف و کنترل کیفیت کارگاه مکاو.',
+                phone: '',
+                social: '@mechave'
+            };
+            try {
+                const stored = localStorage.getItem('pm_about_info');
+                if (stored) Object.assign(info, JSON.parse(stored));
+                if (typeof DBManager !== 'undefined' && DBManager.getDB) {
+                    const doc = await DBManager.getDB().get('mecav_about_info').catch(() => null);
+                    if (doc) Object.assign(info, doc);
+                }
+            } catch (e) {}
+
+            if (adminAboutTitle) adminAboutTitle.value = info.title || '';
+            if (adminAboutSite) adminAboutSite.value = info.site || 'https://mechave.ir';
+            if (adminAboutDesc) adminAboutDesc.value = info.desc || '';
+            if (adminAboutPhone) adminAboutPhone.value = info.phone || '';
+            if (adminAboutSocial) adminAboutSocial.value = info.social || '@mechave';
+        }
+        loadAdminAboutFields();
+
+        if (btnSaveAdminAbout && !btnSaveAdminAbout.dataset.bound) {
+            btnSaveAdminAbout.dataset.bound = "true";
+            btnSaveAdminAbout.addEventListener('click', async () => {
+                const title = adminAboutTitle ? adminAboutTitle.value.trim() : '';
+                const site = adminAboutSite ? adminAboutSite.value.trim() : 'https://mechave.ir';
+                const desc = adminAboutDesc ? adminAboutDesc.value.trim() : '';
+                const phone = adminAboutPhone ? adminAboutPhone.value.trim() : '';
+                const social = adminAboutSocial ? adminAboutSocial.value.trim() : '';
+
+                const data = { title, site, desc, phone, social };
+                localStorage.setItem('pm_about_info', JSON.stringify(data));
+
+                try {
+                    if (typeof DBManager !== 'undefined' && DBManager.getDB) {
+                        const db = DBManager.getDB();
+                        let existing = await db.get('mecav_about_info').catch(() => null);
+                        let doc = { _id: 'mecav_about_info', ...data };
+                        if (existing) doc._rev = existing._rev;
+                        await db.put(doc);
+                    }
+                } catch (e) {}
+
+                showToast('اطلاعات درباره ما با موفقیت ذخیره شد.');
             });
         }
 
@@ -774,7 +957,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (user) {
             dashboardView.style.display = 'block'; document.getElementById('headerActions').style.display = 'flex';
-            document.getElementById('welcomeName').innerText = user.name; fabAdd.style.display = 'flex';
+            document.getElementById('welcomeName').innerHTML = `${getUserAvatarHtml(user.id, 24)} <span>${user.name}</span>`; fabAdd.style.display = 'flex';
             if (typeof NotificationManager !== 'undefined') {
                 NotificationManager.startListening(user.id);
                 NotificationManager.initInAppNotifs();
@@ -939,6 +1122,90 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnSwitchUser.addEventListener('click', () => {
             if (typeof AutoLockManager !== 'undefined') {
                 AutoLockManager.clearLockedUser();
+            }
+        });
+    }
+
+    // ==========================================
+    // پنجره درباره کارگاه مکاو (About Modal)
+    // ==========================================
+    window.openAboutModal = async function() {
+        const modal = document.getElementById('aboutModal');
+        if (!modal) return;
+        
+        let aboutInfo = {
+            title: 'مدیریت کارگاه مکاو',
+            site: 'https://mechave.ir',
+            desc: 'سامانه هوشمند مدیریت پروژه، فرآیندهای تولید، ارجاع وظایف و کنترل کیفیت کارگاه مکاو.',
+            phone: '',
+            social: '@mechave'
+        };
+        try {
+            const stored = localStorage.getItem('pm_about_info');
+            if (stored) Object.assign(aboutInfo, JSON.parse(stored));
+            if (typeof DBManager !== 'undefined' && DBManager.getDB) {
+                const doc = await DBManager.getDB().get('mecav_about_info').catch(() => null);
+                if (doc) Object.assign(aboutInfo, doc);
+            }
+        } catch (e) {}
+
+        const titleEl = document.getElementById('aboutModalTitle');
+        const descEl = document.getElementById('aboutModalDesc');
+        const verEl = document.getElementById('aboutModalVersion');
+        const phoneEl = document.getElementById('aboutModalPhone');
+        const socialEl = document.getElementById('aboutModalSocial');
+        const phoneRow = document.getElementById('aboutPhoneRow');
+        const socialRow = document.getElementById('aboutSocialRow');
+
+        if (titleEl) titleEl.innerText = aboutInfo.title || 'مدیریت کارگاه مکاو';
+        if (descEl) descEl.innerText = aboutInfo.desc || 'سامانه هوشمند مدیریت کارگاه مکاو';
+        if (verEl && typeof VersionManager !== 'undefined') verEl.innerText = VersionManager.CURRENT_VERSION;
+        if (phoneEl) phoneEl.innerText = aboutInfo.phone || '—';
+        if (socialEl) socialEl.innerText = aboutInfo.social || '@mechave';
+        if (phoneRow) phoneRow.style.display = aboutInfo.phone ? 'flex' : 'none';
+        if (socialRow) socialRow.style.display = aboutInfo.social ? 'flex' : 'none';
+
+        modal.style.display = 'flex';
+    };
+
+    window.closeAboutModal = function() {
+        const modal = document.getElementById('aboutModal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    // شنود کلیک روی تمام لوگوهای برنامه برای باز شدن About
+    document.addEventListener('click', (e) => {
+        const logoTarget = e.target.closest('#mecavLoginLogo, .app-header h1, .electron-titlebar-brand');
+        if (logoTarget) {
+            e.stopPropagation();
+            window.openAboutModal();
+        }
+    });
+
+    const btnCloseAboutModal = document.getElementById('btnCloseAboutModal');
+    if (btnCloseAboutModal) {
+        btnCloseAboutModal.onclick = () => window.closeAboutModal();
+    }
+
+    const aboutModalEl = document.getElementById('aboutModal');
+    if (aboutModalEl) {
+        aboutModalEl.onclick = (e) => {
+            if (e.target === aboutModalEl) window.closeAboutModal();
+        };
+    }
+
+    const aboutSiteLink = document.getElementById('aboutModalSiteLink');
+    if (aboutSiteLink && !aboutSiteLink.dataset.bound) {
+        aboutSiteLink.dataset.bound = "true";
+        aboutSiteLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            const url = 'https://mechave.ir';
+            if (window.electronAPI && typeof window.electronAPI.openExternal === 'function') {
+                window.electronAPI.openExternal(url);
+            } else if (window.cordova) {
+                window.open(url, '_system');
+            } else {
+                window.open(url, '_blank');
             }
         });
     }
@@ -1248,6 +1515,145 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function isSameUser(id1, id2) { return ((id1 === '100' || id1 === 'admin') && (id2 === '100' || id2 === 'admin')) || id1 === id2; }
 
+    // ==========================================
+    // قابلیت چیدمان سفارشی پروژه‌ها (Drag & Drop و Touch & Hold)
+    // ==========================================
+    function getSavedProjectOrder() {
+        try {
+            const raw = localStorage.getItem('pm_project_order');
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function saveProjectOrder(orderArray) {
+        localStorage.setItem('pm_project_order', JSON.stringify(orderArray));
+    }
+
+    function saveCurrentDomProjectOrder(container) {
+        if (!container) return;
+        const cards = container.querySelectorAll('.project-group');
+        const newOrder = [];
+        cards.forEach(c => {
+            if (c.dataset.projectId) newOrder.push(c.dataset.projectId);
+        });
+        if (newOrder.length > 0) {
+            saveProjectOrder(newOrder);
+        }
+    }
+
+    function setupProjectDragAndDrop(container) {
+        if (!container) return;
+        const projectCards = container.querySelectorAll('.project-group');
+        if (projectCards.length <= 1) return;
+
+        let draggedEl = null;
+
+        projectCards.forEach(card => {
+            // ۱. پشتیبانی از درگ با ماوس در ویندوز و مرورگر
+            card.addEventListener('dragstart', (e) => {
+                draggedEl = card;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', card.dataset.projectId || '');
+                setTimeout(() => card.classList.add('is-dragging'), 0);
+            });
+
+            card.addEventListener('dragend', () => {
+                card.classList.remove('is-dragging');
+                projectCards.forEach(c => c.classList.remove('drag-over'));
+                saveCurrentDomProjectOrder(container);
+                draggedEl = null;
+            });
+
+            card.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (!draggedEl || draggedEl === card) return;
+
+                const rect = card.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+                if (e.clientY < midY) {
+                    container.insertBefore(draggedEl, card);
+                } else {
+                    container.insertBefore(draggedEl, card.nextSibling);
+                }
+            });
+
+            card.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                if (draggedEl && draggedEl !== card) card.classList.add('drag-over');
+            });
+
+            card.addEventListener('dragleave', () => {
+                card.classList.remove('drag-over');
+            });
+
+            card.addEventListener('drop', (e) => {
+                e.preventDefault();
+                card.classList.remove('drag-over');
+                saveCurrentDomProjectOrder(container);
+            });
+
+            // ۲. پشتیبانی از لمس و نگه‌داشتن در گوشی (Touch & Hold برای اندروید)
+            const handle = card.querySelector('.project-drag-handle') || card.querySelector('.project-header');
+            if (handle) {
+                let touchTimer = null;
+                let isTouchDragging = false;
+                let startY = 0;
+
+                handle.addEventListener('touchstart', (e) => {
+                    const touch = e.touches[0];
+                    startY = touch.clientY;
+                    touchTimer = setTimeout(() => {
+                        isTouchDragging = true;
+                        draggedEl = card;
+                        card.classList.add('touch-dragging');
+                        if (navigator.vibrate) navigator.vibrate(50);
+                    }, 350);
+                }, { passive: true });
+
+                handle.addEventListener('touchmove', (e) => {
+                    if (!isTouchDragging) {
+                        const touch = e.touches[0];
+                        if (Math.abs(touch.clientY - startY) > 10) {
+                            clearTimeout(touchTimer);
+                        }
+                        return;
+                    }
+
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+                    if (!targetEl) return;
+                    const targetCard = targetEl.closest('.project-group');
+                    if (targetCard && targetCard !== card && targetCard.parentNode === container) {
+                        const rect = targetCard.getBoundingClientRect();
+                        const midY = rect.top + rect.height / 2;
+                        if (touch.clientY < midY) {
+                            container.insertBefore(card, targetCard);
+                        } else {
+                            container.insertBefore(card, targetCard.nextSibling);
+                        }
+                    }
+                }, { passive: false });
+
+                const finishTouch = () => {
+                    clearTimeout(touchTimer);
+                    if (isTouchDragging) {
+                        isTouchDragging = false;
+                        card.classList.remove('touch-dragging');
+                        saveCurrentDomProjectOrder(container);
+                        showToast('چیدمان پروژه‌ها ذخیره شد.');
+                    }
+                };
+
+                handle.addEventListener('touchend', finishTouch, { passive: true });
+                handle.addEventListener('touchcancel', finishTouch, { passive: true });
+            }
+        });
+    }
+
     async function renderDashboard() {
         let currentUser = AuthManager.getCurrentUser();
         if (!currentUser) return;
@@ -1333,6 +1739,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         let filteredProjects = allProjects.filter(p => Boolean(p.isArchived) === Boolean(showArchived));
         let myProjects = filteredProjects.filter(p => myTasks.some(t => t.projectId === p._id) || currentUser.role === 'admin');
         
+        // مرتب‌سازی بر اساس چیدمان سفارشی پروژه‌ها
+        const savedOrder = getSavedProjectOrder();
+        if (savedOrder && savedOrder.length > 0) {
+            myProjects.sort((a, b) => {
+                let idxA = savedOrder.indexOf(a._id);
+                let idxB = savedOrder.indexOf(b._id);
+                if (idxA === -1) idxA = 999999;
+                if (idxB === -1) idxB = 999999;
+                return idxA - idxB;
+            });
+        }
+
         if (myProjects.length === 0) { 
             container.innerHTML = searchTerm ? '<div class="card">تسکی با این جستجو یافت نشد.</div>' : '<div class="card">تسک فعالی با این فیلتر وجود ندارد.</div>'; 
             return; 
@@ -1368,9 +1786,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             let isCollapsed = searchTerm ? false : collapsedList.includes(proj._id);
 
-            let projHTML = `<div class="project-group">
+            let projHTML = `<div class="project-group" draggable="true" data-project-id="${proj._id}">
                 <div class="project-header" onclick="toggleProject(this, '${proj._id}')">
                     <div style="display:flex; align-items:center;">
+                        <span class="project-drag-handle" title="نگه‌داشتن یا کشیدن جهت تغییر چیدمان" onclick="event.stopPropagation();">⠿</span>
                         <span class="project-collapse-arrow" style="display:inline-block; font-size:0.75rem; margin-left:8px; color:var(--text-muted);">${isCollapsed ? '◀' : '▼'}</span>
                         <button class="btn-quick-add" onclick="event.stopPropagation(); window.quickAddTask('${proj._id}', '${proj.title}')" title="افزودن تسک به این پروژه">➕</button>
                         📁 ${proj.title} <span style="font-size:0.8rem; color: var(--primary); margin-right:5px;">(${projTasks.length})</span> ${unreadBadgeInHeader}
@@ -1416,7 +1835,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </div>
                             <div class="task-latest-activity">${activitySnippet}</div>
                             <div class="task-card-meta">
-                                <div style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;">👤 ${findUserName(t.assigneeId)}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); display:inline-flex; align-items:center;">
+                                    ${getUserAvatarHtml(t.assigneeId, 18)} <span>${findUserName(t.assigneeId)}</span>
+                                </div>
                             </div>
                         </div>
                     </div>`;
@@ -1424,6 +1845,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             projHTML += `</div></div>`;
             container.innerHTML += projHTML;
         });
+
+        setupProjectDragAndDrop(container);
     }
 
     window.archiveProject = async function(id) {
@@ -1527,7 +1950,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </button>`;
 
         document.getElementById('td-status').innerHTML = statStr;
-        document.getElementById('td-assignee').innerText = findUserName(task.assigneeId);
+        document.getElementById('td-assignee').innerHTML = `${getUserAvatarHtml(task.assigneeId, 20)} <span>${findUserName(task.assigneeId)}</span>`;
 
         const reportsBox = document.getElementById('td-official-reports');
         const commentsBox = document.getElementById('td-comments-list');
@@ -1544,18 +1967,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let delBtn = user.role === 'admin' ? `<span style="cursor:pointer; color:var(--danger); padding: 0 4px;" title="حذف این پیام" onclick="window.deleteActivity(${a.id})">🗑️</span>` : '';
 
                 if(a.type === 'report') {
-                    reportsBox.innerHTML += `<div class="report-item"><div class="msg-meta" style="color: #10b981;"><span>گزارش: ${a.userName}</span><div><span style="font-weight:normal; opacity:0.7;">${date}</span>${delBtn}</div></div><div>${text}</div>${imgHTML}</div>`;
+                    reportsBox.innerHTML += `<div class="report-item"><div class="msg-meta" style="color: #10b981; display:flex; align-items:center; justify-content:space-between;"><div style="display:inline-flex; align-items:center;">${getUserAvatarHtml(a.userId, 22)} <span>گزارش: ${a.userName}</span></div><div><span style="font-weight:normal; opacity:0.7;">${date}</span>${delBtn}</div></div><div>${text}</div>${imgHTML}</div>`;
                 } else {
                     if (isMine) {
                         commentsBox.innerHTML += `
                         <div class="chat-msg msg-mine">
-                            <div class="msg-meta" style="color: #38bdf8;"><span>شما</span><div><span style="font-weight:normal; opacity:0.7;">${date}</span>${delBtn}</div></div>
+                            <div class="msg-meta" style="color: #38bdf8; display:flex; align-items:center; justify-content:space-between;"><div style="display:inline-flex; align-items:center;">${getUserAvatarHtml(a.userId, 22)} <span>شما</span></div><div><span style="font-weight:normal; opacity:0.7;">${date}</span>${delBtn}</div></div>
                             <div>${text}</div>${imgHTML}
                         </div>`;
                     } else {
                         commentsBox.innerHTML += `
                         <div class="chat-msg msg-other" style="--user-color: ${uColor}; border-left-color: ${uColor};">
-                            <div class="msg-meta" style="color: ${uColor};"><span>${a.userName}</span><div><span style="font-weight:normal; opacity:0.7;">${date}</span>${delBtn}</div></div>
+                            <div class="msg-meta" style="color: ${uColor}; display:flex; align-items:center; justify-content:space-between;"><div style="display:inline-flex; align-items:center;">${getUserAvatarHtml(a.userId, 22)} <span>${a.userName}</span></div><div><span style="font-weight:normal; opacity:0.7;">${date}</span>${delBtn}</div></div>
                             <div>${text}</div>${imgHTML}
                         </div>`;
                     }
