@@ -1,8 +1,8 @@
 {
-  "version": "1.0.9",
-  "versionCode": 10009,
+  "version": "1.0.10",
+  "versionCode": 10010,
   "releaseDate": "1405/08/07",
-  "changelog": "پشتیبانی از تغییر اندازه پنجره ویندوز و باریک شدن آزادانه (مشابه تلگرام)، چیدمان فشرده هوشمند، و ارتقای عملکرد نوتیفیکیشن‌ها",
+  "changelog": "رفع کامل خطای تجزیه پکیج نصبی اندروید (Problem Parsing the Package) با امضای رسمی v1/v2/v3 و هماهنگی مجوزهای FileProvider",
   "apkUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk",
   "winUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS-Setup.exe"
 }

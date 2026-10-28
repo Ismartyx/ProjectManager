@@ -12,6 +12,8 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -26,6 +28,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MecavNotification extends CordovaPlugin {
@@ -210,18 +213,28 @@ public class MecavNotification extends CordovaPlugin {
     private void installApk(File apkFile, CallbackContext callbackContext) {
         Context context = cordova.getActivity().getApplicationContext();
         try {
+            apkFile.setReadable(true, false);
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             Uri apkUri;
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 apkUri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", apkFile);
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             } else {
                 apkUri = Uri.fromFile(apkFile);
             }
 
             intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                List<ResolveInfo> resInfoList = context.getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+                for (ResolveInfo resolveInfo : resInfoList) {
+                    String packageName = resolveInfo.activityInfo.packageName;
+                    context.grantUriPermission(packageName, apkUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                }
+            }
+
             cordova.getActivity().startActivity(intent);
 
             JSONObject doneJson = new JSONObject();

@@ -124,10 +124,39 @@ jobs:
 
           cordova build android --release --buildConfig=build.json -- --packageType=apk
 
+          # امضای معتبر و تضمینی با apksigner و zipalign برای رفع خطای Problem Parsing the Package
+          ZIPALIGN=$(find $ANDROID_HOME/build-tools -name zipalign | sort -V | tail -n 1)
+          APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner | sort -V | tail -n 1)
+          echo "ZIPALIGN path: $ZIPALIGN"
+          echo "APKSIGNER path: $APKSIGNER"
+
+          RAW_APK=$(find platforms/android/app/build/outputs/apk/ -name "*release*.apk" ! -name "*unsigned*" | head -n 1)
+          if [ -z "$RAW_APK" ]; then
+            RAW_APK=$(find platforms/android/app/build/outputs/apk/ -name "*.apk" | head -n 1)
+          fi
+          echo "Found raw APK: $RAW_APK"
+
+          mkdir -p signed_out
+          if [ -n "$ZIPALIGN" ] && [ -x "$ZIPALIGN" ]; then
+            $ZIPALIGN -f -p 4 "$RAW_APK" signed_out/aligned.apk || cp "$RAW_APK" signed_out/aligned.apk
+          else
+            cp "$RAW_APK" signed_out/aligned.apk
+          fi
+
+          if [ -n "$APKSIGNER" ] && [ -x "$APKSIGNER" ]; then
+            echo "Signing APK with apksigner (v1, v2, v3 schemes)..."
+            $APKSIGNER sign --ks mecav-release.keystore --ks-key-alias mecav --ks-pass pass:mecavworkshop --key-pass pass:mecavworkshop --out signed_out/MechaveWS.apk signed_out/aligned.apk
+            echo "Verifying signature:"
+            $APKSIGNER verify --verbose signed_out/MechaveWS.apk
+            APK_PATH="signed_out/MechaveWS.apk"
+          else
+            echo "APKSIGNER not found, using raw apk"
+            APK_PATH="$RAW_APK"
+          fi
+
           # بارگذاری خودکار فایل نصبی جدید در سرور دیتابیس (مخزن ریلیزهای مجزا جهت جلوگیری از سنگین شدن دیتابیس تسک‌ها)
-          APK_PATH=$(find platforms/android/app/build/outputs/apk/ -name "*.apk" | head -n 1)
           if [ -n "$APK_PATH" ] && [ -f "$APK_PATH" ]; then
-            echo "Deploying APK to CouchDB direct update repository..."
+            echo "Deploying signed APK to CouchDB direct update repository..."
             REV=$(curl -s "http://155.117.234.69:5984/mecav_releases/app_release" | grep -o '"_rev":"[^"]*"' | head -n 1 | cut -d'"' -f4 || true)
             if [ -z "$REV" ]; then
               curl -s -X PUT "http://155.117.234.69:5984/mecav_releases/app_release" \
@@ -145,7 +174,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MechaveWS-APK
-          path: apk_build/platforms/android/app/build/outputs/apk/**/*.apk
+          path: |
+            apk_build/signed_out/*.apk
+            apk_build/platforms/android/app/build/outputs/apk/**/*.apk
 
   build-windows:
     name: Build Windows Application
