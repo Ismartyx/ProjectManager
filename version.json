@@ -1,8 +1,8 @@
 {
-  "version": "1.0.3",
-  "versionCode": 10003,
+  "version": "1.0.4",
+  "versionCode": 10004,
   "releaseDate": "1405/08/07",
-  "changelog": "نشانگر مینیمال و آرام تسک‌های جدید با بج «● جدید» و تب‌های فیلتر سریع داشبورد",
+  "changelog": "حذف فیلدهای اضافی پروژه و تگ و انتقال گزینه تعریف جدید به ابتدای منوی کشویی",
   "apkUrl": "https://github.com/Ismartyx/ProjectManager/actions",
   "winUrl": "https://github.com/Ismartyx/ProjectManager/actions"
 }

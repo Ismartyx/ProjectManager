@@ -213,13 +213,9 @@
             
             <div id="formTask">
                 <!-- بخش پروژه -->
-                <div class="custom-select-wrapper" id="taskProjectSelectWrapper">
+                <div class="custom-select-wrapper" id="taskProjectSelectWrapper" style="margin-bottom: 15px;">
                     <div class="custom-select"><span class="select-text">پروژه مرتبط...</span><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
                     <div class="custom-options"></div>
-                </div>
-                <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-                    <input type="text" id="newProjectInput" placeholder="عنوان پروژه جدید..." style="margin:0;" />
-                    <button id="btnAddCustomProject" class="btn btn-secondary btn-small" style="white-space: nowrap;">افزودن پروژه</button>
                 </div>
 
                 <input type="text" id="taskTitle" placeholder="عنوان تسک..." style="margin-bottom: 15px; border-color: var(--primary); border-width: 2px;" />
@@ -236,18 +232,10 @@
                 </div>
                 
                 <!-- بخش تگ -->
-                <div class="custom-select-wrapper" id="taskTagSelectWrapper">
+                <div class="custom-select-wrapper" id="taskTagSelectWrapper" style="margin-bottom: 15px;">
                     <div class="custom-select"><span class="select-text">تگ (اختیاری)...</span><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
                     <div class="custom-options"></div>
                 </div>
-                <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-                    <input type="text" id="newTagInput" placeholder="تگ جدید..." style="margin:0;" />
-                    <button id="btnAddCustomTag" class="btn btn-secondary btn-small" style="white-space: nowrap;">افزودن تگ</button>
-                </div>
-
-                <label id="globalItemLabel" class="checkbox-label" style="display:none; background:rgba(255,255,255,0.05); padding:8px; border-radius:6px;">
-                    <input type="checkbox" id="chkGlobalItem"> ثبت پروژه/تگ برای همه (عمومی)
-                </label>
                 
                 <button id="btnSaveTask" class="btn btn-primary" style="margin-top: 5px; font-size: 1.1rem; padding: 15px;">ثبت تسک</button>
             </div>

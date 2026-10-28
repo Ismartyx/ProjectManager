@@ -209,7 +209,12 @@ function setupCustomSelect(wrapperId, dataArray, placeholder, onDeleteClick = nu
         opt.className = 'custom-option';
         
         if (item.value === 'ADD_NEW_PROJECT' || item.value === 'ADD_NEW_TAG') {
-            opt.innerHTML = `<span style="color: #10b981; font-weight: bold;">${item.text}</span>`;
+            opt.innerHTML = `<span style="color: var(--primary); font-weight: bold; display: flex; align-items: center; gap: 6px;">${item.text}</span>`;
+            opt.style.borderBottom = '1px solid var(--border-color)';
+            opt.style.background = 'rgba(56, 189, 248, 0.08)';
+            opt.style.position = 'sticky';
+            opt.style.top = '0';
+            opt.style.zIndex = '3';
         } else if (onDeleteClick && item.canDelete) {
             opt.innerHTML = `<span>${item.text}</span> <span class="delete-btn" style="color:var(--danger); font-size:1.2rem;">✕</span>`;
             opt.querySelector('.delete-btn').onclick = async (e) => {
@@ -551,7 +556,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.reloadTagsInDropdown = async function(user) {
         let tags = await DBManager.getTags(user.id);
         let tagData = tags.map(t => ({ text: t.title, value: t.title, rawId: t._id, canDelete: (t.creatorId === user.id || user.role === 'admin') }));
-        tagData.push({ text: '➕ ثبت تگ جدید...', value: 'ADD_NEW_TAG', canDelete: false });
+        tagData.unshift({ text: '➕ تعریف تگ جدید...', value: 'ADD_NEW_TAG', canDelete: false });
         setupCustomSelect('taskTagSelectWrapper', tagData, 'تگ (اختیاری)...', async (tagId) => {
             await DBManager.deleteTag(tagId); showToast('تگ حذف شد.'); window.reloadTagsInDropdown(user);
         }, user);
@@ -562,7 +567,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let projData = projects.filter(p => !p.isArchived).map(p => ({ 
             text: p.title, value: p._id, rawId: p._id, canDelete: (p.creatorId === user.id || user.role === 'admin') 
         }));
-        projData.push({ text: '➕ ثبت پروژه جدید...', value: 'ADD_NEW_PROJECT', canDelete: false });
+        projData.unshift({ text: '➕ تعریف پروژه جدید...', value: 'ADD_NEW_PROJECT', canDelete: false });
         setupCustomSelect('taskProjectSelectWrapper', projData, 'پروژه مرتبط...', async (projId) => {
             let isConfirmed = await showCustomModal({ title: 'حذف پروژه', message: 'هشدار: با حذف این پروژه، تمام تسک‌های داخل آن نیز از داشبورد مخفی می‌شوند. ادامه می‌دهید؟', type: 'confirm' });
             if(isConfirmed) { await DBManager.deleteProject(projId); showToast('پروژه حذف شد.'); window.reloadProjectsInDropdown(user); renderDashboard(); }
