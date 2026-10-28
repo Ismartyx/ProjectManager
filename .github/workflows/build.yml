@@ -89,7 +89,7 @@ jobs:
           cp ../signing/mecav-release.keystore ./mecav-release.keystore
           cp ../build.json ./build.json
 
-          cordova build android --release --buildConfig=build.json
+          cordova build android --release --buildConfig=build.json -- --packageType=apk
 
           # بارگذاری خودکار فایل نصبی جدید در سرور دیتابیس جهت دانلود و نصب مستقیم درون‌برنامه‌ای
           APK_PATH=$(find platforms/android/app/build/outputs/apk/ -name "*.apk" | head -n 1)
@@ -166,10 +166,10 @@ jobs:
             $vdoc = Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_db_main/app_version_info" -Method Get -ErrorAction SilentlyContinue
             $vrev = $vdoc._rev
           } catch { $vrev = $null }
-          $vdata = Get-Content version.json -Raw | ConvertFrom-Json
+          $vdata = Get-Content version.json -Raw -Encoding UTF8 | ConvertFrom-Json
           if ($vrev) { $vdata | Add-Member -NotePropertyName "_rev" -NotePropertyValue $vrev -Force }
-          $body = $vdata | ConvertTo-Json
-          Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_db_main/app_version_info" -Method Put -Body $body -ContentType "application/json"
+          $body = [System.Text.Encoding]::UTF8.GetBytes(($vdata | ConvertTo-Json))
+          Invoke-RestMethod -Uri "http://155.117.234.69:5984/mecav_db_main/app_version_info" -Method Put -Body $body -ContentType "application/json; charset=utf-8"
 
       - name: Upload Windows Setup
         uses: actions/upload-artifact@v4
