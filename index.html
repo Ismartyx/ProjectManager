@@ -53,12 +53,15 @@
     </div>
 
     <!-- نوار وضعیت شبکه کشویی -->
-    <div id="connection-status" title="کلیک برای بستن" onclick="this.style.transform='translateY(-100%)'; this.classList.remove('show');">
+    <div id="connection-status" title="کلیک برای بستن" onclick="this.classList.remove('show');">
         ⏳ در حال بررسی وضعیت شبکه...
     </div>
 
     <header class="app-header">
-        <h1 id="header-title">کارهای مکاو</h1>
+        <div class="app-header-brand" id="appHeaderBrand" style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;" title="درباره مکاو (About)">
+            <img src="icon-192.png" alt="Mecav" class="app-header-logo" style="width: 28px; height: 28px; border-radius: 8px; object-fit: contain; box-shadow: 0 2px 6px rgba(0,0,0,0.25);">
+            <h1 id="header-title" style="margin: 0; font-size: 1.1rem; font-weight: bold;">کارهای مکاو</h1>
+        </div>
         <div class="header-actions">
             <button id="btnThemeToggle" class="icon-btn" title="تغییر تم شب و روز">☀️</button>
             <div class="palette-dropdown-wrapper">
@@ -84,7 +87,10 @@
     <main id="app-container">
         <!-- فرم ورود -->
         <div id="login-view" class="view-section">
-            <div class="form-container card">
+            <div class="form-container card" style="text-align: center;">
+                <div id="mecavLoginLogo" style="display: inline-block; margin-bottom: 12px; cursor: pointer;" title="درباره مکاو (About)">
+                    <img src="icon-192.png" alt="Mecav" style="width: 72px; height: 72px; border-radius: 18px; object-fit: contain; filter: drop-shadow(0 6px 16px rgba(0,0,0,0.4));">
+                </div>
                 <h2>ورود به حساب</h2>
                 <div id="lockedUserBanner" style="display: none; background: rgba(56, 189, 248, 0.1); border: 1px solid var(--primary); border-radius: 12px; padding: 12px 14px; margin-bottom: 15px; text-align: center;">
                     <div style="font-weight: bold; color: var(--primary); font-size: 0.95rem; margin-bottom: 4px;">🔒 برنامه قفل شده است</div>

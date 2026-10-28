@@ -143,15 +143,15 @@ const PouchAdapter = {
         }
 
         // نمایش نوار با انیمیشن کشویی نرم از بالای صفحه
+        statusEl.style.transform = '';
         statusEl.classList.add('show');
-        statusEl.style.transform = 'translateY(0)';
 
         // برای سرورهای آنلاین یا محلی، ۳.۵ ثانیه بماند و سپس به بالا برگردد
         // در حالت آفلاین، ۵ ثانیه بماند
         const stayMs = (mode === 'offline') ? 5000 : 3500;
         this.statusDismissTimer = setTimeout(() => {
             statusEl.classList.remove('show');
-            statusEl.style.transform = 'translateY(-100%)';
+            statusEl.style.transform = '';
         }, stayMs);
     },
 

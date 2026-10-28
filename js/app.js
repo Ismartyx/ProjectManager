@@ -217,32 +217,40 @@ function getUserColor(userId) {
     return colors[Math.abs(hash) % colors.length];
 }
 
+function getDefaultUserCharacter(userId) {
+    if (!userId) return '👤';
+    if (userId === '100' || userId === 'admin') return '👑';
+    const chars = ['👨‍💼', '👨‍🔧', '👷‍♂️', '🧑‍💻', '👨‍🔬', '🧙‍♂️', '🦸‍♂️', '🦁', '🦊', '🦉', '🤖', '🚀', '🎯', '⚡', '🛡️', '🌟'];
+    let hash = 0;
+    const str = String(userId);
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return chars[Math.abs(hash) % chars.length];
+}
+window.getDefaultUserCharacter = getDefaultUserCharacter;
+
 function getUserAvatar(userId) {
     if (!userId) return null;
     try {
         let uList = (typeof AuthManager !== 'undefined' && Array.isArray(AuthManager.usersList)) ? AuthManager.usersList : [];
         let user = uList.find(u => u && isSameUser(u.id, userId));
-        return user ? user.avatar : null;
+        if (user && user.avatar) return user.avatar;
+        return getDefaultUserCharacter(userId);
     } catch (e) {
-        return null;
+        return getDefaultUserCharacter(userId);
     }
 }
 
 function getUserAvatarHtml(userId, size = 24) {
     try {
-        const avatar = getUserAvatar(userId);
-        const uColor = getUserColor(userId);
-        const name = findUserName(userId);
-        const initial = name ? name.trim().charAt(0) : '?';
+        const avatar = getUserAvatar(userId) || getDefaultUserCharacter(userId);
 
-        if (avatar) {
-            if (avatar.startsWith('data:image') || avatar.startsWith('http')) {
-                return `<img src="${avatar}" class="user-avatar-thumb" style="width:${size}px; height:${size}px; margin-left:6px;" alt="" />`;
-            } else {
-                return `<span class="user-avatar-thumb" style="display:inline-flex; align-items:center; justify-content:center; width:${size}px; height:${size}px; background:var(--bg-input); font-size:${Math.round(size * 0.65)}px; border:1px solid var(--border-color); margin-left:6px;">${avatar}</span>`;
-            }
+        if (avatar.startsWith('data:image') || avatar.startsWith('http')) {
+            return `<img src="${avatar}" class="user-avatar-thumb" style="width:${size}px; height:${size}px; border-radius:50%; margin-left:6px; object-fit:cover; vertical-align:middle;" alt="" />`;
+        } else {
+            return `<span class="user-avatar-thumb" style="display:inline-flex; align-items:center; justify-content:center; width:${size}px; height:${size}px; background:var(--bg-input); font-size:${Math.round(size * 0.72)}px; border:1px solid var(--border-color); border-radius:50%; margin-left:6px; line-height:1; vertical-align:middle; user-select:none;">${avatar}</span>`;
         }
-        return `<span class="user-avatar-thumb" style="display:inline-flex; align-items:center; justify-content:center; width:${size}px; height:${size}px; background:${uColor}; color:#fff; font-size:${Math.round(size * 0.52)}px; font-weight:bold; margin-left:6px;">${initial}</span>`;
     } catch (e) {
         return '';
     }
@@ -1203,21 +1211,59 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (socialRow) socialRow.style.display = aboutInfo.social ? 'flex' : 'none';
 
         modal.style.display = 'flex';
+        requestAnimationFrame(() => {
+            modal.classList.add('active');
+        });
     };
 
     window.closeAboutModal = function() {
         const modal = document.getElementById('aboutModal');
-        if (modal) modal.style.display = 'none';
+        if (modal) {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                if (!modal.classList.contains('active')) modal.style.display = 'none';
+            }, 250);
+        }
     };
 
     // شنود کلیک روی تمام لوگوهای برنامه برای باز شدن About
     document.addEventListener('click', (e) => {
-        const logoTarget = e.target.closest('#mecavLoginLogo, .app-header h1, .electron-titlebar-brand');
+        const logoTarget = e.target.closest('#appHeaderBrand, .app-header-logo, #header-title, #mecavLoginLogo, .electron-titlebar-brand, .electron-titlebar-icon, .electron-titlebar-text');
         if (logoTarget) {
+            e.preventDefault();
             e.stopPropagation();
             window.openAboutModal();
         }
     });
+
+    // اتصال مستقیم به المان‌های لوگو در صورت لود زودهنگام
+    const bindDirectLogoClick = () => {
+        ['appHeaderBrand', 'header-title', 'mecavLoginLogo'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el && !el.dataset.aboutBound) {
+                el.dataset.aboutBound = 'true';
+                el.style.cursor = 'pointer';
+                el.addEventListener('click', (ev) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    window.openAboutModal();
+                });
+            }
+        });
+        document.querySelectorAll('.electron-titlebar-brand, .app-header-logo').forEach(el => {
+            if (el && !el.dataset.aboutBound) {
+                el.dataset.aboutBound = 'true';
+                el.style.cursor = 'pointer';
+                el.addEventListener('click', (ev) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    window.openAboutModal();
+                });
+            }
+        });
+    };
+    bindDirectLogoClick();
+    setTimeout(bindDirectLogoClick, 500);
 
     const btnCloseAboutModal = document.getElementById('btnCloseAboutModal');
     if (btnCloseAboutModal) {
