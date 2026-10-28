@@ -289,11 +289,13 @@ public class MecavNotification extends CordovaPlugin {
                     }
 
                     int fileLength = conn.getContentLength();
-                    File outputDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
-                    if (outputDir == null) {
-                        outputDir = new File(context.getCacheDir(), "updates");
+                    File outputDir = new File(context.getCacheDir(), "updates");
+                    if (!outputDir.exists()) {
+                        if (!outputDir.mkdirs()) {
+                            outputDir = new File(context.getFilesDir(), "updates");
+                            if (!outputDir.exists()) outputDir.mkdirs();
+                        }
                     }
-                    if (!outputDir.exists()) outputDir.mkdirs();
 
                     File outputFile = new File(outputDir, "MechaveWS-update.apk");
                     if (outputFile.exists()) {

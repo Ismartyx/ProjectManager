@@ -110,23 +110,49 @@ const PouchAdapter = {
         ]);
     },
 
-    updateStatusUI: function(mode) {
+    lastDisplayedMode: null,
+    statusDismissTimer: null,
+
+    updateStatusUI: function(mode, force = false) {
         const statusEl = document.getElementById('connection-status');
         if (!statusEl) return;
 
-        if (mode === 'local') {
-            statusEl.style.background = '#10b981';
-            statusEl.style.color = '#fff';
-            statusEl.innerText = '🟢 متصل به سرور محلی کارگاه (شبکه داخلی)';
-        } else if (mode === 'online') {
-            statusEl.style.background = '#0284c7';
-            statusEl.style.color = '#fff';
-            statusEl.innerText = '🌐 متصل به سرور آنلاین (اینترنت)';
-        } else {
-            statusEl.style.background = '#ef4444';
-            statusEl.style.color = '#fff';
-            statusEl.innerText = '🔴 آفلاین (ذخیره در حافظه دستگاه)';
+        // فقط در صورت تغییر وضعیت یا درخواست اجباری، انیمیشن اجرا شود
+        if (!force && this.lastDisplayedMode === mode) {
+            return;
         }
+        this.lastDisplayedMode = mode;
+
+        if (this.statusDismissTimer) {
+            clearTimeout(this.statusDismissTimer);
+            this.statusDismissTimer = null;
+        }
+
+        if (mode === 'local') {
+            statusEl.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+            statusEl.style.color = '#ffffff';
+            statusEl.innerHTML = '🟢 <b>متصل به سرور محلی کارگاه</b> (شبکه داخلی LAN)';
+        } else if (mode === 'online') {
+            statusEl.style.background = 'linear-gradient(135deg, #0284c7, #0369a1)';
+            statusEl.style.color = '#ffffff';
+            statusEl.innerHTML = '🌐 <b>متصل به سرور ابری آنلاین</b> (اینترنت VPS)';
+        } else {
+            statusEl.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+            statusEl.style.color = '#ffffff';
+            statusEl.innerHTML = '⚠️ <b>حالت آفلاین</b> (عدم اتصال به سرور - ذخیره محلی در دستگاه)';
+        }
+
+        // نمایش نوار با انیمیشن کشویی نرم از بالای صفحه
+        statusEl.classList.add('show');
+        statusEl.style.transform = 'translateY(0)';
+
+        // برای سرورهای آنلاین یا محلی، ۳.۵ ثانیه بماند و سپس به بالا برگردد
+        // در حالت آفلاین، ۵ ثانیه بماند
+        const stayMs = (mode === 'offline') ? 5000 : 3500;
+        this.statusDismissTimer = setTimeout(() => {
+            statusEl.classList.remove('show');
+            statusEl.style.transform = 'translateY(-100%)';
+        }, stayMs);
     },
 
     // بررسی هوشمند: اول سرور محلی کارگاه، در صورت عدم دسترسی سرور آنلاین VPS
