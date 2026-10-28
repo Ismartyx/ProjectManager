@@ -3,7 +3,7 @@
         id="cordova-plugin-mecav-notification"
         version="1.0.0">
     <name>MecavNotification</name>
-    <description>Native Android Notification & In-App Updater plugin for MecavWS</description>
+    <description>Native Android Notification and In-App Updater plugin for MecavWS</description>
     <license>MIT</license>
 
     <js-module src="www/MecavNotification.js" name="MecavNotification">
