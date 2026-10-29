@@ -1754,12 +1754,92 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    function getProjectDropTarget(container, clientX, clientY, currentCard) {
+        const cards = Array.from(container.querySelectorAll('.project-group')).filter(c => c !== currentCard);
+        if (cards.length === 0) return { position: 'append' };
+
+        // ۱. بررسی هاور دقیق روی هر کارت در نمای دوبعدی گرید (X و Y)
+        for (const card of cards) {
+            const r = card.getBoundingClientRect();
+            if (clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom) {
+                // در چیدمان راست‌به‌چپ (RTL):
+                // نیمه سمت راست کارت (clientX > center) = قبل از کارت (سمت راست‌تر)
+                // نیمه سمت چپ کارت (clientX <= center) = بعد از کارت (سمت چپ‌تر)
+                const isRightHalf = clientX > (r.left + r.width / 2);
+                return {
+                    target: card,
+                    position: isRightHalf ? 'before' : 'after'
+                };
+            }
+        }
+
+        // ۲. اگر ماوس روی هیچ کارتی نیست (مانند فضای خالی سمت چپ یا پایین کانتینر):
+        // نزدیک‌ترین کارت را نسبت به نشانگر پیدا می‌کنیم
+        let closestCard = null;
+        let minDistance = Infinity;
+
+        cards.forEach(card => {
+            const r = card.getBoundingClientRect();
+            const centerX = r.left + r.width / 2;
+            const centerY = r.top + r.height / 2;
+            const dist = Math.hypot(clientX - centerX, clientY - centerY);
+            if (dist < minDistance) {
+                minDistance = dist;
+                closestCard = card;
+            }
+        });
+
+        if (!closestCard) return { position: 'append' };
+
+        const r = closestCard.getBoundingClientRect();
+        // در RTL: اگر نشانگر سمت چپ مرکز نزدیک‌ترین کارت باشد یا زیر آن، بعد از آن قرار می‌گیرد
+        if (clientX < (r.left + r.width / 2) || clientY > (r.bottom - 20)) {
+            return { target: closestCard, position: 'after' };
+        } else {
+            return { target: closestCard, position: 'before' };
+        }
+    }
+
+    function applyProjectDrop(container, draggedCard, dropInfo) {
+        if (!draggedCard || !dropInfo) return;
+        if (dropInfo.position === 'before') {
+            if (dropInfo.target && dropInfo.target !== draggedCard && dropInfo.target.previousElementSibling !== draggedCard) {
+                container.insertBefore(draggedCard, dropInfo.target);
+            }
+        } else if (dropInfo.position === 'after') {
+            if (dropInfo.target && dropInfo.target !== draggedCard && dropInfo.target.nextElementSibling !== draggedCard) {
+                container.insertBefore(draggedCard, dropInfo.target.nextSibling);
+            }
+        } else {
+            if (container.lastElementChild !== draggedCard) {
+                container.appendChild(draggedCard);
+            }
+        }
+    }
+
     function setupProjectDragAndDrop(container) {
         if (!container) return;
         const projectCards = container.querySelectorAll('.project-group');
         if (projectCards.length <= 1) return;
 
         let draggedEl = null;
+
+        // شنود درگ روی کل کانتینر برای فضاهای خالی سمت چپ و پایین
+        if (!container.dataset.dragBound) {
+            container.dataset.dragBound = "true";
+            container.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                if (!draggedEl) return;
+                e.dataTransfer.dropEffect = 'move';
+                const dropInfo = getProjectDropTarget(container, e.clientX, e.clientY, draggedEl);
+                applyProjectDrop(container, draggedEl, dropInfo);
+            });
+
+            container.addEventListener('drop', (e) => {
+                e.preventDefault();
+                saveCurrentDomProjectOrder(container);
+            });
+        }
 
         projectCards.forEach(card => {
             // ۱. پشتیبانی از درگ با ماوس در ویندوز و مرورگر
@@ -1781,14 +1861,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 e.preventDefault();
                 e.dataTransfer.dropEffect = 'move';
                 if (!draggedEl || draggedEl === card) return;
-
-                const rect = card.getBoundingClientRect();
-                const midY = rect.top + rect.height / 2;
-                if (e.clientY < midY) {
-                    container.insertBefore(draggedEl, card);
-                } else {
-                    container.insertBefore(draggedEl, card.nextSibling);
-                }
+                const dropInfo = getProjectDropTarget(container, e.clientX, e.clientY, draggedEl);
+                applyProjectDrop(container, draggedEl, dropInfo);
             });
 
             card.addEventListener('dragenter', (e) => {
@@ -1811,23 +1885,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (handle) {
                 let touchTimer = null;
                 let isTouchDragging = false;
+                let startX = 0;
                 let startY = 0;
 
                 handle.addEventListener('touchstart', (e) => {
                     const touch = e.touches[0];
+                    startX = touch.clientX;
                     startY = touch.clientY;
                     touchTimer = setTimeout(() => {
                         isTouchDragging = true;
                         draggedEl = card;
                         card.classList.add('touch-dragging');
                         if (navigator.vibrate) navigator.vibrate(50);
-                    }, 350);
+                    }, 300);
                 }, { passive: true });
 
                 handle.addEventListener('touchmove', (e) => {
                     if (!isTouchDragging) {
                         const touch = e.touches[0];
-                        if (Math.abs(touch.clientY - startY) > 10) {
+                        if (Math.abs(touch.clientY - startY) > 15 || Math.abs(touch.clientX - startX) > 15) {
                             clearTimeout(touchTimer);
                         }
                         return;
@@ -1835,18 +1911,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     e.preventDefault();
                     const touch = e.touches[0];
-                    const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-                    if (!targetEl) return;
-                    const targetCard = targetEl.closest('.project-group');
-                    if (targetCard && targetCard !== card && targetCard.parentNode === container) {
-                        const rect = targetCard.getBoundingClientRect();
-                        const midY = rect.top + rect.height / 2;
-                        if (touch.clientY < midY) {
-                            container.insertBefore(card, targetCard);
-                        } else {
-                            container.insertBefore(card, targetCard.nextSibling);
-                        }
-                    }
+                    const dropInfo = getProjectDropTarget(container, touch.clientX, touch.clientY, card);
+                    applyProjectDrop(container, card, dropInfo);
                 }, { passive: false });
 
                 const finishTouch = () => {
@@ -2014,6 +2080,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
                 <div class="project-tasks-container ${isCollapsed ? 'collapsed' : ''}">`;
             
+            if (projTasks.length === 0) {
+                projHTML += `
+                    <div style="padding: 24px 14px; text-align: center; color: var(--text-muted); font-size: 0.85rem; border: 1px dashed var(--border-color); border-radius: 10px; margin: 8px 10px 12px 10px; background: rgba(255, 255, 255, 0.01);">
+                        تسکی در این پروژه وجود ندارد
+                    </div>`;
+            }
+
             projTasks.forEach(t => {
                 let overdue = isTaskOverdue(t);
                 let isUnread = (!t.viewedBy || !t.viewedBy.includes(currentUser.id)) && t.status !== 'completed';
@@ -2066,11 +2139,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </div>
                             <div class="task-latest-activity">${activitySnippet}</div>
                             <div class="task-card-meta" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-                                <div style="font-size: 0.75rem; color: var(--text-muted); display:inline-flex; align-items:center; gap: 8px; flex-wrap: wrap;">
+                                <div style="font-size: 0.75rem; color: var(--text-muted); display:inline-flex; align-items:center; gap: 6px; flex-wrap: wrap;">
+                                    <span style="opacity:0.75; font-size:0.7rem;">از:</span>
                                     <span style="display:inline-flex; align-items:center; gap:3px;" title="ایجادکننده تسک">${getUserAvatarHtml(t.creatorId, 16)} <span style="opacity:0.9;">${findUserName(t.creatorId)}</span></span>
-                                    <span style="opacity:0.4;">➔</span>
+                                    <span style="color:var(--primary); font-weight:bold; font-size:0.9rem;" title="ارجاع شده به">←</span>
+                                    <span style="opacity:0.75; font-size:0.7rem;">به:</span>
                                     <span style="display:inline-flex; align-items:center; gap:3px;" title="مسئول انجام">${getUserAvatarHtml(t.assigneeId, 16)} <b>${findUserName(t.assigneeId)}</b></span>
-                                    ${createdStr ? `<span style="font-size:0.7rem; opacity:0.75;">📅 ${createdStr}</span>` : ''}
+                                    ${createdStr ? `<span style="font-size:0.7rem; opacity:0.75; margin-right:4px;">📅 ${createdStr}</span>` : ''}
                                 </div>
                                 <button class="task-card-history-btn" onclick="event.stopPropagation(); window.openTaskHistoryModal('${t._id}')" title="تاریخچه وقایع، ارجاعات و مشاهده‌های تسک">📜</button>
                             </div>
@@ -2284,15 +2359,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         let overdue = isTaskOverdue(task);
         let canDelete = user.role === 'admin' || isSameUser(task.creatorId, user.id);
         
-        document.getElementById('td-title').innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
-                <span style="flex: 1; line-height: 1.4;">${task.title}</span>
-                <div style="display: flex; gap: 5px;">
-                    ${canDelete ? `<button onclick="event.stopPropagation(); window.editTaskTitle()" class="btn btn-small btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 8px;">✏️ ویرایش</button>` : ''}
-                    ${canDelete ? `<button onclick="event.stopPropagation(); window.deleteCurrentTask()" class="btn btn-small" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; font-size: 0.75rem; border-radius: 8px;">🗑️ حذف</button>` : ''}
-                </div>
-            </div>
-        `;
+        const titleEl = document.getElementById('td-title');
+        if (titleEl) {
+            titleEl.innerText = task.title;
+        }
+
+        const btnEdit = document.getElementById('btnEditTaskTitle');
+        const btnDelete = document.getElementById('btnDeleteTask');
+        if (btnEdit) {
+            btnEdit.style.display = canDelete ? 'inline-flex' : 'none';
+            btnEdit.onclick = (e) => {
+                e.stopPropagation();
+                window.editTaskTitle();
+            };
+        }
+        if (btnDelete) {
+            btnDelete.style.display = canDelete ? 'inline-flex' : 'none';
+            btnDelete.onclick = (e) => {
+                e.stopPropagation();
+                window.deleteCurrentTask();
+            };
+        }
 
         // دکمه باز کردن تاریخچه تسک
         const btnHistory = document.getElementById('btnOpenTaskHistory');

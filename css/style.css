@@ -1099,6 +1099,117 @@ input:focus, textarea:focus {
     max-width: 780px;
 }
 
+/* هدر مودال جزئیات تسک و دکمه‌های عملیات */
+.task-detail-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.task-detail-header-title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: bold;
+    color: var(--primary);
+    line-height: 1.5;
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+}
+
+.task-detail-header-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.td-btn-action {
+    padding: 6px 12px !important;
+    font-size: 0.8rem !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+}
+
+.td-btn-delete {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #ef4444 !important;
+    border: 1px solid rgba(239, 68, 68, 0.35) !important;
+}
+
+.td-btn-delete:hover {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+}
+
+.td-icon-action {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 1.25rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid var(--border-color) !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    color: var(--accent) !important;
+    transition: 0.2s;
+}
+
+.td-icon-action:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: var(--primary) !important;
+}
+
+.td-icon-close {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 1.35rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+    border: 1px solid rgba(239, 68, 68, 0.25) !important;
+    color: var(--danger) !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    transition: 0.2s;
+}
+
+.td-icon-close:hover {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+}
+
+@media (max-width: 600px) {
+    .task-detail-header-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .task-detail-header-buttons {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 6px;
+    }
+}
+
 /* چت و گزارش‌ها در جزئیات تسک */
 .section-title {
     font-size: 0.95rem;
@@ -1318,31 +1429,33 @@ input:focus, textarea:focus {
 }
 
 /* ==========================================
-   طراحی چند ستونه هوشمند (CSS Columns / Masonry) در نمایشگرهای عریض
+   طراحی چند ستونه هوشمند (CSS Grid) برای پروژه‌ها
    ========================================== */
+#tasks-list-container {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)) !important;
+    gap: 18px !important;
+    align-items: start !important;
+    min-height: 400px;
+    padding-bottom: 50px;
+}
+
+#tasks-list-container > .card {
+    grid-column: 1 / -1;
+}
+
+.project-group {
+    width: 100% !important;
+    margin-bottom: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    break-inside: auto !important;
+}
+
 @media (min-width: 992px) {
     .view-section {
         max-width: 96% !important;
         padding: 20px 28px !important;
-    }
-    
-    #tasks-list-container {
-        display: block !important;
-        column-width: 440px !important;
-        column-gap: 18px !important;
-    }
-
-    #tasks-list-container > .card {
-        column-span: all;
-    }
-
-    .project-group {
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-        display: inline-block !important;
-        width: 100% !important;
-        margin-bottom: 16px !important;
-        vertical-align: top;
     }
 }
 
@@ -1352,8 +1465,15 @@ input:focus, textarea:focus {
     }
 
     #tasks-list-container {
-        column-width: 480px !important;
-        column-gap: 22px !important;
+        grid-template-columns: repeat(auto-fill, minmax(390px, 1fr)) !important;
+        gap: 22px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #tasks-list-container {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
     }
 }
 
