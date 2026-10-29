@@ -71,7 +71,7 @@ const AutoLockManager = {
         }
     },
 
-    lock: function() {
+    lock: function(isManual = false) {
         const user = (typeof AuthManager !== 'undefined') ? AuthManager.getCurrentUser() : null;
         if (!user) return;
 
@@ -94,7 +94,7 @@ const AutoLockManager = {
         this.applyLockedUI();
 
         if (typeof showToast === 'function') {
-            showToast('برنامه به دلیل عدم فعالیت قفل شد. رمز عبور را مجدداً وارد کنید.', 'info');
+            showToast(isManual ? 'برنامه قفل شد. جهت ورود رمز عبور را وارد کنید.' : 'برنامه به دلیل عدم فعالیت قفل شد. رمز عبور را مجدداً وارد کنید.', 'info');
         }
     },
 

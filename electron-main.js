@@ -1,9 +1,53 @@
 const { app, BrowserWindow, shell, ipcMain, Notification } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 // تنظیم نام رسمی برنامه در ویندوز جهت دریافت پایدار نوتیفیکیشن‌های Action Center
 if (process.platform === 'win32') {
     app.setAppUserModelId('com.mechave.ws');
+}
+
+// ذخیره و بازیابی هوشمند ابعاد و موقعیت پنجره در ویندوز
+function getWindowStateFile() {
+    try {
+        return path.join(app.getPath('userData'), 'window-bounds.json');
+    } catch (e) {
+        return null;
+    }
+}
+
+function loadSavedWindowState() {
+    try {
+        const file = getWindowStateFile();
+        if (file && fs.existsSync(file)) {
+            const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+            if (data && typeof data === 'object') {
+                return data;
+            }
+        }
+    } catch (e) {}
+    return { width: 1200, height: 800, isMaximized: false };
+}
+
+function saveWindowState(win) {
+    if (!win || win.isDestroyed()) return;
+    try {
+        const file = getWindowStateFile();
+        if (!file) return;
+        const isMax = win.isMaximized();
+        if (isMax) {
+            fs.writeFileSync(file, JSON.stringify({ isMaximized: true }), 'utf8');
+        } else {
+            const bounds = win.getBounds();
+            fs.writeFileSync(file, JSON.stringify({
+                isMaximized: false,
+                width: bounds.width,
+                height: bounds.height,
+                x: bounds.x,
+                y: bounds.y
+            }), 'utf8');
+        }
+    } catch (e) {}
 }
 
 // جلوگیری از اجرای هم‌زمان چند نسخه از برنامه روی ویندوز
@@ -22,11 +66,13 @@ if (!gotTheLock) {
 
     function createWindow() {
         const isWindows = process.platform === 'win32';
+        const savedState = loadSavedWindowState();
+
         const windowOptions = {
-            width: 1200,
-            height: 800,
-            minWidth: 360,
-            minHeight: 450,
+            width: savedState.width || 1200,
+            height: savedState.height || 800,
+            minWidth: 320,
+            minHeight: 400,
             title: 'مدیریت پروژه مکاو',
             icon: path.join(__dirname, 'icon.ico'),
             autoHideMenuBar: true,
@@ -39,6 +85,11 @@ if (!gotTheLock) {
             }
         };
 
+        if (typeof savedState.x === 'number' && typeof savedState.y === 'number') {
+            windowOptions.x = savedState.x;
+            windowOptions.y = savedState.y;
+        }
+
         // فعال‌سازی نوار عنوان مدرن، مینیمال و یکپارچه در ویندوز (مشابه تلگرام دسکتاپ)
         if (isWindows) {
             windowOptions.titleBarStyle = 'hidden';
@@ -50,6 +101,20 @@ if (!gotTheLock) {
         }
 
         mainWindow = new BrowserWindow(windowOptions);
+
+        if (savedState.isMaximized) {
+            mainWindow.maximize();
+        }
+
+        // ذخیره خودکار ابعاد و موقعیت هنگام تغییر اندازه یا جابجایی پنجره
+        let saveTimer = null;
+        const triggerSave = () => {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(() => saveWindowState(mainWindow), 300);
+        };
+        mainWindow.on('resize', triggerSave);
+        mainWindow.on('move', triggerSave);
+        mainWindow.on('close', () => saveWindowState(mainWindow));
 
         // باز کردن لینک‌های خارجی در مرورگر اصلی سیستم
         mainWindow.webContents.setWindowOpenHandler(({ url }) => {

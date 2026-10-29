@@ -107,19 +107,54 @@ function injectMecavUnifiedTheme() {
 }
 
 function applyFontSize(sizeStr) {
-    document.documentElement.style.fontSize = sizeStr;
-    document.body.style.fontSize = sizeStr;
-    localStorage.setItem('pm_font_size', sizeStr);
-    document.querySelectorAll('.btn-font-size').forEach(btn => {
-        btn.style.background = btn.dataset.size === sizeStr ? 'var(--primary)' : 'transparent';
-        btn.style.color = btn.dataset.size === sizeStr ? (document.body.getAttribute('data-theme') === 'dark' ? '#0b1120' : '#ffffff') : 'var(--text-main)';
-    });
+    if (!sizeStr) sizeStr = '15px';
+    const pxVal = parseInt(sizeStr, 10) || 15;
+    const finalStr = pxVal + 'px';
+    document.documentElement.style.fontSize = finalStr;
+    document.body.style.fontSize = finalStr;
+    localStorage.setItem('pm_font_size', finalStr);
+
+    const lbl = document.getElementById('fontSizeDisplayLabel');
+    if (lbl) {
+        lbl.innerText = enToFaDigits(pxVal) + ' پیکسل';
+    }
+}
+
+function changeFontSize(delta) {
+    const current = parseInt(localStorage.getItem('pm_font_size') || '15px', 10) || 15;
+    let next = current + delta;
+    if (next < 11) next = 11;
+    if (next > 26) next = 26;
+    applyFontSize(next + 'px');
+}
+
+function resetFontSizeDefault() {
+    applyFontSize('15px');
+}
+
+function initLiveClock() {
+    const timeEl = document.getElementById('headerLiveTime');
+    const dateEl = document.getElementById('headerLiveDate');
+    if (!timeEl || !dateEl) return;
+
+    function update() {
+        const now = new Date();
+        try {
+            timeEl.innerText = now.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            dateEl.innerText = now.toLocaleDateString('fa-IR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        } catch (e) {
+            timeEl.innerText = now.toTimeString().split(' ')[0];
+        }
+    }
+    update();
+    setInterval(update, 1000);
 }
 
 function applyBrandingAndIcons() {
     injectMecavUnifiedTheme();
     document.title = "مدیریت پروژه مکاو";
     applyFontSize(localStorage.getItem('pm_font_size') || '15px');
+    initLiveClock();
 
     const iconUrl = "icon-192.png?v=10";
 
@@ -422,19 +457,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         fontPanel.style.cssText = 'background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; margin-top: 16px; margin-bottom: 20px; box-shadow: var(--shadow);';
         fontPanel.innerHTML = `
             <div style="color: var(--primary); font-weight: bold; font-size: 0.95rem; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-                🎨 اندازه فونت برنامه
+                🎨 تنظیم اندازه قلم (فونت) برنامه
             </div>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn btn-secondary btn-font-size" data-size="14px" style="flex: 1; border-radius: 12px;">کوچک (14)</button>
-                <button class="btn btn-secondary btn-font-size" data-size="15px" style="flex: 1; border-radius: 12px;">متوسط (15)</button>
-                <button class="btn btn-secondary btn-font-size" data-size="17px" style="flex: 1; border-radius: 12px;">بزرگ (17)</button>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button id="btnFontDecrease" class="btn btn-secondary" style="width: 44px; height: 42px; font-size: 1.2rem; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; padding: 0;" title="کوچک‌تر کردن متن">➖</button>
+                    <div id="fontSizeDisplayLabel" style="min-width: 90px; text-align: center; font-weight: bold; font-size: 1.05rem; color: var(--primary);">۱۵ پیکسل</div>
+                    <button id="btnFontIncrease" class="btn btn-secondary" style="width: 44px; height: 42px; font-size: 1.2rem; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; padding: 0;" title="بزرگ‌تر کردن متن">➕</button>
+                </div>
+                <button id="btnFontResetDefault" class="btn btn-secondary btn-small" style="padding: 9px 16px; border-radius: 10px; font-size: 0.85rem;">🔄 پیش‌فرض (۱۵)</button>
             </div>
         `;
         settingsView.appendChild(fontPanel);
 
-        document.querySelectorAll('.btn-font-size').forEach(btn => {
-            btn.addEventListener('click', (e) => { applyFontSize(e.target.dataset.size); });
-        });
+        document.getElementById('btnFontDecrease').addEventListener('click', () => changeFontSize(-1));
+        document.getElementById('btnFontIncrease').addEventListener('click', () => changeFontSize(1));
+        document.getElementById('btnFontResetDefault').addEventListener('click', () => resetFontSizeDefault());
         applyFontSize(localStorage.getItem('pm_font_size') || '15px');
 
         // فعال‌سازی و تست اعلان‌ها و صدای زنگ روی این دستگاه
@@ -1158,6 +1196,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     
     document.getElementById('btnLogout').addEventListener('click', () => { AuthManager.logout(); checkLoginStatus(); });
+
+    const btnLockApp = document.getElementById('btnLockApp');
+    if (btnLockApp && !btnLockApp.dataset.bound) {
+        btnLockApp.dataset.bound = "true";
+        btnLockApp.addEventListener('click', () => {
+            if (typeof AutoLockManager !== 'undefined') {
+                AutoLockManager.lock(true);
+            }
+        });
+    }
     
     const btnSwitchUser = document.getElementById('btnSwitchUser');
     if (btnSwitchUser && !btnSwitchUser.dataset.bound) {
@@ -1488,6 +1536,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         let projectId = document.getElementById('taskProjectSelectWrapper').dataset.value;
         let title = document.getElementById('taskTitle').value.trim();
+        let description = document.getElementById('taskDescription') ? document.getElementById('taskDescription').value.trim() : '';
         let tag = document.getElementById('taskTagSelectWrapper').dataset.value || ''; 
         
         let assigneeId = hasPower ? (document.getElementById('taskAssigneeSelectWrapper').dataset.value || user.id) : user.id;
@@ -1506,12 +1555,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         let parsedDL = parseDeadlineInput(deadlineRaw);
         let isImportant = document.getElementById('chkTaskImportant') ? document.getElementById('chkTaskImportant').checked : false;
 
+        const nowTs = Date.now();
+        const nowPersian = new Date(nowTs).toLocaleDateString('fa-IR', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
         let newTask = {
-            projectId: projectId, title: title, assigneeId: assigneeId, finalizerId: finalizerId,
-            creatorId: user.id, tag: tag, status: 'pending', transferRequest: null, activities: [],
-            isImportant: isImportant, deadlineTimestamp: parsedDL.timestamp, deadlineLabel: parsedDL.label,
-            isPublic: isPublic, observers: selectedObservers,
-            viewedBy: [user.id] // سازنده خودش تسک رو همون لحظه دیده
+            projectId: projectId, 
+            title: title, 
+            description: description,
+            assigneeId: assigneeId, 
+            finalizerId: finalizerId,
+            creatorId: user.id, 
+            tag: tag, 
+            status: 'pending', 
+            transferRequest: null, 
+            activities: [],
+            isImportant: isImportant, 
+            deadlineTimestamp: parsedDL.timestamp, 
+            deadlineLabel: parsedDL.label,
+            isPublic: isPublic, 
+            observers: selectedObservers,
+            createdAt: nowTs,
+            createdDateStr: nowPersian,
+            viewedBy: [user.id], // سازنده خودش تسک رو همون لحظه دیده
+            seenList: [
+                {
+                    userId: user.id,
+                    userName: user.name,
+                    timestamp: nowTs,
+                    dateStr: nowPersian
+                }
+            ]
         };
         
         try {
@@ -1541,6 +1614,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             document.getElementById('taskTitle').value = ''; 
+            if(document.getElementById('taskDescription')) document.getElementById('taskDescription').value = '';
             if(document.getElementById('taskDeadlineInput')) document.getElementById('taskDeadlineInput').value = '';
             if(document.getElementById('chkTaskImportant')) document.getElementById('chkTaskImportant').checked = false;
             if(document.getElementById('chkPublicTask')) document.getElementById('chkPublicTask').checked = false;
@@ -1865,7 +1939,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div style="display:flex; align-items:center;">
                         <span class="project-drag-handle" title="نگه‌داشتن یا کشیدن جهت تغییر چیدمان" onclick="event.stopPropagation();">⠿</span>
                         <span class="project-collapse-arrow" style="display:inline-block; font-size:0.75rem; margin-left:8px; color:var(--text-muted);">${isCollapsed ? '◀' : '▼'}</span>
-                        <button class="btn-quick-add" onclick="event.stopPropagation(); window.quickAddTask('${proj._id}', '${proj.title}')" title="افزودن تسک به این پروژه">➕</button>
+                        <button class="btn-quick-add" onclick="event.stopPropagation(); window.quickAddTask('${proj._id}', '${proj.title}')" title="افزودن تسک به این پروژه">
+                            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
                         📁 ${proj.title} <span style="font-size:0.8rem; color: var(--primary); margin-right:5px;">(${projTasks.length})</span> ${unreadBadgeInHeader}
                     </div>
                     ${projectActionBtns}
@@ -1893,6 +1972,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (t.isImportant) badgesHTML += `<span class="badge-important">⭐ مهم</span>`;
                 if (t.deadlineLabel) badgesHTML += `<span class="badge-deadline ${overdue ? 'overdue' : ''}">📅 ${t.deadlineLabel}</span>`;
 
+                // وضعیت مشاهده مسئول تسک
+                let assigneeSeen = t.seenList && t.seenList.some(s => isSameUser(s.userId, t.assigneeId));
+                let seenBadge = '';
+                if (t.status !== 'completed' && (isSameUser(t.creatorId, currentUser.id) || currentUser.role === 'admin' || isSameUser(t.finalizerId, currentUser.id))) {
+                    seenBadge = assigneeSeen
+                        ? `<span class="badge-seen" title="توسط مسئول تسک (${findUserName(t.assigneeId)}) مشاهده شده است">👁️ دیده‌شده</span>`
+                        : `<span class="badge-unseen" title="هنوز توسط مسئول تسک باز نشده است">👁️‍🗨️ دیده‌نشده</span>`;
+                }
+
                 let lastReport = t.activities ? t.activities.filter(a => a.type === 'report').pop() : null;
                 let lastComment = t.activities ? t.activities.filter(a => a.type === 'comment').pop() : null;
                 let activitySnippet = '';
@@ -1900,18 +1988,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (lastComment) activitySnippet += `<div style="border-right: 3px solid var(--primary); padding-right: 6px;"><b style="color:var(--primary);">نظر ${lastComment.userName}:</b> ${lastComment.text.substring(0, 45)}${lastComment.text.length > 45 ? '...' : ''}</div>`;
                 if (!activitySnippet) activitySnippet = '<div style="opacity: 0.5;">گزارش یا نظری ثبت نشده...</div>';
 
+                let createdStr = t.createdDateStr || (t.createdAt ? new Date(t.createdAt).toLocaleDateString('fa-IR', { month: 'numeric', day: 'numeric' }) : '');
+
                 projHTML += `
                     <div class="${cardClasses}" onclick="window.openTaskById('${t._id}')">
                         <div class="task-card-inner">
                             <div class="task-card-title">
                                 <h3>${statusTxt} ${t.title}</h3>
-                                ${badgesHTML ? `<div style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px;">${badgesHTML}</div>` : ''}
+                                ${t.description ? `<div class="task-card-desc">${escapeHtml(t.description)}</div>` : ''}
+                                <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; align-items: center;">
+                                    ${badgesHTML}
+                                    ${seenBadge}
+                                </div>
                             </div>
                             <div class="task-latest-activity">${activitySnippet}</div>
-                            <div class="task-card-meta">
-                                <div style="font-size: 0.75rem; color: var(--text-muted); display:inline-flex; align-items:center;">
-                                    ${getUserAvatarHtml(t.assigneeId, 18)} <span>${findUserName(t.assigneeId)}</span>
+                            <div class="task-card-meta" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                                <div style="font-size: 0.75rem; color: var(--text-muted); display:inline-flex; align-items:center; gap: 8px; flex-wrap: wrap;">
+                                    <span style="display:inline-flex; align-items:center; gap:3px;" title="ایجادکننده تسک">${getUserAvatarHtml(t.creatorId, 16)} <span style="opacity:0.9;">${findUserName(t.creatorId)}</span></span>
+                                    <span style="opacity:0.4;">➔</span>
+                                    <span style="display:inline-flex; align-items:center; gap:3px;" title="مسئول انجام">${getUserAvatarHtml(t.assigneeId, 16)} <b>${findUserName(t.assigneeId)}</b></span>
+                                    ${createdStr ? `<span style="font-size:0.7rem; opacity:0.75;">📅 ${createdStr}</span>` : ''}
                                 </div>
+                                <button class="task-card-history-btn" onclick="event.stopPropagation(); window.openTaskHistoryModal('${t._id}')" title="تاریخچه وقایع، ارجاعات و مشاهده‌های تسک">📜</button>
                             </div>
                         </div>
                     </div>`;
@@ -1975,16 +2073,137 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    // متغیرهای موقت پیوست فایل و تصویر
+    let pendingReportAttachment = null;
+    let pendingCommentAttachment = null;
+
+    function formatFileSize(bytes) {
+        if (!bytes || bytes === 0) return '0 بایت';
+        const k = 1024;
+        const sizes = ['بایت', 'کیلوبایت', 'مگابایت'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function processFileAttachment(file, callback) {
+        if (!file) return;
+        if (file.size > 15 * 1024 * 1024) {
+            showToast('حجم فایل انتخابی نباید بیشتر از ۱۵ مگابایت باشد.', 'error');
+            return;
+        }
+
+        const isImage = file.type.startsWith('image/');
+        if (isImage) {
+            compressImageToBase64(file, (b64) => {
+                callback({
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    data: b64,
+                    isImage: true
+                });
+            });
+        } else {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                callback({
+                    name: file.name,
+                    type: file.type || 'application/octet-stream',
+                    size: file.size,
+                    data: e.target.result,
+                    isImage: false
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function renderAttachmentPreview(containerId, att, clearFnName) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        if (!att) {
+            container.innerHTML = '';
+            return;
+        }
+
+        if (att.isImage) {
+            container.innerHTML = `
+                <div style="position:relative; display:inline-block; margin: 4px 0;">
+                    <img src="${att.data}" class="clickable-image" style="max-height: 80px; border-radius: 8px; border: 1px solid var(--border-color); margin: 0;"/>
+                    <span class="remove-attachment-btn" onclick="${clearFnName}()">✕</span>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div style="position:relative; display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.06); border:1px solid var(--border-color); border-radius:8px; padding:6px 12px; margin: 4px 0;">
+                    <span style="font-size:1.2rem;">📎</span>
+                    <span style="font-size:0.82rem; font-weight:bold; color:var(--text-main); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${att.name}</span>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">(${formatFileSize(att.size)})</span>
+                    <span class="remove-attachment-btn" style="position:static; margin-right:4px;" onclick="${clearFnName}()">✕</span>
+                </div>
+            `;
+        }
+    }
+
+    window.clearReportAttachment = function() {
+        pendingReportAttachment = null;
+        document.getElementById('reportAttachmentPreview').innerHTML = '';
+        const input = document.getElementById('reportFileInput');
+        if (input) input.value = '';
+    };
+
+    window.clearCommentAttachment = function() {
+        pendingCommentAttachment = null;
+        document.getElementById('commentAttachmentPreview').innerHTML = '';
+        const input = document.getElementById('commentFileInput');
+        if (input) input.value = '';
+    };
+
+    window.downloadAttachment = function(fileName, dataUrl) {
+        if (!dataUrl) return;
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = fileName || 'attachment';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => a.remove(), 100);
+    };
+
     window.openTaskById = async function(taskId) {
-        let tasks = await DBManager.getTasks(); let task = tasks.find(t => t._id === taskId);
+        let tasks = await DBManager.getTasks(); 
+        let task = tasks.find(t => t._id === taskId);
         if(task) {
             let user = AuthManager.getCurrentUser();
             if (!task.viewedBy) task.viewedBy = [];
-            // اگر کاربر تسک را ندیده، نشان جدید را خاموش کن و در دیتابیس ذخیره کن
+            if (!task.seenList) task.seenList = [];
+
+            const nowTs = Date.now();
+            const nowPersian = new Date(nowTs).toLocaleDateString('fa-IR', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            let needSave = false;
             if (!task.viewedBy.includes(user.id)) {
                 task.viewedBy.push(user.id);
+                needSave = true;
+            }
+
+            let existingSeen = task.seenList.find(s => isSameUser(s.userId, user.id));
+            if (!existingSeen) {
+                task.seenList.push({
+                    userId: user.id,
+                    userName: user.name,
+                    timestamp: nowTs,
+                    dateStr: nowPersian
+                });
+                needSave = true;
+            } else {
+                existingSeen.lastSeenAt = nowTs;
+                existingSeen.lastSeenStr = nowPersian;
+            }
+
+            if (needSave) {
                 DBManager.saveTask(task).then(() => renderDashboard());
             }
+
             openTaskDetail(task);
         }
     };
@@ -1995,9 +2214,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         await DBManager.saveTask(currentOpenedTask); openTaskDetail(currentOpenedTask); renderDashboard();
         showToast(currentOpenedTask.isImportant ? '⭐ تسک به عنوان مهم علامت‌گذاری شد.' : 'از حالت مهم خارج شد.');
     };
-
-    window.clearReportImage = function() { pendingReportImage = null; document.getElementById('reportAttachmentPreview').innerHTML = ''; document.getElementById('reportImageInput').value = ''; };
-    window.clearCommentImage = function() { pendingCommentImage = null; document.getElementById('commentAttachmentPreview').innerHTML = ''; document.getElementById('commentImageInput').value = ''; };
 
     function openTaskDetail(task) {
         currentOpenedTask = task;
@@ -2015,6 +2231,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
 
+        // دکمه باز کردن تاریخچه تسک
+        const btnHistory = document.getElementById('btnOpenTaskHistory');
+        if (btnHistory) {
+            btnHistory.onclick = () => window.openTaskHistoryModal(task._id);
+        }
+
+        // نمایش توضیحات تسک در صورت وجود
+        const descEl = document.getElementById('td-description');
+        if (descEl) {
+            if (task.description && task.description.trim()) {
+                descEl.style.display = 'block';
+                descEl.innerText = task.description;
+            } else {
+                descEl.style.display = 'none';
+                descEl.innerText = '';
+            }
+        }
+
         let statStr = task.status === 'completed' ? '✅ تکمیل شده' : (task.status === 'pending_approval' ? '⏳ منتظر تایید مدیر' : '🔥 در حال انجام');
         if (overdue) statStr += ` <span class="badge-deadline overdue" style="margin-right:6px;">🚨 موعد رسیده (${task.deadlineLabel})</span>`;
         else if (task.deadlineLabel) statStr += ` <span class="badge-deadline" style="margin-right:6px;">📅 مهلت: ${task.deadlineLabel}</span>`;
@@ -2024,7 +2258,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         </button>`;
 
         document.getElementById('td-status').innerHTML = statStr;
-        document.getElementById('td-assignee').innerHTML = `${getUserAvatarHtml(task.assigneeId, 20)} <span>${findUserName(task.assigneeId)}</span>`;
+
+        // نمایش افراد درگیر و وضعیت دیده‌شده
+        const metaPeople = document.getElementById('td-meta-people');
+        if (metaPeople) {
+            let seenCount = task.seenList ? task.seenList.length : (task.viewedBy ? task.viewedBy.length : 1);
+            let seenTooltip = task.seenList ? task.seenList.map(s => `${s.userName} (${s.dateStr || ''})`).join(' ، ') : '';
+            metaPeople.innerHTML = `
+                <span style="display:inline-flex; align-items:center; gap:4px;" title="ایجادکننده تسک">${getUserAvatarHtml(task.creatorId, 18)} <span>ایجاد: <b>${findUserName(task.creatorId)}</b></span></span>
+                <span style="display:inline-flex; align-items:center; gap:4px;" title="مسئول انجام">${getUserAvatarHtml(task.assigneeId, 18)} <span>مسئول: <b style="color:var(--text-main);">${findUserName(task.assigneeId)}</b></span></span>
+                <span style="display:inline-flex; align-items:center; gap:3px; cursor:pointer;" title="${seenTooltip}" onclick="window.openTaskHistoryModal('${task._id}')" class="badge-seen">👁️ ${seenCount} نفر دیده‌اند</span>
+            `;
+        }
 
         const reportsBox = document.getElementById('td-official-reports');
         const commentsBox = document.getElementById('td-comments-list');
@@ -2034,26 +2279,43 @@ document.addEventListener('DOMContentLoaded', async () => {
             task.activities.forEach(a => {
                 let date = new Date(a.timestamp).toLocaleDateString('fa-IR', { hour: '2-digit', minute:'2-digit' });
                 let text = a.text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:var(--accent)">$1</a>');
-                let imgHTML = a.image ? `<img src="${a.image}" class="clickable-image" onclick="window.openImage('${a.image}')" style="max-width:100%; border-radius:8px; margin-top:8px;"/>` : '';
+                
+                // پیوست تصویر یا فایل
+                let attachmentHTML = '';
+                if (a.attachment && !a.attachment.isImage) {
+                    attachmentHTML = `
+                        <div class="attachment-file-box" onclick="window.downloadAttachment('${escapeHtml(a.attachment.name)}', '${a.attachment.data}')">
+                            <span style="font-size: 1.4rem;">📎</span>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: bold; font-size: 0.85rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(a.attachment.name)}</div>
+                                <div style="font-size: 0.72rem; color: var(--text-muted);">${formatFileSize(a.attachment.size)} - کلیک جهت دانلود</div>
+                            </div>
+                            <span style="color: var(--accent); font-size: 1rem;">⬇️</span>
+                        </div>
+                    `;
+                } else if (a.image || (a.attachment && a.attachment.isImage)) {
+                    let imgSrc = a.image || a.attachment.data;
+                    attachmentHTML = `<img src="${imgSrc}" class="clickable-image" onclick="window.openImage('${imgSrc}')" style="max-width:100%; border-radius:8px; margin-top:8px;"/>`;
+                }
 
                 let isMine = isSameUser(a.userId, user.id);
                 let uColor = getUserColor(a.userId);
                 let delBtn = user.role === 'admin' ? `<span style="cursor:pointer; color:var(--danger); padding: 0 4px;" title="حذف این پیام" onclick="window.deleteActivity(${a.id})">🗑️</span>` : '';
 
                 if(a.type === 'report') {
-                    reportsBox.innerHTML += `<div class="report-item"><div class="msg-meta" style="color: #10b981; display:flex; align-items:center; justify-content:space-between;"><div style="display:inline-flex; align-items:center;">${getUserAvatarHtml(a.userId, 22)} <span>گزارش: ${a.userName}</span></div><div><span style="font-weight:normal; opacity:0.7;">${date}</span>${delBtn}</div></div><div>${text}</div>${imgHTML}</div>`;
+                    reportsBox.innerHTML += `<div class="report-item"><div class="msg-meta" style="color: #10b981; display:flex; align-items:center; justify-content:space-between;"><div style="display:inline-flex; align-items:center;">${getUserAvatarHtml(a.userId, 22)} <span>گزارش: ${a.userName}</span></div><div><span style="font-weight:normal; opacity:0.7;">${date}</span>${delBtn}</div></div><div>${text}</div>${attachmentHTML}</div>`;
                 } else {
                     if (isMine) {
                         commentsBox.innerHTML += `
                         <div class="chat-msg msg-mine">
                             <div class="msg-meta" style="color: #38bdf8; display:flex; align-items:center; justify-content:space-between;"><div style="display:inline-flex; align-items:center;">${getUserAvatarHtml(a.userId, 22)} <span>شما</span></div><div><span style="font-weight:normal; opacity:0.7;">${date}</span>${delBtn}</div></div>
-                            <div>${text}</div>${imgHTML}
+                            <div>${text}</div>${attachmentHTML}
                         </div>`;
                     } else {
                         commentsBox.innerHTML += `
                         <div class="chat-msg msg-other" style="--user-color: ${uColor}; border-left-color: ${uColor};">
                             <div class="msg-meta" style="color: ${uColor}; display:flex; align-items:center; justify-content:space-between;"><div style="display:inline-flex; align-items:center;">${getUserAvatarHtml(a.userId, 22)} <span>${a.userName}</span></div><div><span style="font-weight:normal; opacity:0.7;">${date}</span>${delBtn}</div></div>
-                            <div>${text}</div>${imgHTML}
+                            <div>${text}</div>${attachmentHTML}
                         </div>`;
                     }
                 }
@@ -2064,24 +2326,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let reportForm = document.getElementById('td-report-form');
         let commentForm = document.getElementById('td-comment-form');
-        let transferSec = document.getElementById('transferSection');
 
         let isMainActor = isSameUser(task.assigneeId, user.id) || isSameUser(task.finalizerId, user.id) || isSameUser(task.creatorId, user.id) || user.role === 'admin';
         let infoNotice = document.getElementById('observerNoticeBox');
 
+        // بازنشانی فایل‌های موقت
+        window.clearReportAttachment();
+        window.clearCommentAttachment();
+
         if (task.status === 'completed') {
             reportForm.style.display = 'none'; 
             commentForm.style.display = user.role === 'admin' ? 'block' : 'none'; 
-            transferSec.style.display = 'none';
             if (infoNotice) infoNotice.remove();
         } else if (task.status === 'pending_approval') {
             reportForm.style.display = 'none'; 
             commentForm.style.display = 'block'; 
-            transferSec.style.display = 'none';
             if(isSameUser(task.finalizerId, user.id) || user.role === 'admin') {
                 reportForm.style.display = 'block';
-                reportForm.innerHTML = `<button class="btn btn-success" onclick="window.approveTask()">✅ تایید گزارش و بستن پرونده</button>
-                                        <button class="btn btn-secondary" onclick="window.rejectTask()">❌ رد گزارش و بازگشت به مسئول</button>`;
+                reportForm.innerHTML = `<button class="btn btn-success" onclick="window.approveTask()" style="width:100%; margin-bottom:8px;">✅ تایید گزارش و بستن پرونده</button>
+                                        <button class="btn btn-secondary" onclick="window.rejectTask()" style="width:100%;">❌ رد گزارش و بازگشت به مسئول</button>`;
             }
             if (infoNotice) infoNotice.remove();
         } else {
@@ -2099,40 +2362,66 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (infoNotice) infoNotice.remove();
                 if(isSameUser(task.assigneeId, user.id)) {
                     reportForm.style.display = 'block';
-                    reportForm.innerHTML = `<div style="font-size:0.85rem; color:var(--success); margin-bottom:8px;">ثبت گزارش رسمی کار:</div>
-                    <input type="file" id="reportImageInput" accept="image/*" style="display: none;" />
-                    <div id="reportAttachmentPreview" style="margin-bottom: 8px;"></div>
-                    <textarea id="td-new-report" placeholder="گزارش کار..." style="min-height: 60px; margin-bottom: 8px;"></textarea>
-                    <div style="display: flex; gap: 8px;"><button id="btnAttachReportImg" class="btn btn-secondary" style="width: 45px;">📷</button><button id="btnSubmitReport" class="btn btn-primary">ثبت گزارش در پرونده</button></div>
-                    <button id="btnSubmitFinal" class="btn btn-success" style="margin-top: 8px;">اتمام کار و ارسال برای تایید مدیر</button>`;
                     
-                    document.getElementById('btnAttachReportImg').onclick = () => document.getElementById('reportImageInput').click();
-                    document.getElementById('reportImageInput').onchange = (e) => {
-                        if(e.target.files[0]) compressImageToBase64(e.target.files[0], (b64) => { 
-                            pendingReportImage = b64; 
-                            document.getElementById('reportAttachmentPreview').innerHTML = `<div style="position:relative; display:inline-block;"><img src="${b64}" class="clickable-image" style="margin:0;"/><span class="remove-attachment-btn" onclick="window.clearReportImage()">✕</span></div>`; 
-                        });
-                    };
-                    document.getElementById('btnSubmitReport').onclick = () => saveActivity('report', false);
-                    document.getElementById('btnSubmitFinal').onclick = () => saveActivity('report', true);
-                } else { reportForm.style.display = 'none'; }
-            }
+                    // راه‌اندازی بخش ارجاع داخل فرم گزارش رسمی
+                    const chkRefer = document.getElementById('chkReferTaskWithReport');
+                    const referBox = document.getElementById('referSelectBoxInReport');
+                    const btnSubmitReport = document.getElementById('btnSubmitReport');
+                    const btnSubmitFinal = document.getElementById('btnSubmitFinal');
 
-            if (isSameUser(task.assigneeId, user.id) && !task.transferRequest) {
-                transferSec.style.display = 'block';
-                let usersData = AuthManager.usersList.filter(u => !isSameUser(u.id, user.id)).map(u => ({ text: u.name, value: u.id }));
-                setupCustomSelect('transferUserSelectWrapper', usersData, 'شخص جدید...');
-            } else { transferSec.style.display = 'none'; }
+                    if (chkRefer && referBox) {
+                        chkRefer.checked = false;
+                        referBox.style.display = 'none';
+                        if (btnSubmitReport) btnSubmitReport.innerText = 'ثبت گزارش در پرونده';
+
+                        let usersData = AuthManager.usersList.filter(u => !isSameUser(u.id, user.id)).map(u => ({ text: u.name, value: u.id }));
+                        setupCustomSelect('transferUserSelectWrapper', usersData, 'انتخاب شخص جدید برای ارجاع...');
+
+                        chkRefer.onchange = function() {
+                            referBox.style.display = this.checked ? 'block' : 'none';
+                            if (btnSubmitReport) {
+                                btnSubmitReport.innerText = this.checked ? 'ثبت گزارش و درخواست ارجاع' : 'ثبت گزارش در پرونده';
+                            }
+                        };
+                    }
+
+                    // دکمه پیوست فایل در گزارش
+                    const reportFileBtn = document.getElementById('btnAttachReportFile');
+                    const reportFileInput = document.getElementById('reportFileInput');
+                    if (reportFileBtn && reportFileInput) {
+                        reportFileBtn.onclick = () => reportFileInput.click();
+                        reportFileInput.onchange = (e) => {
+                            if (e.target.files[0]) {
+                                processFileAttachment(e.target.files[0], (att) => {
+                                    pendingReportAttachment = att;
+                                    renderAttachmentPreview('reportAttachmentPreview', att, 'window.clearReportAttachment');
+                                });
+                            }
+                        };
+                    }
+
+                    if (btnSubmitReport) btnSubmitReport.onclick = () => saveActivity('report', false);
+                    if (btnSubmitFinal) btnSubmitFinal.onclick = () => saveActivity('report', true);
+                } else { 
+                    reportForm.style.display = 'none'; 
+                }
+            }
         }
 
-        pendingCommentImage = null; document.getElementById('commentAttachmentPreview').innerHTML = '';
-        document.getElementById('btnAttachCommentImg').onclick = () => document.getElementById('commentImageInput').click();
-        document.getElementById('commentImageInput').onchange = (e) => {
-            if(e.target.files[0]) compressImageToBase64(e.target.files[0], (b64) => { 
-                pendingCommentImage = b64; 
-                document.getElementById('commentAttachmentPreview').innerHTML = `<div style="position:relative; display:inline-block;"><img src="${b64}" class="clickable-image" style="margin:0;"/><span class="remove-attachment-btn" onclick="window.clearCommentImage()">✕</span></div>`; 
-            });
-        };
+        // دکمه پیوست فایل در گفتگو و نظرات
+        const commentFileBtn = document.getElementById('btnAttachCommentFile');
+        const commentFileInput = document.getElementById('commentFileInput');
+        if (commentFileBtn && commentFileInput) {
+            commentFileBtn.onclick = () => commentFileInput.click();
+            commentFileInput.onchange = (e) => {
+                if (e.target.files[0]) {
+                    processFileAttachment(e.target.files[0], (att) => {
+                        pendingCommentAttachment = att;
+                        renderAttachmentPreview('commentAttachmentPreview', att, 'window.clearCommentAttachment');
+                    });
+                }
+            };
+        }
         document.getElementById('btnSubmitComment').onclick = () => saveActivity('comment', false);
 
         document.getElementById('taskDetailModal').classList.add('active');
@@ -2144,15 +2433,65 @@ document.addEventListener('DOMContentLoaded', async () => {
         let textId = type === 'report' ? 'td-new-report' : 'td-new-comment';
         let textEl = document.getElementById(textId);
         let text = textEl ? textEl.value.trim() : '';
-        let image = type === 'report' ? pendingReportImage : pendingCommentImage;
+        let attachment = type === 'report' ? pendingReportAttachment : pendingCommentAttachment;
         
-        if(!text && !image) return showToast('محتوایی وارد نکردید.', 'error');
-
         let user = AuthManager.getCurrentUser();
+        let isTransferring = false;
+        let transferTargetId = null;
+
+        // بررسی حالت ارجاع در گزارش رسمی کار
+        if (type === 'report') {
+            const chkRefer = document.getElementById('chkReferTaskWithReport');
+            if (chkRefer && chkRefer.checked) {
+                isTransferring = true;
+                const wrapper = document.getElementById('transferUserSelectWrapper');
+                transferTargetId = wrapper ? wrapper.dataset.value : null;
+
+                if (!text) {
+                    return showToast('برای ارجاع تسک، نوشتن توضیحات و گزارش در کادر بالا الزامی است.', 'error');
+                }
+                if (!transferTargetId) {
+                    return showToast('لطفاً شخصی که می‌خواهید تسک به او ارجاع داده شود را انتخاب کنید.', 'error');
+                }
+            }
+        }
+
+        if(!text && !attachment) return showToast('محتوایی وارد نکردید.', 'error');
+
         if(!currentOpenedTask.activities) currentOpenedTask.activities = [];
-        currentOpenedTask.activities.push({ id: Date.now(), userId: user.id, userName: user.name, text: text, image: image, type: type, timestamp: Date.now() });
+
+        let reportTextToSave = text;
+        if (isTransferring && transferTargetId) {
+            let targetName = findUserName(transferTargetId);
+            reportTextToSave = `🔄 درخواست ارجاع تسک به ${targetName} با توضیح: ${text}`;
+        }
+
+        let activityItem = {
+            id: Date.now(),
+            userId: user.id,
+            userName: user.name,
+            text: reportTextToSave,
+            type: type,
+            timestamp: Date.now(),
+            image: (attachment && attachment.isImage) ? attachment.data : null,
+            attachment: attachment || null
+        };
+        currentOpenedTask.activities.push(activityItem);
         
-        if(isFinal) {
+        if (isTransferring && transferTargetId) {
+            currentOpenedTask.transferRequest = transferTargetId;
+            currentOpenedTask.viewedBy = [user.id];
+
+            // ارسال نوتیفیکیشن درخواست ارجاع به مدیر کارگاه
+            NotificationManager.sendPush('admin', {
+                title: '🔄 درخواست ارجاع تسک',
+                body: `درخواست ارجاع تسک "${currentOpenedTask.title}" توسط ${user.name} به همراه گزارش ثبت شد.`,
+                priority: 'high',
+                tags: ['repeat', 'memo']
+            });
+
+            showToast('گزارش ثبت شد و درخواست ارجاع برای مدیر ارسال گردید.');
+        } else if(isFinal) {
             currentOpenedTask.status = 'pending_approval';
             
             // ارسال نوتیفیکیشن تایید نهایی برای مدیر یا تاییدکننده
@@ -2173,7 +2512,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (recipients.length > 0) {
                 const isReport = type === 'report';
-                const preview = text ? (text.length > 70 ? text.substring(0, 70) + '...' : text) : 'تصویر ارسال شد';
+                const preview = text ? (text.length > 70 ? text.substring(0, 70) + '...' : text) : 'پیوست فایل ارسال شد';
                 NotificationManager.sendPush(recipients, {
                     title: isReport ? `📝 گزارش جدید در "${currentOpenedTask.title}"` : `💬 نظر جدید در "${currentOpenedTask.title}"`,
                     body: `${user.name}: ${preview}`,
@@ -2187,9 +2526,155 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentOpenedTask.viewedBy = [user.id];
 
         await DBManager.saveTask(currentOpenedTask);
-        if(type === 'report') pendingReportImage = null; else pendingCommentImage = null;
+        if(type === 'report') window.clearReportAttachment(); else window.clearCommentAttachment();
         if(textEl) textEl.value = '';
-        openTaskDetail(currentOpenedTask); renderDashboard();
+        openTaskDetail(currentOpenedTask); 
+        renderDashboard();
+    }
+
+    // ============================================================
+    // مودال جامع تاریخچه وقایع، ارجاعات و مشاهده‌های تسک
+    // ============================================================
+    window.openTaskHistoryModal = async function(taskId) {
+        if (!taskId && currentOpenedTask) taskId = currentOpenedTask._id;
+        if (!taskId) return;
+
+        let tasks = await DBManager.getTasks();
+        let task = tasks.find(t => t._id === taskId);
+        if (!task) return showToast('تسک یافت نشد.', 'error');
+
+        const modal = document.getElementById('taskHistoryModal');
+        const titleEl = document.getElementById('th-task-title');
+        const timelineEl = document.getElementById('th-timeline-container');
+        if (!modal || !timelineEl) return;
+
+        let allProjects = await DBManager.getProjects();
+        let proj = allProjects.find(p => p._id === task.projectId);
+        let projTitle = proj ? proj.title : 'پروژه عمومی';
+
+        titleEl.innerText = `${task.title} (پروژه: ${projTitle})`;
+
+        let events = [];
+
+        // ۱. رویداد ایجاد تسک
+        let createdTs = task.createdAt || (task.activities && task.activities[0] ? task.activities[0].timestamp - 1000 : Date.now());
+        let createdStr = task.createdDateStr || new Date(createdTs).toLocaleDateString('fa-IR', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        events.push({
+            timestamp: createdTs,
+            dateStr: createdStr,
+            icon: '🌱',
+            title: `ایجاد تسک توسط ${findUserName(task.creatorId)}`,
+            desc: `تسک با عنوان «${task.title}» تعریف و به ${findUserName(task.assigneeId)} اختصاص یافت.`,
+            userAvatar: getUserAvatarHtml(task.creatorId, 20),
+            color: 'var(--primary)'
+        });
+
+        // ۲. وضعیت افراد دیده‌بان تسک
+        if (task.seenList && task.seenList.length > 0) {
+            task.seenList.forEach(s => {
+                events.push({
+                    timestamp: s.timestamp || createdTs,
+                    dateStr: s.dateStr || '',
+                    icon: '👁️',
+                    title: `مشاهده تسک توسط ${s.userName}`,
+                    desc: isSameUser(s.userId, task.assigneeId) ? 'مسئول تسک وارد صفحه شد و جزئیات کار را مشاهده کرد.' : 'کاربر تسک را باز و بررسی کرد.',
+                    userAvatar: getUserAvatarHtml(s.userId, 20),
+                    color: '#38bdf8'
+                });
+            });
+        }
+
+        // ۳. گزارش‌ها، ارجاعات و نظرات
+        if (task.activities && task.activities.length > 0) {
+            task.activities.forEach(a => {
+                let aDate = new Date(a.timestamp).toLocaleDateString('fa-IR', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                let isTransfer = a.text && a.text.includes('درخواست ارجاع تسک');
+                let isFinalReport = a.text && a.text.includes('اتمام کار');
+                let isApproval = a.text && a.text.includes('پرونده توسط مدیر تایید');
+                let isReject = a.text && a.text.includes('مدیر کار را رد کرد');
+
+                let icon = a.type === 'report' ? '📝' : '💬';
+                let title = `${a.type === 'report' ? 'گزارش رسمی' : 'نظر'}: ${a.userName}`;
+                let color = a.type === 'report' ? 'var(--success)' : '#818cf8';
+
+                if (isTransfer) { icon = '🔄'; title = `درخواست ارجاع: ${a.userName}`; color = '#f59e0b'; }
+                if (isApproval) { icon = '✅'; title = `تایید نهایی و پایان کار`; color = '#10b981'; }
+                if (isReject) { icon = '⚠️'; title = `رد و بازگشت تسک`; color = '#ef4444'; }
+
+                let attBadge = '';
+                if (a.attachment) {
+                    attBadge = `<div style="margin-top:6px; font-size:0.75rem; color:var(--accent);">📎 پیوست: ${escapeHtml(a.attachment.name)}</div>`;
+                }
+
+                events.push({
+                    timestamp: a.timestamp,
+                    dateStr: aDate,
+                    icon: icon,
+                    title: title,
+                    desc: a.text,
+                    extraHtml: attBadge,
+                    userAvatar: getUserAvatarHtml(a.userId, 20),
+                    color: color
+                });
+            });
+        }
+
+        // ۴. ارجاع در انتظار تایید
+        if (task.transferRequest) {
+            let targetName = findUserName(task.transferRequest);
+            events.push({
+                timestamp: Date.now(),
+                dateStr: 'در انتظار تایید',
+                icon: '⏳',
+                title: `ارجاع در انتظار تایید مدیر`,
+                desc: `درخواست ارجاع به ${targetName} ارسال شده و منتظر تایید مدیر است.`,
+                userAvatar: getUserAvatarHtml(task.transferRequest, 20),
+                color: '#f59e0b'
+            });
+        }
+
+        // مرتب‌سازی زمانی
+        events.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+        let html = '<div class="task-history-timeline">';
+        events.forEach(ev => {
+            html += `
+                <div class="timeline-event-item">
+                    <div class="timeline-event-dot" style="border-color: ${ev.color}; color: ${ev.color};">
+                        <span>${ev.icon}</span>
+                    </div>
+                    <div class="timeline-event-card">
+                        <div class="timeline-event-header">
+                            <span style="font-weight: bold; color: ${ev.color}; display: flex; align-items: center; gap: 6px;">
+                                ${ev.userAvatar || ''}
+                                <span>${ev.title}</span>
+                            </span>
+                            <span style="direction: ltr;">${ev.dateStr}</span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.5; margin-top: 4px;">
+                            ${escapeHtml(ev.desc)}
+                        </div>
+                        ${ev.extraHtml || ''}
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        timelineEl.innerHTML = html;
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+    };
+
+    const closeHistoryBtn = document.getElementById('btnCloseTaskHistory');
+    if (closeHistoryBtn) {
+        closeHistoryBtn.onclick = () => {
+            const modal = document.getElementById('taskHistoryModal');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+            }
+        };
     }
 
     window.approveTask = async function() {
@@ -2232,23 +2717,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         showToast('به مسئول برگشت داده شد.', 'error'); openTaskDetail(currentOpenedTask); renderDashboard();
     };
 
-    document.getElementById('btnRequestTransfer').addEventListener('click', async () => {
-        let targetId = document.getElementById('transferUserSelectWrapper').dataset.value;
-        if (!targetId) return showToast('شخص را انتخاب کنید.', 'error');
-        currentOpenedTask.transferRequest = targetId; 
-        currentOpenedTask.viewedBy = [AuthManager.getCurrentUser().id];
-        await DBManager.saveTask(currentOpenedTask);
+    const btnTransferEl = document.getElementById('btnRequestTransfer');
+    if (btnTransferEl) {
+        btnTransferEl.addEventListener('click', async () => {
+            let targetId = document.getElementById('transferUserSelectWrapper').dataset.value;
+            if (!targetId) return showToast('شخص را انتخاب کنید.', 'error');
+            currentOpenedTask.transferRequest = targetId; 
+            currentOpenedTask.viewedBy = [AuthManager.getCurrentUser().id];
+            await DBManager.saveTask(currentOpenedTask);
 
-        // ارسال نوتیفیکیشن به مدیر جهت تایید انتقال
-        NotificationManager.sendPush('admin', {
-            title: '🔄 درخواست ارجاع تسک',
-            body: `درخواست ارجاع تسک "${currentOpenedTask.title}" توسط ${AuthManager.getCurrentUser().name} ارسال شد.`,
-            priority: 'default',
-            tags: ['repeat']
+            // ارسال نوتیفیکیشن به مدیر جهت تایید انتقال
+            NotificationManager.sendPush('admin', {
+                title: '🔄 درخواست ارجاع تسک',
+                body: `درخواست ارجاع تسک "${currentOpenedTask.title}" توسط ${AuthManager.getCurrentUser().name} ارسال شد.`,
+                priority: 'default',
+                tags: ['repeat']
+            });
+
+            showToast('درخواست ارسال شد.'); document.getElementById('taskDetailModal').classList.remove('active'); renderDashboard();
         });
-
-        showToast('درخواست ارسال شد.'); document.getElementById('taskDetailModal').classList.remove('active'); renderDashboard();
-    });
+    }
 
     window.handleTransfer = async function(taskId, isApproved) {
         let tasks = await DBManager.getTasks(); let task = tasks.find(t => t._id === taskId);
