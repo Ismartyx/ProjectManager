@@ -106,6 +106,54 @@ function injectMecavUnifiedTheme() {
     // استایل‌ها اکنون به صورت استاندارد در css/style.css قرار دارند
 }
 
+// توابع کمکی استاندارد متنی و عددی
+function enToFaDigits(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+}
+window.enToFaDigits = enToFaDigits;
+
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+window.escapeHtml = escapeHtml;
+
+function jalaliToGregorian(jy, jm, jd) {
+    let gy;
+    if (jy > 979) {
+        gy = 1600;
+        jy -= 979;
+    } else {
+        gy = 621;
+    }
+    let days = (365 * jy) + ((parseInt(jy / 33, 10)) * 8) + (parseInt(((jy % 33) + 3) / 4, 10)) + 78 + jd + ((jm < 7) ? (jm - 1) * 31 : (((jm - 7) * 30) + 186));
+    gy += 400 * (parseInt(days / 146097, 10));
+    days %= 146097;
+    if (days > 36524) {
+        gy += 100 * (parseInt(--days / 36524, 10));
+        days %= 36524;
+        if (days >= 365) days++;
+    }
+    gy += 4 * (parseInt(days / 1461, 10));
+    days %= 1461;
+    if (days > 365) {
+        gy += parseInt((days - 1) / 365, 10);
+        days = (days - 1) % 365;
+    }
+    let gd = days + 1;
+    let sal_a = [0, 31, ((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let gm;
+    for (gm = 0; gm < 13 && gd > sal_a[gm]; gm++) gd -= sal_a[gm];
+    return [gy, gm, gd];
+}
+window.jalaliToGregorian = jalaliToGregorian;
+
 function applyFontSize(sizeStr) {
     if (!sizeStr) sizeStr = '15px';
     const pxVal = parseInt(sizeStr, 10) || 15;
@@ -116,7 +164,7 @@ function applyFontSize(sizeStr) {
 
     const lbl = document.getElementById('fontSizeDisplayLabel');
     if (lbl) {
-        lbl.innerText = enToFaDigits(pxVal) + ' پیکسل';
+        lbl.innerText = (typeof enToFaDigits === 'function' ? enToFaDigits(pxVal) : pxVal) + ' پیکسل';
     }
 }
 
@@ -140,7 +188,11 @@ function initLiveClock() {
     function update() {
         const now = new Date();
         try {
-            timeEl.innerText = now.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            // ساعت دیجیتال واضح و درشت به فرمت HH:MM:SS
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            timeEl.innerText = `${h}:${m}:${s}`;
             dateEl.innerText = now.toLocaleDateString('fa-IR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         } catch (e) {
             timeEl.innerText = now.toTimeString().split(' ')[0];
@@ -1203,6 +1255,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnLockApp.addEventListener('click', () => {
             if (typeof AutoLockManager !== 'undefined') {
                 AutoLockManager.lock(true);
+            }
+        });
+    }
+
+    const btnDashboardAddProj = document.getElementById('btnDashboardAddProject');
+    if (btnDashboardAddProj && !btnDashboardAddProj.dataset.bound) {
+        btnDashboardAddProj.dataset.bound = "true";
+        btnDashboardAddProj.addEventListener('click', () => {
+            const curUser = AuthManager.getCurrentUser();
+            if (window.handleAddNewProject) {
+                window.handleAddNewProject(curUser);
             }
         });
     }
