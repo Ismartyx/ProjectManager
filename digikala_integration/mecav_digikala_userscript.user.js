@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         اتصال خودکار دیجی‌کالا به سیستم مدیریت مکاو
 // @namespace    https://mechave.ir/
-// @version      1.1.0
-// @description  تشخیص خودکار فروش جدید در تعهدات ارسال دیجی‌کالا و ایجاد خودکار تسک در پروژه فروش مکاو با نام دقیق محصول
+// @version      1.2.0
+// @description  تشخیص خودکار فروش جدید در تعهدات ارسال دیجی‌کالا و ایجاد تسک یکتا در پروژه فروش مکاو با جلوگیری از ثبت تکراری
 // @author       Mecav Workshop
 // @match        https://seller.digikala.com/*
 // @grant        GM_xmlhttpRequest
@@ -18,7 +18,7 @@
     const MECAV_COUCHDB = 'http://155.117.234.69:5984/mecav_db_main';
     const MECAV_AUTH = 'Basic ' + btoa('admin:33995333Sma');
     const MECAV_NTFY = 'http://155.117.234.69:8080';
-    const PROCESSED_ORDERS_KEY = 'mecav_processed_dk_orders_v2';
+    const PROCESSED_ORDERS_KEY = 'mecav_processed_dk_orders_v3';
 
     let isChecking = false;
     let digikalaSettings = null;
@@ -79,6 +79,19 @@
         });
     }
 
+    async function fetchExactDeadline(cleanDkpc) {
+        if (!cleanDkpc) return '';
+        try {
+            const res = await fetch(`https://seller.digikala.com/pwa/orders/ship-by-digikala/${cleanDkpc}`, { credentials: 'include' });
+            if (res.ok) {
+                const html = await res.text();
+                const match = html.match(/تا\s+\d+\s+[\u0600-\u06FF]+/);
+                if (match) return match[0];
+            }
+        } catch (e) {}
+        return '';
+    }
+
     async function createMecavTask(order) {
         if (!digikalaSettings) await loadMecavSettings();
 
@@ -92,28 +105,62 @@
             tag: 'فروش / دیجی‌کالا'
         };
 
+        const cleanDkpc = String(order.dkpc || '').replace(/\D/g, '');
+
+        // بررسی در سرور قبل از ایجاد
+        const alreadyExists = await new Promise((resolve) => {
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url: `${MECAV_COUCHDB}/_all_docs?include_docs=true`,
+                headers: { 'Authorization': MECAV_AUTH },
+                onload: (res) => {
+                    try {
+                        const json = JSON.parse(res.responseText);
+                        const exists = (json.rows || []).some(r => {
+                            const d = r.doc;
+                            if (!d || d.type !== 'task' || d.isArchived) return false;
+                            if (cleanDkpc && (d.dkpc === cleanDkpc || (d._id && d._id.includes(cleanDkpc)))) return true;
+                            if (cleanDkpc && d.description && d.description.includes(cleanDkpc)) return true;
+                            return false;
+                        });
+                        resolve(exists);
+                    } catch (e) {
+                        resolve(false);
+                    }
+                },
+                onerror: () => resolve(false)
+            });
+        });
+
+        if (alreadyExists) {
+            markOrderProcessed(cleanDkpc);
+            console.log(`[Mecav Sync] تسک مربوط به DKPC-${cleanDkpc} قبلاً ثبت شده است.`);
+            return false;
+        }
+
         const nowTs = Date.now();
         const nowPersian = new Date(nowTs).toLocaleDateString('fa-IR', {
             year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
         });
 
-        const orderId = order.dkpc || order.id || String(nowTs).substr(-6);
+        const exactDeadline = (await fetchExactDeadline(cleanDkpc)) || order.deadline || 'تعهد ارسال آینده در پنل';
         const title = order.title || 'کالای سفارشی دیجی‌کالا';
-        const count = order.count || order.quantity || 1;
-        const commitmentDate = order.deadline || 'تعهد ارسال آینده در پنل';
+        const count = order.count || 1;
         const dkp = order.dkp ? `\n🆔 کد کالا (DKP): ${order.dkp}` : '';
-        const dkpc = order.dkpc ? `\n🔢 کد تنوع: ${order.dkpc}` : '';
+        const dkpcFull = cleanDkpc ? `\n🔢 کد تنوع: DKPC-${cleanDkpc}` : '';
 
         const taskDoc = {
-            _id: 'task_' + nowTs + '_' + Math.random().toString(36).substr(2, 5),
+            _id: `task_dk_${cleanDkpc || nowTs}`,
+            dkpc: cleanDkpc,
             type: 'task',
             projectId: s.targetProjectId,
             title: `🛒 سفارش دیجی‌کالا: ${title} (${count} عدد)`,
-            description: `یک سفارش جدید در بخش تعهدات ارسال دیجی‌کالا ثبت شد.\n\n` +
-                         `📦 نام کالا: ${title}${dkpc}${dkp}\n` +
+            description: `سفارش جدید دیجی‌کالا در بخش تعهدات ارسال ثبت شد.\n\n` +
+                         `📦 نام کالا: ${title}${dkpcFull}${dkp}\n` +
                          `📊 تعداد فروخته‌شده: ${count} عدد\n` +
-                         `⏰ مهلت تعهد ارسال: ${commitmentDate}\n` +
-                         `🏷️ وضعیت: در انتظار بسته‌بندی و الصاق برچسب محموله\n` +
+                         `⏰ مهلت تعهد ارسال دیجی‌کالا: ${exactDeadline}\n` +
+                         `🏷️ وضعیت تعهد: در انتظار بسته‌بندی و تحویل به انبار/پست\n` +
+                         `🔗 لینک بررسی در پنل: https://seller.digikala.com/pwa/orders/ship-by-digikala/${cleanDkpc}\n` +
                          `🤖 ثبت‌شده خودکار توسط: ربات دیجی‌کالا`,
             assigneeId: s.assigneeId || '100',
             finalizerId: s.finalizerId || '100',
@@ -134,7 +181,7 @@
             ],
             isImportant: s.isImportant !== false,
             deadlineTimestamp: null,
-            deadlineLabel: commitmentDate,
+            deadlineLabel: exactDeadline,
             isPublic: false,
             observers: s.observers || ['100'],
             createdAt: nowTs,
@@ -150,10 +197,10 @@
                 data: JSON.stringify(taskDoc),
                 headers: {
                     'Authorization': MECAV_AUTH,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json; charset=utf-8'
                 },
                 onload: () => {
-                    markOrderProcessed(orderId);
+                    markOrderProcessed(cleanDkpc);
                     playSaleChime();
                     sendPushNotifications(taskDoc);
                     showMecavToast(`✅ سفارش "${title}" با موفقیت در پروژه فروش ثبت شد!`);
@@ -224,17 +271,10 @@
             }
         }
 
-        let deadline = '';
-        for (const el of elements) {
-            if (el.children.length === 0 && el.innerText && el.innerText.includes('تعهد ارسال') && el.innerText.includes('تا')) {
-                deadline = el.innerText.replace(/بازه زمانی|تعهد ارسال|[:|]/g, '').trim();
-                break;
-            }
-        }
-
         for (const el of dkpcElements) {
             const dkpcMatch = el.innerText.match(/DKPC-\d+/i);
             const dkpc = dkpcMatch ? dkpcMatch[0] : '';
+            const cleanDkpc = dkpc.replace(/\D/g, '');
             
             let row = el.closest('tr') || el.closest('[class*="row"]') || el.parentElement.parentElement;
             let title = '';
@@ -261,13 +301,12 @@
                 }
             }
 
-            if (dkpc) {
+            if (cleanDkpc) {
                 orders.push({
-                    dkpc: dkpc,
+                    dkpc: cleanDkpc,
                     dkp: dkp,
                     title: title || 'کالای ثبت‌شده در تعهدات ارسال',
-                    count: count,
-                    deadline: deadline || 'تعهد ارسال آینده در پنل'
+                    count: count
                 });
             }
         }
@@ -285,12 +324,8 @@
 
             if (isOrdersPage) {
                 const orders = extractOrdersFromDocument(document);
-                const processed = getProcessedOrders();
-
                 for (const o of orders) {
-                    if (!processed.includes(o.dkpc)) {
-                        await createMecavTask(o);
-                    }
+                    await createMecavTask(o);
                 }
             } else {
                 const pageText = document.body.innerText;
@@ -308,12 +343,8 @@
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(html, 'text/html');
                         const orders = extractOrdersFromDocument(doc);
-                        const processed = getProcessedOrders();
-
                         for (const o of orders) {
-                            if (!processed.includes(o.dkpc)) {
-                                await createMecavTask(o);
-                            }
+                            await createMecavTask(o);
                         }
                     }
                 }
