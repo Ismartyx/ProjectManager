@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         اتصال خودکار دیجی‌کالا به سیستم مدیریت مکاو
 // @namespace    https://mechave.ir/
-// @version      1.0.0
-// @description  تشخیص خودکار فروش جدید در پنل دیجی‌کالا و ایجاد خودکار تسک در پروژه فروش مکاو همراه با نوتیفیکیشن
+// @version      1.1.0
+// @description  تشخیص خودکار فروش جدید در تعهدات ارسال دیجی‌کالا و ایجاد خودکار تسک در پروژه فروش مکاو با نام دقیق محصول
 // @author       Mecav Workshop
 // @match        https://seller.digikala.com/*
 // @grant        GM_xmlhttpRequest
@@ -18,40 +18,10 @@
     const MECAV_COUCHDB = 'http://155.117.234.69:5984/mecav_db_main';
     const MECAV_AUTH = 'Basic ' + btoa('admin:33995333Sma');
     const MECAV_NTFY = 'http://155.117.234.69:8080';
-    const PROCESSED_ORDERS_KEY = 'mecav_processed_dk_orders';
+    const PROCESSED_ORDERS_KEY = 'mecav_processed_dk_orders_v2';
 
     let isChecking = false;
     let digikalaSettings = null;
-
-    // بارگذاری تنظیمات از سرور مکاو
-    async function loadMecavSettings() {
-        return new Promise((resolve) => {
-            const req = (typeof GM_xmlhttpRequest !== 'undefined') ? GM_xmlhttpRequest : window.fetch;
-            if (typeof GM_xmlhttpRequest !== 'undefined') {
-                GM_xmlhttpRequest({
-                    method: 'GET',
-                    url: `${MECAV_COUCHDB}/digikala_settings?t=${Date.now()}`,
-                    headers: { 'Authorization': MECAV_AUTH },
-                    onload: function(res) {
-                        try {
-                            digikalaSettings = JSON.parse(res.responseText);
-                            resolve(digikalaSettings);
-                        } catch (e) {
-                            resolve(null);
-                        }
-                    },
-                    onerror: () => resolve(null)
-                });
-            } else {
-                fetch(`${MECAV_COUCHDB}/digikala_settings?t=${Date.now()}`, {
-                    headers: { 'Authorization': MECAV_AUTH }
-                }).then(r => r.json()).then(data => {
-                    digikalaSettings = data;
-                    resolve(data);
-                }).catch(() => resolve(null));
-            }
-        });
-    }
 
     function getProcessedOrders() {
         try {
@@ -61,21 +31,20 @@
         }
     }
 
-    function markOrderProcessed(orderId) {
-        if (!orderId) return;
+    function markOrderProcessed(orderKey) {
+        if (!orderKey) return;
         const list = getProcessedOrders();
-        if (!list.includes(String(orderId))) {
-            list.push(String(orderId));
+        if (!list.includes(String(orderKey))) {
+            list.push(String(orderKey));
             if (list.length > 500) list.shift();
             localStorage.setItem(PROCESSED_ORDERS_KEY, JSON.stringify(list));
         }
     }
 
-    // پخش صدای زنگ اعلان فروش جدید
     function playSaleChime() {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+            const notes = [523.25, 659.25, 783.99, 1046.50];
             notes.forEach((freq, i) => {
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
@@ -91,7 +60,25 @@
         } catch (e) {}
     }
 
-    // ایجاد تسک در دیتابیس مکاو
+    async function loadMecavSettings() {
+        return new Promise((resolve) => {
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url: `${MECAV_COUCHDB}/digikala_settings?t=${Date.now()}`,
+                headers: { 'Authorization': MECAV_AUTH },
+                onload: (res) => {
+                    try {
+                        digikalaSettings = JSON.parse(res.responseText);
+                        resolve(digikalaSettings);
+                    } catch (e) {
+                        resolve(null);
+                    }
+                },
+                onerror: () => resolve(null)
+            });
+        });
+    }
+
     async function createMecavTask(order) {
         if (!digikalaSettings) await loadMecavSettings();
 
@@ -110,28 +97,27 @@
             year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
         });
 
-        const orderId = order.id || order.order_id || String(nowTs).substr(-6);
-        const title = order.title || order.product_variant_title || order.product_title || 'کالای سفارشی دیجی‌کالا';
-        const count = order.quantity || order.count || 1;
-        const commitmentDate = order.commitment_date || order.shipping_deadline || 'نامشخص (نیاز به بررسی در پنل)';
-        const price = order.price || order.selling_price || order.total_price || 0;
-        const priceStr = price ? (Number(price).toLocaleString('fa-IR') + ' ریال') : 'ثبت‌شده در پنل';
+        const orderId = order.dkpc || order.id || String(nowTs).substr(-6);
+        const title = order.title || 'کالای سفارشی دیجی‌کالا';
+        const count = order.count || order.quantity || 1;
+        const commitmentDate = order.deadline || 'تعهد ارسال آینده در پنل';
+        const dkp = order.dkp ? `\n🆔 کد کالا (DKP): ${order.dkp}` : '';
+        const dkpc = order.dkpc ? `\n🔢 کد تنوع: ${order.dkpc}` : '';
 
         const taskDoc = {
             _id: 'task_' + nowTs + '_' + Math.random().toString(36).substr(2, 5),
             type: 'task',
             projectId: s.targetProjectId,
             title: `🛒 سفارش دیجی‌کالا: ${title} (${count} عدد)`,
-            description: `یک سفارش جدید در پنل فروشندگان دیجی‌کالا ثبت شد.\n\n` +
-                         `📦 عنوان کالا: ${title}\n` +
-                         `🔢 شناسه سفارش: ${orderId}\n` +
-                         `📊 تعداد: ${count} عدد\n` +
-                         `⏰ مهلت ارسال دیجی‌کالا: ${commitmentDate}\n` +
-                         `💰 مبلغ: ${priceStr}\n` +
-                         `🏷️ وضعیت: در انتظار بسته‌بندی و تحویل به انبار/پست`,
+            description: `یک سفارش جدید در بخش تعهدات ارسال دیجی‌کالا ثبت شد.\n\n` +
+                         `📦 نام کالا: ${title}${dkpc}${dkp}\n` +
+                         `📊 تعداد فروخته‌شده: ${count} عدد\n` +
+                         `⏰ مهلت تعهد ارسال: ${commitmentDate}\n` +
+                         `🏷️ وضعیت: در انتظار بسته‌بندی و الصاق برچسب محموله\n` +
+                         `🤖 ثبت‌شده خودکار توسط: ربات دیجی‌کالا`,
             assigneeId: s.assigneeId || '100',
             finalizerId: s.finalizerId || '100',
-            creatorId: '100',
+            creatorId: 'digikala_bot',
             tag: s.tag || 'فروش / دیجی‌کالا',
             status: 'pending',
             transferRequest: null,
@@ -139,9 +125,9 @@
                 {
                     id: 'act_' + nowTs,
                     type: 'create',
-                    userId: '100',
-                    userName: 'ربات هوشمند دیجی‌کالا',
-                    text: `ثبت خودکار سفارش #${orderId} دیجی‌کالا در پروژه فروش`,
+                    userId: 'digikala_bot',
+                    userName: 'ربات دیجی‌کالا',
+                    text: `ثبت خودکار سفارش [${title}] در پروژه فروش`,
                     timestamp: nowTs,
                     dateStr: nowPersian
                 }
@@ -157,31 +143,27 @@
             seenList: []
         };
 
-        // ارسال به CouchDB
         return new Promise((resolve) => {
-            const bodyStr = JSON.stringify(taskDoc);
-            const sendReq = (url, method, body, headers, callback) => {
-                if (typeof GM_xmlhttpRequest !== 'undefined') {
-                    GM_xmlhttpRequest({ url, method, data: body, headers, onload: callback, onerror: () => resolve(false) });
-                } else {
-                    fetch(url, { method, headers, body }).then(r => r.json()).then(callback).catch(() => resolve(false));
-                }
-            };
-
-            sendReq(`${MECAV_COUCHDB}/${taskDoc._id}`, 'PUT', bodyStr, {
-                'Authorization': MECAV_AUTH,
-                'Content-Type': 'application/json'
-            }, (res) => {
-                markOrderProcessed(orderId);
-                playSaleChime();
-                sendPushNotifications(taskDoc);
-                showMecavToast(`✅ سفارش "${title}" با موفقیت در پروژه فروش ثبت شد!`);
-                resolve(true);
+            GM_xmlhttpRequest({
+                url: `${MECAV_COUCHDB}/${taskDoc._id}`,
+                method: 'PUT',
+                data: JSON.stringify(taskDoc),
+                headers: {
+                    'Authorization': MECAV_AUTH,
+                    'Content-Type': 'application/json'
+                },
+                onload: () => {
+                    markOrderProcessed(orderId);
+                    playSaleChime();
+                    sendPushNotifications(taskDoc);
+                    showMecavToast(`✅ سفارش "${title}" با موفقیت در پروژه فروش ثبت شد!`);
+                    resolve(true);
+                },
+                onerror: () => resolve(false)
             });
         });
     }
 
-    // ارسال پوش نوتیفیکیشن لحظه‌ای به گوشی و سیستم‌ها
     function sendPushNotifications(task) {
         const notifUsers = new Set();
         if (task.assigneeId) notifUsers.add(String(task.assigneeId));
@@ -189,32 +171,23 @@
 
         notifUsers.forEach(userId => {
             const topic = 'mecav_user_' + userId;
-            const payload = JSON.stringify({
+            const payload = {
                 topic: topic,
                 title: '🛒 فروش جدید در دیجی‌کالا!',
                 message: `${task.title}\nمهلت ارسال: ${task.deadlineLabel}`,
                 priority: 4,
                 tags: ['shopping_cart', 'package']
-            });
+            };
 
-            if (typeof GM_xmlhttpRequest !== 'undefined') {
-                GM_xmlhttpRequest({
-                    method: 'POST',
-                    url: MECAV_NTFY,
-                    headers: { 'Content-Type': 'application/json' },
-                    data: payload
-                });
-            } else {
-                fetch(MECAV_NTFY, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: payload
-                }).catch(() => {});
-            }
+            GM_xmlhttpRequest({
+                url: MECAV_NTFY,
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                data: JSON.stringify(payload)
+            });
         });
     }
 
-    // نمایش اعلان گرافیکی روی پنل دیجی‌کالا
     function showMecavToast(msg) {
         const toast = document.createElement('div');
         toast.style.cssText = `
@@ -234,104 +207,125 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            animation: slideIn 0.3s ease-out;
         `;
         toast.innerHTML = `<span>⚙️ <b>سامانه مکاو:</b> ${msg}</span>`;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 7000);
     }
 
-    // اسکن سفارش‌ها از داشبورد یا اندپوینت‌های پنل
+    function extractOrdersFromDocument(doc) {
+        const orders = [];
+        const elements = doc.querySelectorAll('*');
+        const dkpcElements = [];
+
+        for (const el of elements) {
+            if (el.children.length === 0 && el.innerText && /DKPC-\d+/i.test(el.innerText)) {
+                dkpcElements.push(el);
+            }
+        }
+
+        let deadline = '';
+        for (const el of elements) {
+            if (el.children.length === 0 && el.innerText && el.innerText.includes('تعهد ارسال') && el.innerText.includes('تا')) {
+                deadline = el.innerText.replace(/بازه زمانی|تعهد ارسال|[:|]/g, '').trim();
+                break;
+            }
+        }
+
+        for (const el of dkpcElements) {
+            const dkpcMatch = el.innerText.match(/DKPC-\d+/i);
+            const dkpc = dkpcMatch ? dkpcMatch[0] : '';
+            
+            let row = el.closest('tr') || el.closest('[class*="row"]') || el.parentElement.parentElement;
+            let title = '';
+            let dkp = '';
+            let count = 1;
+
+            if (row) {
+                const candidateTexts = Array.from(row.querySelectorAll('*'))
+                    .filter(n => n.children.length === 0 && n.innerText && n.innerText.trim().length > 10 && !n.innerText.includes('DKPC') && !n.innerText.includes('DKP'))
+                    .map(n => n.innerText.trim());
+
+                if (candidateTexts.length > 0) {
+                    candidateTexts.sort((a, b) => b.length - a.length);
+                    title = candidateTexts[0];
+                }
+
+                const dkpMatch = row.innerText.match(/\b(2\d{7}|\d{8})\b/);
+                if (dkpMatch) dkp = dkpMatch[0];
+
+                const nums = row.innerText.match(/\b\d+\b/g);
+                if (nums && nums.length > 0) {
+                    const validNums = nums.map(Number).filter(n => n > 0 && n < 100);
+                    if (validNums.length > 0) count = validNums[0];
+                }
+            }
+
+            if (dkpc) {
+                orders.push({
+                    dkpc: dkpc,
+                    dkp: dkp,
+                    title: title || 'کالای ثبت‌شده در تعهدات ارسال',
+                    count: count,
+                    deadline: deadline || 'تعهد ارسال آینده در پنل'
+                });
+            }
+        }
+
+        return orders;
+    }
+
     async function checkDigikalaOrders() {
         if (isChecking) return;
         isChecking = true;
         updateBadge('در حال بررسی...', '#f59e0b');
 
         try {
-            // ۱. تلاش برای بررسی از طریق API اختصاصی فروشنده در همان مرورگر (با کوکی جاری لاگین)
-            const apiRes = await fetch('/api/v1/seller/dashboard/', { credentials: 'include' }).catch(() => null);
-            if (apiRes && apiRes.ok) {
-                const data = await apiRes.json();
-                handleDashboardData(data);
+            const isOrdersPage = window.location.href.includes('/orders');
+
+            if (isOrdersPage) {
+                const orders = extractOrdersFromDocument(document);
+                const processed = getProcessedOrders();
+
+                for (const o of orders) {
+                    if (!processed.includes(o.dkpc)) {
+                        await createMecavTask(o);
+                    }
+                }
             } else {
-                // ۲. اگر API مستقیم در دسترس نبود، اسکن متن‌های موجود در صفحه
-                scanDOMForOrders();
+                const pageText = document.body.innerText;
+                const pastTodayMatch = pageText.match(/تعهدات ارسال گذشته و امروز\s*(\d+)/);
+                const futureMatch = pageText.match(/تعهدات ارسال آینده\s*(\d+)/);
+
+                const pastToday = pastTodayMatch ? parseInt(pastTodayMatch[1], 10) : 0;
+                const future = futureMatch ? parseInt(futureMatch[1], 10) : 0;
+
+                if (pastToday > 0 || future > 0) {
+                    const ordersUrl = 'https://seller.digikala.com/pwa/orders?sort=variant_id&page=1';
+                    const res = await fetch(ordersUrl, { credentials: 'include' }).catch(() => null);
+                    if (res && res.ok) {
+                        const html = await res.text();
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const orders = extractOrdersFromDocument(doc);
+                        const processed = getProcessedOrders();
+
+                        for (const o of orders) {
+                            if (!processed.includes(o.dkpc)) {
+                                await createMecavTask(o);
+                            }
+                        }
+                    }
+                }
             }
         } catch (e) {
-            scanDOMForOrders();
+            console.error('[Mecav Sync]', e);
         } finally {
             isChecking = false;
             updateBadge('متصل به مکاو 🟢', '#10b981');
         }
     }
 
-    function handleDashboardData(data) {
-        if (!data || !data.data) return;
-        const d = data.data;
-        const todayOrders = d.today_orders_count || (d.orders && d.orders.today) || 0;
-        const futureCommitments = d.future_commitments_count || 0;
-
-        if (todayOrders > 0 || futureCommitments > 0) {
-            // درخواست لیست تفصیلی سفارش‌های باز
-            fetchOrderDetailsAndSync();
-        }
-    }
-
-    // استخراج جزئیات سفارش‌های فعال
-    async function fetchOrderDetailsAndSync() {
-        try {
-            const res = await fetch('/api/v1/orders/?page=1&size=20', { credentials: 'include' }).catch(() => null);
-            if (res && res.ok) {
-                const json = await res.json();
-                const items = json?.data?.items || json?.items || [];
-                const processed = getProcessedOrders();
-
-                for (const item of items) {
-                    const id = item.order_id || item.id;
-                    if (id && !processed.includes(String(id))) {
-                        await createMecavTask({
-                            id: id,
-                            title: item.product_variant_title || item.title || 'محصول دیجی‌کالا',
-                            quantity: item.quantity || 1,
-                            commitment_date: item.commitment_date || item.shipping_deadline || '',
-                            price: item.selling_price || item.total_price || 0
-                        });
-                    }
-                }
-                return;
-            }
-        } catch (e) {}
-
-        // روش جایگزین: اسکن جدول سفارش‌ها در صورت باز بودن تب سفارشات
-        scanDOMForOrders();
-    }
-
-    // اسکن المان‌های صفحه داشبورد
-    function scanDOMForOrders() {
-        const text = document.body.innerText;
-        // بررسی عدد جلوی "سفارش‌های امروز" یا "تعهدات ارسال آینده"
-        const todayMatch = text.match(/سفارش‌های امروز\s*(\d+)/);
-        const futureMatch = text.match(/تعهدات ارسال آینده\s*(\d+)/);
-
-        const countToday = todayMatch ? parseInt(todayMatch[1], 10) : 0;
-        const countFuture = futureMatch ? parseInt(futureMatch[1], 10) : 0;
-
-        if (countToday > 0 || countFuture > 0) {
-            const processed = getProcessedOrders();
-            const orderKey = `order_detected_${new Date().toLocaleDateString('fa-IR')}`;
-            if (!processed.includes(orderKey)) {
-                createMecavTask({
-                    id: orderKey,
-                    title: 'سفارش جدید دریافتی (جهت مشاهده نام کالا به تب سفارش‌ها بروید)',
-                    quantity: countToday || countFuture,
-                    commitment_date: 'تعهد ارسال آینده در پنل',
-                    price: 0
-                });
-            }
-        }
-    }
-
-    // ویجت شناور مکاو در گوشه پنل دیجی‌کالا
     let badgeEl = null;
     function createMecavWidget() {
         if (document.getElementById('mecav-sync-widget')) return;
@@ -371,7 +365,7 @@
         badgeEl = document.getElementById('mecav-badge-status');
 
         document.getElementById('btnMecavManualSync').addEventListener('click', () => {
-            showMecavToast('در حال بررسی سفارش‌های جدید دیجی‌کالا...');
+            showMecavToast('در حال استخراج نام کالا و بررسی سفارش‌های جدید...');
             checkDigikalaOrders();
         });
     }
@@ -383,16 +377,13 @@
         }
     }
 
-    // شروع کار
     window.addEventListener('load', () => {
         setTimeout(() => {
             createMecavWidget();
             loadMecavSettings();
             checkDigikalaOrders();
-
-            // بررسی خودکار هر ۹۰ ثانیه
-            setInterval(checkDigikalaOrders, 90000);
-        }, 3000);
+            setInterval(checkDigikalaOrders, 60000);
+        }, 2000);
     });
 
 })();
