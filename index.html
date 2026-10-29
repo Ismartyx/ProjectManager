@@ -13,6 +13,9 @@
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js');
         }
+        if (window.electronAPI && window.electronAPI.isElectron) {
+            document.documentElement.classList.add('is-electron');
+        }
         // تضمین قطعی محو شدن اسپلش اسکرین حتی در صورت کندی شبکه یا رخداد پیش‌بینی‌نشده
         setTimeout(function() {
             var splash = document.getElementById('app-splash-overlay');

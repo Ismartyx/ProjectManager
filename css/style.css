@@ -236,12 +236,24 @@
     transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
-body.is-electron .electron-titlebar {
+body.is-electron .electron-titlebar,
+html.is-electron .electron-titlebar {
     display: flex;
 }
 
-body.is-electron {
+body.is-electron,
+html.is-electron body {
     padding-top: 32px;
+}
+
+body.is-electron .app-header,
+html.is-electron .app-header {
+    top: 32px !important;
+}
+
+body.is-electron #connection-status,
+html.is-electron #connection-status {
+    top: 32px !important;
 }
 
 .electron-titlebar-drag {
@@ -298,7 +310,7 @@ button, input, select, textarea {
     border-bottom: 1px solid var(--border-color);
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 1000;
     box-shadow: var(--shadow);
     transition: background-color 0.25s ease, border-color 0.25s ease;
 }
