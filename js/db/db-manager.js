@@ -178,5 +178,93 @@ const DBManager = {
             phone: '',
             social: '@mechave'
         };
+    },
+
+    saveDigikalaSettings: async function(settingsData) {
+        try {
+            localStorage.setItem('pm_digikala_settings', JSON.stringify(settingsData));
+        } catch (e) {}
+
+        let doc = { _id: 'digikala_settings', type: 'digikala_settings', ...settingsData, updatedAt: Date.now() };
+
+        try {
+            if (this.adapter && this.adapter.localDB) {
+                let existing = await this.adapter.localDB.get('digikala_settings').catch(() => null);
+                if (existing) doc._rev = existing._rev;
+                await this.adapter.localDB.put(doc);
+            }
+        } catch (e) {
+            console.warn('[DBManager] error saving digikala settings to localDB:', e);
+        }
+
+        try {
+            const activeUrl = (this.adapter && this.adapter.activeUrl) ? this.adapter.activeUrl : 'http://155.117.234.69:5984/mecav_db_main';
+            let remoteRes = await fetch(`${activeUrl}/digikala_settings`, {
+                headers: { 'Authorization': 'Basic ' + btoa('admin:33995333Sma') }
+            });
+            if (remoteRes.ok) {
+                let remoteDoc = await remoteRes.json();
+                doc._rev = remoteDoc._rev;
+            } else {
+                delete doc._rev;
+            }
+            await fetch(`${activeUrl}/digikala_settings`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Basic ' + btoa('admin:33995333Sma')
+                },
+                body: JSON.stringify(doc)
+            });
+        } catch (ex) {
+            console.warn('[DBManager] error direct syncing digikala settings to CouchDB:', ex);
+        }
+        return doc;
+    },
+
+    getDigikalaSettings: async function() {
+        let settings = null;
+        try {
+            if (this.adapter && this.adapter.localDB) {
+                let doc = await this.adapter.localDB.get('digikala_settings').catch(() => null);
+                if (doc && doc.targetProjectId) settings = doc;
+            }
+        } catch (e) {}
+
+        if (!settings) {
+            try {
+                const activeUrl = (this.adapter && this.adapter.activeUrl) ? this.adapter.activeUrl : 'http://155.117.234.69:5984/mecav_db_main';
+                let res = await fetch(`${activeUrl}/digikala_settings?t=${Date.now()}`, {
+                    headers: { 'Authorization': 'Basic ' + btoa('admin:33995333Sma') }
+                });
+                if (res.ok) {
+                    let remoteDoc = await res.json();
+                    if (remoteDoc && remoteDoc.targetProjectId) {
+                        settings = remoteDoc;
+                        localStorage.setItem('pm_digikala_settings', JSON.stringify(remoteDoc));
+                        if (this.adapter && this.adapter.localDB) {
+                            await this.adapter.localDB.put(remoteDoc).catch(() => {});
+                        }
+                    }
+                }
+            } catch (ex) {}
+        }
+
+        if (!settings) {
+            try {
+                const stored = localStorage.getItem('pm_digikala_settings');
+                if (stored) settings = JSON.parse(stored);
+            } catch (e) {}
+        }
+
+        return settings || {
+            targetProjectId: 'project_1792433538439_z9a5e',
+            targetProjectTitle: 'فروش',
+            assigneeId: '100',
+            finalizerId: '100',
+            observers: ['100'],
+            isImportant: true,
+            tag: 'فروش / دیجی‌کالا'
+        };
     }
 };

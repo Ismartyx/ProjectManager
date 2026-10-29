@@ -286,6 +286,42 @@
                         <input type="text" id="serverPushUrl" placeholder="http://155.117.234.69:8080" style="direction: ltr; text-align: left; margin-bottom: 10px;" />
                         <button id="btnSavePushUrl" class="btn btn-primary" style="margin: 0; width: 100%;">ذخیره سرور اعلان‌ها</button>
                     </div>
+
+                    <div class="card" style="border: 1px solid #ef394e; margin-bottom: 15px; background: rgba(239, 57, 78, 0.03);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                            <h3 style="color: #ef394e; margin: 0; display: flex; align-items: center; gap: 8px;">
+                                🛒 اتصال خودکار سفارش‌های دیجی‌کالا
+                            </h3>
+                            <span class="badge" style="background: rgba(239, 57, 78, 0.15); color: #ef394e; border: 1px solid rgba(239, 57, 78, 0.3); font-size: 0.75rem; padding: 2px 8px; border-radius: 4px;">فروش خودکار</span>
+                        </div>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.6;">
+                            هنگام ثبت سفارش جدید در دیجی‌کالا، یک تسک خودکار همراه با مشخصات کالا و مهلت تعهد ارسال در پروژه زیر ایجاد می‌شود و به افراد مشخص‌شده نوتیفیکیشن می‌زند:
+                        </p>
+
+                        <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 4px;">پروژه مقصد برای ایجاد تسک فروش:</label>
+                        <select id="dkProjectSelect" style="width: 100%; margin-bottom: 10px; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main);"></select>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                            <div>
+                                <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 4px;">مسئول انجام تسک:</label>
+                                <select id="dkAssigneeSelect" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main);"></select>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 4px;">تاییدکننده نهایی:</label>
+                                <select id="dkFinalizerSelect" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main);"></select>
+                            </div>
+                        </div>
+
+                        <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 4px;">ناظرین و افراد مطلع (دریافت نوتیفیکیشن):</label>
+                        <div id="dkObserversContainer" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid var(--border-color); max-height: 140px; overflow-y: auto;"></div>
+
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <input type="checkbox" id="dkIsImportant" checked style="width: 16px; height: 16px; cursor: pointer;" />
+                            <label for="dkIsImportant" style="font-size: 0.85rem; color: var(--text-main); cursor: pointer;">علامت‌گذاری به عنوان تسک دارای فوریت و ستاره‌دار</label>
+                        </div>
+
+                        <button id="btnSaveDkSettings" class="btn btn-primary" style="margin: 0; width: 100%; background: #ef394e; border-color: #ef394e;">ذخیره تنظیمات دیجی‌کالا</button>
+                    </div>
                     <div class="card">
                         <h2>مدیریت پرسنل</h2>
                         <div id="admin-users-list-container" style="max-height: 250px; overflow-y: auto; font-size: 0.9rem;"></div>

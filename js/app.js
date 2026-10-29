@@ -774,6 +774,99 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
+        // تنظیم و بارگذاری تنظیمات دیجی‌کالا
+        const dkProjectSelect = document.getElementById('dkProjectSelect');
+        const dkAssigneeSelect = document.getElementById('dkAssigneeSelect');
+        const dkFinalizerSelect = document.getElementById('dkFinalizerSelect');
+        const dkObserversContainer = document.getElementById('dkObserversContainer');
+        const dkIsImportant = document.getElementById('dkIsImportant');
+        const btnSaveDkSettings = document.getElementById('btnSaveDkSettings');
+
+        async function initDigikalaSettingsUI() {
+            if (!dkProjectSelect) return;
+            const currentUsers = (typeof AuthManager !== 'undefined' && AuthManager.usersList) ? AuthManager.usersList : [];
+            const allProjects = (typeof DBManager !== 'undefined') ? await DBManager.getProjects() : [];
+            const currentSettings = (typeof DBManager !== 'undefined' && DBManager.getDigikalaSettings) ? await DBManager.getDigikalaSettings() : {};
+
+            dkProjectSelect.innerHTML = '';
+            allProjects.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p._id;
+                opt.textContent = p.title;
+                if (currentSettings.targetProjectId === p._id || (!currentSettings.targetProjectId && p.title.includes('فروش'))) {
+                    opt.selected = true;
+                }
+                dkProjectSelect.appendChild(opt);
+            });
+
+            dkAssigneeSelect.innerHTML = '';
+            dkFinalizerSelect.innerHTML = '';
+            currentUsers.forEach(u => {
+                const opt1 = document.createElement('option');
+                opt1.value = u.id;
+                opt1.textContent = `${u.name} (${u.id})`;
+                if (String(currentSettings.assigneeId) === String(u.id)) opt1.selected = true;
+                dkAssigneeSelect.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = u.id;
+                opt2.textContent = `${u.name} (${u.id})`;
+                if (String(currentSettings.finalizerId) === String(u.id)) opt2.selected = true;
+                dkFinalizerSelect.appendChild(opt2);
+            });
+
+            dkObserversContainer.innerHTML = '';
+            const selectedObservers = Array.isArray(currentSettings.observers) ? currentSettings.observers.map(String) : ['100'];
+            currentUsers.forEach(u => {
+                const isChecked = selectedObservers.includes(String(u.id));
+                const label = document.createElement('label');
+                label.style.cssText = 'display: inline-flex; align-items: center; gap: 5px; font-size: 0.82rem; background: rgba(255,255,255,0.06); padding: 4px 8px; border-radius: 6px; cursor: pointer; color: var(--text-main);';
+                label.innerHTML = `
+                    <input type="checkbox" class="dk-observer-chk" value="${u.id}" ${isChecked ? 'checked' : ''} style="cursor: pointer;" />
+                    <span>${u.name}</span>
+                `;
+                dkObserversContainer.appendChild(label);
+            });
+
+            if (dkIsImportant) {
+                dkIsImportant.checked = currentSettings.isImportant !== false;
+            }
+        }
+        window.initDigikalaSettingsUI = initDigikalaSettingsUI;
+        initDigikalaSettingsUI();
+
+        if (btnSaveDkSettings && !btnSaveDkSettings.dataset.bound) {
+            btnSaveDkSettings.dataset.bound = "true";
+            btnSaveDkSettings.addEventListener('click', async () => {
+                const targetProjectId = dkProjectSelect ? dkProjectSelect.value : '';
+                const targetProjectTitle = dkProjectSelect && dkProjectSelect.selectedOptions[0] ? dkProjectSelect.selectedOptions[0].textContent : 'فروش';
+                const assigneeId = dkAssigneeSelect ? dkAssigneeSelect.value : '100';
+                const finalizerId = dkFinalizerSelect ? dkFinalizerSelect.value : '100';
+                const isImportant = dkIsImportant ? dkIsImportant.checked : true;
+
+                const observerCheckboxes = dkObserversContainer ? dkObserversContainer.querySelectorAll('.dk-observer-chk:checked') : [];
+                const observers = Array.from(observerCheckboxes).map(c => c.value);
+
+                const data = {
+                    targetProjectId,
+                    targetProjectTitle,
+                    assigneeId,
+                    finalizerId,
+                    observers,
+                    isImportant,
+                    tag: 'فروش / دیجی‌کالا'
+                };
+
+                if (typeof DBManager !== 'undefined' && DBManager.saveDigikalaSettings) {
+                    await DBManager.saveDigikalaSettings(data);
+                } else {
+                    localStorage.setItem('pm_digikala_settings', JSON.stringify(data));
+                }
+
+                showToast('تنظیمات دیجی‌کالا با موفقیت ذخیره شد.');
+            });
+        }
+
         // تنظیم و ذخیره اطلاعات درباره ما در پنل ادمین
         const adminAboutTitle = document.getElementById('adminAboutTitle');
         const adminAboutSite = document.getElementById('adminAboutSite');
@@ -1402,6 +1495,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             dashboardView.style.display = 'none'; 
             document.getElementById('settings-view').style.display = 'block'; 
             updateBackupStatsText();
+            if (window.initDigikalaSettingsUI) window.initDigikalaSettingsUI();
         });
     }
 
