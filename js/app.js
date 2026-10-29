@@ -1818,8 +1818,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(chkShowArchivedEl) chkShowArchivedEl.addEventListener('change', () => renderDashboard());
 
     // ==========================================
-    // قابلیت چیدمان سفارشی پروژه‌ها (Drag & Drop و Touch & Hold)
+    // قابلیت چیدمان ستونی مستقل و پویا (Multi-Lane Kanban Board)
     // ==========================================
+    function getOptimalColumnCount() {
+        const width = window.innerWidth;
+        if (width < 768) return 1;
+        if (width < 1100) return 2;
+        if (width < 1500) return 3;
+        if (width < 1900) return 4;
+        return 5;
+    }
+
+    function getSavedProjectLanes() {
+        try {
+            const raw = localStorage.getItem('pm_project_lanes');
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     function getSavedProjectOrder() {
         try {
             const raw = localStorage.getItem('pm_project_order');
@@ -1829,111 +1847,96 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    function saveProjectOrder(orderArray) {
-        localStorage.setItem('pm_project_order', JSON.stringify(orderArray));
-    }
-
-    function saveCurrentDomProjectOrder(container) {
+    function saveCurrentProjectLanes(container) {
         if (!container) return;
-        const cards = container.querySelectorAll('.project-group');
-        const newOrder = [];
-        cards.forEach(c => {
-            if (c.dataset.projectId) newOrder.push(c.dataset.projectId);
+        const laneEls = container.querySelectorAll('.project-lane');
+        if (laneEls.length === 0) return;
+        const lanes = [];
+        const flatOrder = [];
+        laneEls.forEach(lane => {
+            const ids = [];
+            lane.querySelectorAll('.project-group').forEach(c => {
+                if (c.dataset.projectId) {
+                    ids.push(c.dataset.projectId);
+                    flatOrder.push(c.dataset.projectId);
+                }
+            });
+            lanes.push(ids);
         });
-        if (newOrder.length > 0) {
-            saveProjectOrder(newOrder);
-        }
+        localStorage.setItem('pm_project_lanes', JSON.stringify(lanes));
+        localStorage.setItem('pm_project_order', JSON.stringify(flatOrder));
     }
 
-    function getProjectDropTarget(container, clientX, clientY, currentCard) {
-        const cards = Array.from(container.querySelectorAll('.project-group')).filter(c => c !== currentCard);
-        if (cards.length === 0) return { position: 'append' };
-
-        // ۱. بررسی هاور دقیق روی هر کارت در نمای دوبعدی گرید (X و Y)
-        for (const card of cards) {
-            const r = card.getBoundingClientRect();
-            if (clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom) {
-                // در چیدمان راست‌به‌چپ (RTL):
-                // نیمه سمت راست کارت (clientX > center) = قبل از کارت (سمت راست‌تر)
-                // نیمه سمت چپ کارت (clientX <= center) = بعد از کارت (سمت چپ‌تر)
-                const isRightHalf = clientX > (r.left + r.width / 2);
-                return {
-                    target: card,
-                    position: isRightHalf ? 'before' : 'after'
-                };
+    let boardResizeTimer = null;
+    let lastRenderedOptimalCols = getOptimalColumnCount();
+    window.addEventListener('resize', () => {
+        clearTimeout(boardResizeTimer);
+        boardResizeTimer = setTimeout(() => {
+            const currentOptimal = getOptimalColumnCount();
+            if (currentOptimal !== lastRenderedOptimalCols) {
+                lastRenderedOptimalCols = currentOptimal;
+                const container = document.getElementById('tasks-list-container');
+                if (container && container.offsetParent !== null) {
+                    renderDashboard();
+                }
             }
-        }
-
-        // ۲. اگر ماوس روی هیچ کارتی نیست (مانند فضای خالی سمت چپ یا پایین کانتینر):
-        // نزدیک‌ترین کارت را نسبت به نشانگر پیدا می‌کنیم
-        let closestCard = null;
-        let minDistance = Infinity;
-
-        cards.forEach(card => {
-            const r = card.getBoundingClientRect();
-            const centerX = r.left + r.width / 2;
-            const centerY = r.top + r.height / 2;
-            const dist = Math.hypot(clientX - centerX, clientY - centerY);
-            if (dist < minDistance) {
-                minDistance = dist;
-                closestCard = card;
-            }
-        });
-
-        if (!closestCard) return { position: 'append' };
-
-        const r = closestCard.getBoundingClientRect();
-        // در RTL: اگر نشانگر سمت چپ مرکز نزدیک‌ترین کارت باشد یا زیر آن، بعد از آن قرار می‌گیرد
-        if (clientX < (r.left + r.width / 2) || clientY > (r.bottom - 20)) {
-            return { target: closestCard, position: 'after' };
-        } else {
-            return { target: closestCard, position: 'before' };
-        }
-    }
-
-    function applyProjectDrop(container, draggedCard, dropInfo) {
-        if (!draggedCard || !dropInfo) return;
-        if (dropInfo.position === 'before') {
-            if (dropInfo.target && dropInfo.target !== draggedCard && dropInfo.target.previousElementSibling !== draggedCard) {
-                container.insertBefore(draggedCard, dropInfo.target);
-            }
-        } else if (dropInfo.position === 'after') {
-            if (dropInfo.target && dropInfo.target !== draggedCard && dropInfo.target.nextElementSibling !== draggedCard) {
-                container.insertBefore(draggedCard, dropInfo.target.nextSibling);
-            }
-        } else {
-            if (container.lastElementChild !== draggedCard) {
-                container.appendChild(draggedCard);
-            }
-        }
-    }
+        }, 300);
+    });
 
     function setupProjectDragAndDrop(container) {
         if (!container) return;
         const projectCards = container.querySelectorAll('.project-group');
-        if (projectCards.length <= 1) return;
+        const lanes = container.querySelectorAll('.project-lane');
+        if (projectCards.length === 0) return;
 
         let draggedEl = null;
 
-        // شنود درگ روی کل کانتینر برای فضاهای خالی سمت چپ و پایین
-        if (!container.dataset.dragBound) {
-            container.dataset.dragBound = "true";
-            container.addEventListener('dragover', (e) => {
+        // شنود رویداد درگ روی هر ستون مستقل
+        lanes.forEach(lane => {
+            lane.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 if (!draggedEl) return;
                 e.dataTransfer.dropEffect = 'move';
-                const dropInfo = getProjectDropTarget(container, e.clientX, e.clientY, draggedEl);
-                applyProjectDrop(container, draggedEl, dropInfo);
+                lane.classList.add('drag-over-lane');
+
+                // محاسبه موقعیت قرارگیری درون ستون جاری
+                const siblingCards = Array.from(lane.querySelectorAll('.project-group')).filter(c => c !== draggedEl);
+                let insertBeforeEl = null;
+                for (const card of siblingCards) {
+                    const rect = card.getBoundingClientRect();
+                    const midY = rect.top + rect.height / 2;
+                    if (e.clientY < midY) {
+                        insertBeforeEl = card;
+                        break;
+                    }
+                }
+
+                if (insertBeforeEl) {
+                    if (insertBeforeEl !== draggedEl.nextElementSibling) {
+                        lane.insertBefore(draggedEl, insertBeforeEl);
+                    }
+                } else {
+                    if (lane.lastElementChild !== draggedEl) {
+                        lane.appendChild(draggedEl);
+                    }
+                }
             });
 
-            container.addEventListener('drop', (e) => {
-                e.preventDefault();
-                saveCurrentDomProjectOrder(container);
+            lane.addEventListener('dragleave', (e) => {
+                if (!lane.contains(e.relatedTarget)) {
+                    lane.classList.remove('drag-over-lane');
+                }
             });
-        }
+
+            lane.addEventListener('drop', (e) => {
+                e.preventDefault();
+                lane.classList.remove('drag-over-lane');
+                saveCurrentProjectLanes(container);
+            });
+        });
 
         projectCards.forEach(card => {
-            // ۱. پشتیبانی از درگ با ماوس در ویندوز و مرورگر
+            // ۱. پشتیبانی از ماوس در دسکتاپ
             card.addEventListener('dragstart', (e) => {
                 draggedEl = card;
                 e.dataTransfer.effectAllowed = 'move';
@@ -1943,32 +1946,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             card.addEventListener('dragend', () => {
                 card.classList.remove('is-dragging');
-                projectCards.forEach(c => c.classList.remove('drag-over'));
-                saveCurrentDomProjectOrder(container);
+                lanes.forEach(l => l.classList.remove('drag-over-lane'));
+                saveCurrentProjectLanes(container);
                 draggedEl = null;
-            });
-
-            card.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                if (!draggedEl || draggedEl === card) return;
-                const dropInfo = getProjectDropTarget(container, e.clientX, e.clientY, draggedEl);
-                applyProjectDrop(container, draggedEl, dropInfo);
-            });
-
-            card.addEventListener('dragenter', (e) => {
-                e.preventDefault();
-                if (draggedEl && draggedEl !== card) card.classList.add('drag-over');
-            });
-
-            card.addEventListener('dragleave', () => {
-                card.classList.remove('drag-over');
-            });
-
-            card.addEventListener('drop', (e) => {
-                e.preventDefault();
-                card.classList.remove('drag-over');
-                saveCurrentDomProjectOrder(container);
             });
 
             // ۲. پشتیبانی از لمس و نگه‌داشتن در گوشی (Touch & Hold برای اندروید)
@@ -2002,8 +1982,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     e.preventDefault();
                     const touch = e.touches[0];
-                    const dropInfo = getProjectDropTarget(container, touch.clientX, touch.clientY, card);
-                    applyProjectDrop(container, card, dropInfo);
+                    const hoveredEl = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const targetLane = hoveredEl ? hoveredEl.closest('.project-lane') : null;
+                    if (targetLane) {
+                        const siblingCards = Array.from(targetLane.querySelectorAll('.project-group')).filter(c => c !== card);
+                        let insertBeforeEl = null;
+                        for (const sc of siblingCards) {
+                            const rect = sc.getBoundingClientRect();
+                            if (touch.clientY < (rect.top + rect.height / 2)) {
+                                insertBeforeEl = sc;
+                                break;
+                            }
+                        }
+                        if (insertBeforeEl) {
+                            if (insertBeforeEl !== card.nextElementSibling) {
+                                targetLane.insertBefore(card, insertBeforeEl);
+                            }
+                        } else {
+                            if (targetLane.lastElementChild !== card) {
+                                targetLane.appendChild(card);
+                            }
+                        }
+                    }
                 }, { passive: false });
 
                 const finishTouch = () => {
@@ -2011,7 +2011,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (isTouchDragging) {
                         isTouchDragging = false;
                         card.classList.remove('touch-dragging');
-                        saveCurrentDomProjectOrder(container);
+                        saveCurrentProjectLanes(container);
                         showToast('چیدمان پروژه‌ها ذخیره شد.');
                     }
                 };
@@ -2125,6 +2125,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         let collapsedList = getCollapsedProjects();
+        const cardHtmlMap = new Map();
+        const activeProjects = [];
 
         myProjects.forEach(proj => {
             let projTasks = myTasks.filter(t => t.projectId === proj._id);
@@ -2246,9 +2248,65 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>`;
             });
             projHTML += `</div></div>`;
-            container.innerHTML += projHTML;
+            cardHtmlMap.set(proj._id, projHTML);
+            activeProjects.push(proj._id);
         });
 
+        if (activeProjects.length === 0) {
+            container.innerHTML = searchTerm ? '<div class="card">تسکی با این جستجو یافت نشد.</div>' : '<div class="card">تسک فعالی با این فیلتر وجود ندارد.</div>';
+            return;
+        }
+
+        const optimalCols = getOptimalColumnCount();
+        const numCols = Math.min(optimalCols, Math.max(1, activeProjects.length));
+        lastRenderedOptimalCols = optimalCols;
+
+        // آماده‌سازی ستون‌های مستقل برد (Lanes)
+        const lanesBuckets = Array.from({ length: numCols }, () => []);
+        const placedIds = new Set();
+        const savedLanes = getSavedProjectLanes();
+
+        if (savedLanes && Array.isArray(savedLanes) && savedLanes.length > 0 && numCols > 1) {
+            savedLanes.forEach((laneList, lIdx) => {
+                const targetCol = lIdx % numCols;
+                if (Array.isArray(laneList)) {
+                    laneList.forEach(id => {
+                        if (activeProjects.includes(id) && !placedIds.has(id)) {
+                            lanesBuckets[targetCol].push(id);
+                            placedIds.add(id);
+                        }
+                    });
+                }
+            });
+        }
+
+        // پروژه‌های جدید یا توزیع پیش‌فرض
+        activeProjects.forEach(id => {
+            if (!placedIds.has(id)) {
+                let minCol = 0;
+                let minLen = lanesBuckets[0].length;
+                for (let c = 1; c < numCols; c++) {
+                    if (lanesBuckets[c].length < minLen) {
+                        minLen = lanesBuckets[c].length;
+                        minCol = c;
+                    }
+                }
+                lanesBuckets[minCol].push(id);
+                placedIds.add(id);
+            }
+        });
+
+        // رندر نهایی کانتینر چندستونه مستقل
+        let boardHTML = '';
+        for (let c = 0; c < numCols; c++) {
+            const bucket = lanesBuckets[c] || [];
+            const cardsInLane = bucket.map(id => cardHtmlMap.get(id)).filter(Boolean).join('');
+            boardHTML += `<div class="project-lane" data-lane-index="${c}">
+                ${cardsInLane}
+            </div>`;
+        }
+
+        container.innerHTML = boardHTML;
         setupProjectDragAndDrop(container);
     }
 

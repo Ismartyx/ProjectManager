@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    const PROCESSED_ORDERS_KEY = 'mecav_processed_dk_orders_v2';
+    const PROCESSED_ORDERS_KEY = 'mecav_processed_dk_orders_v3';
     let isChecking = false;
     let digikalaSettings = null;
 
@@ -55,6 +55,21 @@
         });
     }
 
+    // دریافت مهلت دقیق تعهد ارسال از صفحه جزئیات کالا در دیجی‌کالا
+    async function fetchExactDeadline(cleanDkpc) {
+        if (!cleanDkpc) return '';
+        try {
+            const url = `https://seller.digikala.com/pwa/orders/ship-by-digikala/${cleanDkpc}`;
+            const res = await fetch(url, { credentials: 'include' });
+            if (res.ok) {
+                const html = await res.text();
+                const match = html.match(/تا\s+\d+\s+[\u0600-\u06FF]+/);
+                if (match) return match[0];
+            }
+        } catch (e) {}
+        return '';
+    }
+
     async function createMecavTask(order) {
         if (!digikalaSettings) await loadMecavSettings();
 
@@ -73,23 +88,26 @@
             year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
         });
 
-        const orderId = order.dkpc || order.id || String(nowTs).substr(-6);
+        const cleanDkpc = String(order.dkpc || '').replace(/\D/g, '');
+        const exactDeadline = (await fetchExactDeadline(cleanDkpc)) || order.deadline || 'تعهد ارسال آینده در پنل';
+
         const title = order.title || 'کالای سفارشی دیجی‌کالا';
-        const count = order.count || order.quantity || 1;
-        const commitmentDate = order.deadline || 'تعهد ارسال آینده در پنل';
+        const count = order.count || 1;
         const dkp = order.dkp ? `\n🆔 کد کالا (DKP): ${order.dkp}` : '';
-        const dkpc = order.dkpc ? `\n🔢 کد تنوع: ${order.dkpc}` : '';
+        const dkpcFull = cleanDkpc ? `\n🔢 کد تنوع: DKPC-${cleanDkpc}` : '';
 
         const taskDoc = {
-            _id: 'task_' + nowTs + '_' + Math.random().toString(36).substr(2, 5),
+            _id: `task_dk_${cleanDkpc || nowTs}`,
+            dkpc: cleanDkpc,
             type: 'task',
             projectId: s.targetProjectId,
             title: `🛒 سفارش دیجی‌کالا: ${title} (${count} عدد)`,
-            description: `یک سفارش جدید در بخش تعهدات ارسال دیجی‌کالا ثبت شد.\n\n` +
-                         `📦 نام کالا: ${title}${dkpc}${dkp}\n` +
+            description: `سفارش جدید دیجی‌کالا در بخش تعهدات ارسال ثبت شد.\n\n` +
+                         `📦 نام کالا: ${title}${dkpcFull}${dkp}\n` +
                          `📊 تعداد فروخته‌شده: ${count} عدد\n` +
-                         `⏰ مهلت تعهد ارسال: ${commitmentDate}\n` +
-                         `🏷️ وضعیت: در انتظار بسته‌بندی و الصاق برچسب محموله\n` +
+                         `⏰ مهلت تعهد ارسال دیجی‌کالا: ${exactDeadline}\n` +
+                         `🏷️ وضعیت تعهد: در انتظار بسته‌بندی و تحویل به انبار/پست\n` +
+                         `🔗 لینک بررسی در پنل: https://seller.digikala.com/pwa/orders/ship-by-digikala/${cleanDkpc}\n` +
                          `🤖 ثبت‌شده خودکار توسط: ربات دیجی‌کالا`,
             assigneeId: s.assigneeId || '100',
             finalizerId: s.finalizerId || '100',
@@ -110,7 +128,7 @@
             ],
             isImportant: s.isImportant !== false,
             deadlineTimestamp: null,
-            deadlineLabel: commitmentDate,
+            deadlineLabel: exactDeadline,
             isPublic: false,
             observers: s.observers || ['100'],
             createdAt: nowTs,
@@ -122,11 +140,16 @@
         return new Promise((resolve) => {
             chrome.runtime.sendMessage({ action: 'SAVE_TASK', task: taskDoc }, (response) => {
                 if (response && response.success) {
-                    markOrderProcessed(orderId);
+                    markOrderProcessed(cleanDkpc);
                     playSaleChime();
                     sendPushNotifications(taskDoc);
                     showMecavToast(`✅ سفارش "${title}" با موفقیت در پروژه فروش ثبت شد!`);
                     resolve(true);
+                } else if (response && response.alreadyExists) {
+                    // تسک قبلاً در دیتابیس سرور وجود داشته است؛ شناسه آن در حافظه ثبت می‌شود
+                    markOrderProcessed(cleanDkpc);
+                    console.log(`[Mecav Sync] تسک DKPC-${cleanDkpc} از قبل در دیتابیس مکاو ثبت شده بود و تکراری ایجاد نشد.`);
+                    resolve(false);
                 } else {
                     resolve(false);
                 }
@@ -178,40 +201,28 @@
         setTimeout(() => toast.remove(), 7000);
     }
 
-    // استخراج دقیق اطلاعات سفارش‌ها از DOM صفحه orders
     function extractOrdersFromDocument(doc) {
         const orders = [];
         const elements = doc.querySelectorAll('*');
         const dkpcElements = [];
 
-        // ۱. پیدا کردن کدهای DKPC
         for (const el of elements) {
             if (el.children.length === 0 && el.innerText && /DKPC-\d+/i.test(el.innerText)) {
                 dkpcElements.push(el);
             }
         }
 
-        // ۲. یافتن بازه زمانی تعهد ارسال (مثل: تا ۱۵ آبان)
-        let deadline = '';
-        for (const el of elements) {
-            if (el.children.length === 0 && el.innerText && el.innerText.includes('تعهد ارسال') && el.innerText.includes('تا')) {
-                deadline = el.innerText.replace(/بازه زمانی|تعهد ارسال|[:|]/g, '').trim();
-                break;
-            }
-        }
-
         for (const el of dkpcElements) {
             const dkpcMatch = el.innerText.match(/DKPC-\d+/i);
             const dkpc = dkpcMatch ? dkpcMatch[0] : '';
+            const cleanDkpc = dkpc.replace(/\D/g, '');
             
-            // یافتن سطر یا ظرف محصول
             let row = el.closest('tr') || el.closest('[class*="row"]') || el.parentElement.parentElement;
             let title = '';
             let dkp = '';
             let count = 1;
 
             if (row) {
-                // استخراج عنوان: المانی با متن معنادار در همان سطر
                 const candidateTexts = Array.from(row.querySelectorAll('*'))
                     .filter(n => n.children.length === 0 && n.innerText && n.innerText.trim().length > 10 && !n.innerText.includes('DKPC') && !n.innerText.includes('DKP'))
                     .map(n => n.innerText.trim());
@@ -221,11 +232,9 @@
                     title = candidateTexts[0];
                 }
 
-                // استخراج DKP (معمولاً عدد ۸ رقمی مثل 21975474)
                 const dkpMatch = row.innerText.match(/\b(2\d{7}|\d{8})\b/);
                 if (dkpMatch) dkp = dkpMatch[0];
 
-                // استخراج تعداد از سطر (تعداد فروخته شده یا تعهد آینده)
                 const nums = row.innerText.match(/\b\d+\b/g);
                 if (nums && nums.length > 0) {
                     const validNums = nums.map(Number).filter(n => n > 0 && n < 100);
@@ -233,13 +242,12 @@
                 }
             }
 
-            if (dkpc) {
+            if (cleanDkpc) {
                 orders.push({
-                    dkpc: dkpc,
+                    dkpc: cleanDkpc,
                     dkp: dkp,
                     title: title || 'کالای ثبت‌شده در تعهدات ارسال',
-                    count: count,
-                    deadline: deadline || 'تعهد ارسال آینده در پنل'
+                    count: count
                 });
             }
         }
@@ -247,7 +255,6 @@
         return orders;
     }
 
-    // متد اصلی بررسی وضعیت سفارش‌ها
     async function checkDigikalaOrders() {
         if (isChecking) return;
         isChecking = true;
@@ -257,7 +264,6 @@
             const isOrdersPage = window.location.href.includes('/orders');
 
             if (isOrdersPage) {
-                // اگر در خود صفحه سفارش‌ها هستیم، مستقیماً از DOM صفحه استخراج کن
                 const orders = extractOrdersFromDocument(document);
                 const processed = getProcessedOrders();
 
@@ -267,9 +273,6 @@
                     }
                 }
             } else {
-                // اگر در داشبورد اصلی هستیم، دو عدد کلیدی را بررسی کن:
-                // ۱. تعهدات ارسال گذشته و امروز
-                // ۲. تعهدات ارسال آینده
                 const pageText = document.body.innerText;
                 const pastTodayMatch = pageText.match(/تعهدات ارسال گذشته و امروز\s*(\d+)/);
                 const futureMatch = pageText.match(/تعهدات ارسال آینده\s*(\d+)/);
@@ -278,7 +281,6 @@
                 const future = futureMatch ? parseInt(futureMatch[1], 10) : 0;
 
                 if (pastToday > 0 || future > 0) {
-                    // در پس‌زمینه صفحه جزئیات تعهدات را فراخوانی کن تا نام کالاها را بگیرد
                     const ordersUrl = 'https://seller.digikala.com/pwa/orders?sort=variant_id&page=1';
                     const res = await fetch(ordersUrl, { credentials: 'include' }).catch(() => null);
                     if (res && res.ok) {

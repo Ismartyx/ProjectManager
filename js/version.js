@@ -1,7 +1,7 @@
 // سیستم مدیریت نسخه و بررسی خودکار بروزرسانی
 const VersionManager = {
-    CURRENT_VERSION: "1.0.22",
-    CURRENT_VERSION_CODE: 10022,
+    CURRENT_VERSION: "1.0.23",
+    CURRENT_VERSION_CODE: 10023,
 
     init: function() {
         const verEl = document.getElementById('app-current-version-text');
@@ -399,14 +399,11 @@ const VersionManager = {
                 <button onclick="this.closest('#app-update-banner').remove()" style="background:none; border:none; color:var(--text-muted); font-size:1.3rem; cursor:pointer; line-height:1;" title="بستن">&times;</button>
             </div>
             <div style="font-size:0.85rem; color:var(--text-muted); line-height:1.5;">${info.changelog || 'بهبودها و رفع باگ‌های جدید در این نسخه اعمال شده است.'}</div>
-            <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-                <button onclick="VersionManager.downloadViaSystem('${targetUrl}');" class="btn btn-primary btn-small" style="flex:1; min-width:140px; text-align:center; margin:0; padding:9px 12px; font-weight:bold; cursor:pointer;">
-                    📥 دانلود و نصب نسخه جدید (سیستمی)
+            <div style="display:flex; gap:10px; margin-top:8px;">
+                <button onclick="VersionManager.downloadViaSystem('${targetUrl}');" class="btn btn-primary" style="flex:1; text-align:center; margin:0; padding:10px 14px; font-weight:bold; cursor:pointer; font-size:0.9rem;">
+                    🚀 تأیید و بروزرسانی
                 </button>
-                <button onclick="VersionManager.openInBrowser('${targetUrl}');" class="btn btn-secondary btn-small" style="flex:1; min-width:120px; text-align:center; margin:0; padding:9px 12px; font-weight:bold; cursor:pointer; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2);" title="دانلود مستقیم فایل نصبی با مرورگر">
-                    🌐 دانلود با مرورگر
-                </button>
-                <button onclick="this.closest('#app-update-banner').remove()" class="btn btn-secondary btn-small" style="margin:0; padding:9px 12px; cursor:pointer;">
+                <button onclick="this.closest('#app-update-banner').remove()" class="btn btn-secondary" style="padding:10px 16px; cursor:pointer; font-size:0.85rem;">
                     بعداً
                 </button>
             </div>
