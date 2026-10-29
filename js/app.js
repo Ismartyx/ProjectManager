@@ -291,6 +291,7 @@ window.isSameUser = isSameUser;
 
 function findUserName(id) {
     if (!id) return '';
+    if (id === 'digikala_bot') return 'ربات دیجی‌کالا';
     try {
         let uList = (typeof AuthManager !== 'undefined' && Array.isArray(AuthManager.usersList)) ? AuthManager.usersList : [];
         if (id === 'admin' || id === '100') {
@@ -307,6 +308,7 @@ window.findUserName = findUserName;
 
 function getUserColor(userId) {
     if (!userId) return '#94a3b8';
+    if (userId === 'digikala_bot') return '#ef394e';
     if (userId === '100' || userId === 'admin') return '#f59e0b';
     const colors = ['#10b981', '#a855f7', '#ec4899', '#f43f5e', '#0ea5e9', '#8b5cf6', '#14b8a6'];
     let hash = 0;
@@ -316,6 +318,7 @@ function getUserColor(userId) {
 
 function getDefaultUserCharacter(userId) {
     if (!userId) return '👤';
+    if (userId === 'digikala_bot') return '🛒';
     if (userId === '100' || userId === 'admin') return '👑';
     const chars = ['👨‍💼', '👨‍🔧', '👷‍♂️', '🧑‍💻', '👨‍🔬', '🧙‍♂️', '🦸‍♂️', '🦁', '🦊', '🦉', '🤖', '🚀', '🎯', '⚡', '🛡️', '🌟'];
     let hash = 0;
