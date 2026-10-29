@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "اتصال خودکار دیجی‌کالا به سامانه مکاو",
+  "version": "1.0.0",
+  "description": "تشخیص خودکار فروش جدید در پنل دیجی‌کالا و ایجاد تسک در پروژه فروش مکاو همراه با نوتیفیکیشن",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "http://155.117.234.69:*/*",
+    "https://seller.digikala.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://seller.digikala.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

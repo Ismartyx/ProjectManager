@@ -1,7 +1,7 @@
 // سیستم مدیریت نسخه و بررسی خودکار بروزرسانی
 const VersionManager = {
-    CURRENT_VERSION: "1.0.21",
-    CURRENT_VERSION_CODE: 10021,
+    CURRENT_VERSION: "1.0.22",
+    CURRENT_VERSION_CODE: 10022,
 
     init: function() {
         const verEl = document.getElementById('app-current-version-text');
@@ -87,14 +87,20 @@ const VersionManager = {
 
     downloadViaSystem: function(targetUrl) {
         if (!targetUrl) return;
+
+        // بستن بنر بروزرسانی
+        const banner = document.getElementById('app-update-banner');
+        if (banner) banner.remove();
+
+        // ۱. پلتفرم اندروید: دانلود منیجر سیستمی در نوار اعلان‌ها (۱۰۰٪ پایدار و رسمی سیستم‌عامل)
         if (window.MecavNotification && typeof window.MecavNotification.downloadWithDownloadManager === 'function') {
             window.MecavNotification.downloadWithDownloadManager(
                 targetUrl,
                 function(res) {
                     if (typeof NotificationManager !== 'undefined' && NotificationManager.showToast) {
-                        NotificationManager.showToast('📥 دانلود سیستمی آغاز شد. وضعیت دانلود را در نوار بالای گوشی مشاهده فرمایید.');
+                        NotificationManager.showToast('📥 دانلود نسخه جدید در نوار بالای گوشی آغاز شد.');
                     } else {
-                        alert('📥 دانلود سیستمی آغاز شد. وضعیت دانلود در نوار بالای گوشی قابل مشاهده است.');
+                        alert('📥 دانلود نسخه جدید آغاز شد. وضعیت در نوار بالای گوشی قابل مشاهده است.');
                     }
                 },
                 function(err) {
@@ -104,6 +110,14 @@ const VersionManager = {
             );
             return;
         }
+
+        // ۲. پلتفرم ویندوز (Electron بومی)
+        if (window.electronAPI && typeof window.electronAPI.downloadUpdate === 'function') {
+            VersionManager.startDirectUpdate(targetUrl);
+            return;
+        }
+
+        // ۳. مرورگر وب یا سایر محیط‌ها
         VersionManager.openInBrowser(targetUrl);
     },
 
@@ -385,17 +399,14 @@ const VersionManager = {
                 <button onclick="this.closest('#app-update-banner').remove()" style="background:none; border:none; color:var(--text-muted); font-size:1.3rem; cursor:pointer; line-height:1;" title="بستن">&times;</button>
             </div>
             <div style="font-size:0.85rem; color:var(--text-muted); line-height:1.5;">${info.changelog || 'بهبودها و رفع باگ‌های جدید در این نسخه اعمال شده است.'}</div>
-            <div style="display:flex; gap:8px; margin-top:6px; flex-wrap:wrap;">
-                <button onclick="VersionManager.startDirectUpdate('${targetUrl}');" class="btn btn-primary btn-small" style="flex:1; min-width:130px; text-align:center; margin:0; padding:8px 10px; font-weight:bold; cursor:pointer;">
-                    📥 دانلود و نصب خودکار
+            <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+                <button onclick="VersionManager.downloadViaSystem('${targetUrl}');" class="btn btn-primary btn-small" style="flex:1; min-width:140px; text-align:center; margin:0; padding:9px 12px; font-weight:bold; cursor:pointer;">
+                    📥 دانلود و نصب نسخه جدید (سیستمی)
                 </button>
-                <button onclick="VersionManager.downloadViaSystem('${targetUrl}');" class="btn btn-secondary btn-small" style="flex:1; min-width:130px; text-align:center; margin:0; padding:8px 10px; font-weight:bold; cursor:pointer; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2);" title="دانلود با دانلود منیجر بومی سیستم عامل و نوار بالای گوشی">
-                    ⚡ دانلود در اعلان‌ها
+                <button onclick="VersionManager.openInBrowser('${targetUrl}');" class="btn btn-secondary btn-small" style="flex:1; min-width:120px; text-align:center; margin:0; padding:9px 12px; font-weight:bold; cursor:pointer; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2);" title="دانلود مستقیم فایل نصبی با مرورگر">
+                    🌐 دانلود با مرورگر
                 </button>
-                <button onclick="VersionManager.openInBrowser('${targetUrl}');" class="btn btn-secondary btn-small" style="margin:0; padding:8px 10px; cursor:pointer; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2);" title="دانلود از طریق مرورگر">
-                    🌐 مرورگر
-                </button>
-                <button onclick="this.closest('#app-update-banner').remove()" class="btn btn-secondary btn-small" style="margin:0; padding:8px 10px; cursor:pointer;">
+                <button onclick="this.closest('#app-update-banner').remove()" class="btn btn-secondary btn-small" style="margin:0; padding:9px 12px; cursor:pointer;">
                     بعداً
                 </button>
             </div>

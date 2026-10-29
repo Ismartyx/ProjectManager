@@ -1464,10 +1464,8 @@ input:focus, textarea:focus {
    ========================================== */
 #tasks-list-container {
     display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)) !important;
-    grid-auto-rows: 8px !important;
-    grid-auto-flow: dense !important;
-    gap: 16px !important;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)) !important;
+    gap: 18px !important;
     align-items: start !important;
     min-height: 400px;
     padding-bottom: 50px;
@@ -1506,8 +1504,13 @@ input:focus, textarea:focus {
 
 @media (max-width: 768px) {
     #tasks-list-container {
-        grid-template-columns: 1fr !important;
+        display: flex !important;
+        flex-direction: column !important;
         gap: 14px !important;
+    }
+    .project-group {
+        width: 100% !important;
+        margin-bottom: 0 !important;
     }
 }
 
@@ -2015,21 +2018,26 @@ input:focus, textarea:focus {
 }
 
 .task-card-history-btn {
-    background: none;
-    border: none;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: var(--text-muted);
     cursor: pointer;
-    font-size: 1rem;
-    padding: 2px 6px;
-    border-radius: 6px;
+    font-size: 1.15rem;
+    padding: 3px 7px;
+    border-radius: 8px;
     transition: 0.2s;
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .task-card-history-btn:hover {
     color: var(--primary);
-    background: rgba(56, 189, 248, 0.15);
-    transform: scale(1.1);
+    background: rgba(56, 189, 248, 0.2);
+    border-color: var(--primary);
+    transform: scale(1.08);
 }
 
 /* ============================================================

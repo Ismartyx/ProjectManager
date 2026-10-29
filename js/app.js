@@ -1804,20 +1804,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) {}
     }
 
-    window.updateProjectGridSpans = function() {
-        const container = document.getElementById('tasks-list-container');
-        if (!container) return;
-        const rowHeight = 8;
-        const gap = 16;
-        const cards = container.querySelectorAll('.project-group');
-        cards.forEach(card => {
-            card.style.gridRowEnd = '';
-            const contentHeight = card.offsetHeight;
-            const span = Math.ceil((contentHeight + gap) / (rowHeight + gap));
-            card.style.gridRowEnd = `span ${span}`;
-        });
-    };
-
     window.toggleProject = function(headerEl, projectId) {
         const container = headerEl.nextElementSibling;
         if (!container) return;
@@ -1827,11 +1813,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         const arrow = headerEl.querySelector('.project-collapse-arrow');
         if (arrow) arrow.innerText = isNowCollapsed ? '◀' : '▼';
-        requestAnimationFrame(() => {
-            if (typeof window.updateProjectGridSpans === 'function') {
-                window.updateProjectGridSpans();
-            }
-        });
     };
     const chkShowArchivedEl = document.getElementById('chkShowArchived');
     if(chkShowArchivedEl) chkShowArchivedEl.addEventListener('change', () => renderDashboard());
@@ -2241,16 +2222,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 projHTML += `
                     <div class="${cardClasses}" onclick="window.openTaskById('${t._id}')">
                         <div class="task-card-inner">
-                            <div class="task-card-title">
-                                <h3>${statusTxt} ${t.title}</h3>
-                                ${t.description ? `<div class="task-card-desc">${escapeHtml(t.description)}</div>` : ''}
-                                <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; align-items: center;">
-                                    ${badgesHTML}
-                                    ${seenBadge}
-                                </div>
+                            <div class="task-card-title" style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; width:100%;">
+                                <h3 style="flex:1; min-width:0; margin:0; word-break:break-word;">${statusTxt} ${t.title}</h3>
+                                <button class="task-card-history-btn" onclick="event.stopPropagation(); window.openTaskHistoryModal('${t._id}')" title="تاریخچه وقایع، ارجاعات و مشاهده‌های تسک">📜</button>
+                            </div>
+                            ${t.description ? `<div class="task-card-desc">${escapeHtml(t.description)}</div>` : ''}
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; align-items: center;">
+                                ${badgesHTML}
+                                ${seenBadge}
                             </div>
                             <div class="task-latest-activity">${activitySnippet}</div>
-                            <div class="task-card-meta" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                            <div class="task-card-meta" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; width:100%; border-top:1px dashed rgba(255,255,255,0.06); padding-top:6px; margin-top:6px;">
                                 <div style="font-size: 0.75rem; color: var(--text-muted); display:inline-flex; align-items:center; gap: 6px; flex-wrap: wrap;">
                                     <span style="opacity:0.75; font-size:0.7rem;">از:</span>
                                     <span style="display:inline-flex; align-items:center; gap:3px;" title="ایجادکننده تسک">${getUserAvatarHtml(t.creatorId, 16)} <span style="opacity:0.9;">${findUserName(t.creatorId)}</span></span>
@@ -2259,7 +2241,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     <span style="display:inline-flex; align-items:center; gap:3px;" title="مسئول انجام">${getUserAvatarHtml(t.assigneeId, 16)} <b>${findUserName(t.assigneeId)}</b></span>
                                     ${createdStr ? `<span style="font-size:0.7rem; opacity:0.75; margin-right:4px;">📅 ${createdStr}</span>` : ''}
                                 </div>
-                                <button class="task-card-history-btn" onclick="event.stopPropagation(); window.openTaskHistoryModal('${t._id}')" title="تاریخچه وقایع، ارجاعات و مشاهده‌های تسک">📜</button>
                             </div>
                         </div>
                     </div>`;
@@ -2269,19 +2250,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         setupProjectDragAndDrop(container);
-
-        requestAnimationFrame(() => {
-            if (typeof window.updateProjectGridSpans === 'function') {
-                window.updateProjectGridSpans();
-            }
-        });
     }
-
-    window.addEventListener('resize', () => {
-        if (typeof window.updateProjectGridSpans === 'function') {
-            window.updateProjectGridSpans();
-        }
-    });
 
     window.archiveProject = async function(id) {
         let isConfirmed = await showCustomModal({ title: 'آرشیو پروژه', message: 'پروژه به آرشیو منتقل شود؟', type: 'confirm' });
