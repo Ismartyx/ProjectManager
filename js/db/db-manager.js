@@ -88,5 +88,95 @@ const DBManager = {
             await this.saveTag("فنی / ساخت", "100", true);
             await this.saveTag("بررسی / تایید", "100", true);
         }
+    },
+
+    saveAboutInfo: async function(infoData) {
+        // ۱. ذخیره لوکال
+        try {
+            localStorage.setItem('pm_about_info', JSON.stringify(infoData));
+        } catch (e) {}
+
+        let doc = { _id: 'mecav_about_info', type: 'about_info', ...infoData, updatedAt: Date.now() };
+
+        // ۲. ذخیره در دیتابیس محلی PouchDB
+        try {
+            if (this.adapter && this.adapter.localDB) {
+                let existing = await this.adapter.localDB.get('mecav_about_info').catch(() => null);
+                if (existing) doc._rev = existing._rev;
+                await this.adapter.localDB.put(doc);
+            }
+        } catch (e) {
+            console.warn('[DBManager] error saving about info to localDB:', e);
+        }
+
+        // ۳. ذخیره مستقیم و قطعی در سرور آنلاین کارگاه جهت ماندگاری دائمی
+        try {
+            const activeUrl = (this.adapter && this.adapter.activeUrl) ? this.adapter.activeUrl : 'http://155.117.234.69:5984/mecav_db_main';
+            let remoteRes = await fetch(`${activeUrl}/mecav_about_info`, {
+                headers: { 'Authorization': 'Basic ' + btoa('admin:33995333Sma') }
+            });
+            if (remoteRes.ok) {
+                let remoteDoc = await remoteRes.json();
+                doc._rev = remoteDoc._rev;
+            } else {
+                delete doc._rev;
+            }
+            await fetch(`${activeUrl}/mecav_about_info`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Basic ' + btoa('admin:33995333Sma')
+                },
+                body: JSON.stringify(doc)
+            });
+        } catch (ex) {
+            console.warn('[DBManager] error direct syncing about info to CouchDB:', ex);
+        }
+        return doc;
+    },
+
+    getAboutInfo: async function() {
+        let info = null;
+        // ۱. تلاش برای دریافت از دیتابیس لوکال
+        try {
+            if (this.adapter && this.adapter.localDB) {
+                let doc = await this.adapter.localDB.get('mecav_about_info').catch(() => null);
+                if (doc && (doc.title || doc.desc)) info = doc;
+            }
+        } catch (e) {}
+
+        // ۲. اگر در لوکال نبود، دریافت مستقیم از سرور مرکزی CouchDB
+        if (!info) {
+            try {
+                const activeUrl = (this.adapter && this.adapter.activeUrl) ? this.adapter.activeUrl : 'http://155.117.234.69:5984/mecav_db_main';
+                let res = await fetch(`${activeUrl}/mecav_about_info?t=${Date.now()}`);
+                if (res.ok) {
+                    let remoteDoc = await res.json();
+                    if (remoteDoc && (remoteDoc.title || remoteDoc.desc)) {
+                        info = remoteDoc;
+                        localStorage.setItem('pm_about_info', JSON.stringify(remoteDoc));
+                        if (this.adapter && this.adapter.localDB) {
+                            await this.adapter.localDB.put(remoteDoc).catch(() => {});
+                        }
+                    }
+                }
+            } catch (ex) {}
+        }
+
+        // ۳. بررسی حافظه ذخیره‌سازی محلی مرورگر
+        if (!info) {
+            try {
+                const stored = localStorage.getItem('pm_about_info');
+                if (stored) info = JSON.parse(stored);
+            } catch (e) {}
+        }
+
+        return info || {
+            title: 'مدیریت کارگاه مکاو',
+            site: 'https://mechave.ir',
+            desc: 'سامانه هوشمند مدیریت کارگاه مکاو جهت پایش پیشرفت پروژه‌ها، تخصیص وظایف، گزارش کار روزانه و نظارت کیفی.',
+            phone: '',
+            social: '@mechave'
+        };
     }
 };

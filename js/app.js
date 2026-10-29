@@ -188,12 +188,24 @@ function initLiveClock() {
     function update() {
         const now = new Date();
         try {
-            // ساعت دیجیتال واضح و درشت به فرمت HH:MM:SS
+            // ساعت دیجیتال واضح و درشت به فرمت HH : MM : SS
             const h = String(now.getHours()).padStart(2, '0');
             const m = String(now.getMinutes()).padStart(2, '0');
             const s = String(now.getSeconds()).padStart(2, '0');
-            timeEl.innerText = `${h}:${m}:${s}`;
-            dateEl.innerText = now.toLocaleDateString('fa-IR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            timeEl.innerText = `${h} : ${m} : ${s}`;
+
+            // فرمت استاندارد تاریخ شمسی: روز، ماه، سال (مثلاً: پنجشنبه، ۷ آبان ۱۴۰۵)
+            const formatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            const parts = formatter.formatToParts(now);
+            const p = {};
+            parts.forEach(part => { p[part.type] = part.value; });
+            const weekday = p.weekday ? `${p.weekday}، ` : '';
+            dateEl.innerText = `${weekday}${p.day || ''} ${p.month || ''} ${p.year || ''}`;
         } catch (e) {
             timeEl.innerText = now.toTimeString().split(' ')[0];
         }
@@ -771,21 +783,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const btnSaveAdminAbout = document.getElementById('btnSaveAdminAbout');
 
         async function loadAdminAboutFields() {
-            let info = {
-                title: 'مدیریت کارگاه مکاو',
-                site: 'https://mechave.ir',
-                desc: 'سامانه هوشمند مدیریت پروژه، فرآیندهای تولید، ارجاع وظایف و کنترل کیفیت کارگاه مکاو.',
-                phone: '',
-                social: '@mechave'
-            };
-            try {
-                const stored = localStorage.getItem('pm_about_info');
-                if (stored) Object.assign(info, JSON.parse(stored));
-                if (typeof DBManager !== 'undefined' && DBManager.getDB) {
-                    const doc = await DBManager.getDB().get('mecav_about_info').catch(() => null);
-                    if (doc) Object.assign(info, doc);
-                }
-            } catch (e) {}
+            let info = (typeof DBManager !== 'undefined' && DBManager.getAboutInfo) 
+                ? await DBManager.getAboutInfo() 
+                : {
+                    title: 'مدیریت کارگاه مکاو',
+                    site: 'https://mechave.ir',
+                    desc: 'سامانه هوشمند مدیریت پروژه، فرآیندهای تولید، ارجاع وظایف و کنترل کیفیت کارگاه مکاو.',
+                    phone: '',
+                    social: '@mechave'
+                };
 
             if (adminAboutTitle) adminAboutTitle.value = info.title || '';
             if (adminAboutSite) adminAboutSite.value = info.site || 'https://mechave.ir';
@@ -805,19 +811,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const social = adminAboutSocial ? adminAboutSocial.value.trim() : '';
 
                 const data = { title, site, desc, phone, social };
-                localStorage.setItem('pm_about_info', JSON.stringify(data));
+                if (typeof DBManager !== 'undefined' && DBManager.saveAboutInfo) {
+                    await DBManager.saveAboutInfo(data);
+                } else {
+                    localStorage.setItem('pm_about_info', JSON.stringify(data));
+                }
 
-                try {
-                    if (typeof DBManager !== 'undefined' && DBManager.getDB) {
-                        const db = DBManager.getDB();
-                        let existing = await db.get('mecav_about_info').catch(() => null);
-                        let doc = { _id: 'mecav_about_info', ...data };
-                        if (existing) doc._rev = existing._rev;
-                        await db.put(doc);
-                    }
-                } catch (e) {}
-
-                showToast('اطلاعات درباره ما با موفقیت ذخیره شد.');
+                showToast('اطلاعات درباره ما با موفقیت در دیتابیس سرور ذخیره شد.');
             });
         }
 
@@ -1287,21 +1287,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const modal = document.getElementById('aboutModal');
         if (!modal) return;
         
-        let aboutInfo = {
-            title: 'مدیریت کارگاه مکاو',
-            site: 'https://mechave.ir',
-            desc: 'سامانه هوشمند مدیریت پروژه، فرآیندهای تولید، ارجاع وظایف و کنترل کیفیت کارگاه مکاو.',
-            phone: '',
-            social: '@mechave'
-        };
-        try {
-            const stored = localStorage.getItem('pm_about_info');
-            if (stored) Object.assign(aboutInfo, JSON.parse(stored));
-            if (typeof DBManager !== 'undefined' && DBManager.getDB) {
-                const doc = await DBManager.getDB().get('mecav_about_info').catch(() => null);
-                if (doc) Object.assign(aboutInfo, doc);
-            }
-        } catch (e) {}
+        let aboutInfo = (typeof DBManager !== 'undefined' && DBManager.getAboutInfo) 
+            ? await DBManager.getAboutInfo()
+            : {
+                title: 'مدیریت کارگاه مکاو',
+                site: 'https://mechave.ir',
+                desc: 'سامانه هوشمند مدیریت پروژه، فرآیندهای تولید، ارجاع وظایف و کنترل کیفیت کارگاه مکاو.',
+                phone: '',
+                social: '@mechave'
+            };
 
         const titleEl = document.getElementById('aboutModalTitle');
         const descEl = document.getElementById('aboutModalDesc');
@@ -1713,6 +1707,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) {}
     }
 
+    window.updateProjectGridSpans = function() {
+        const container = document.getElementById('tasks-list-container');
+        if (!container) return;
+        const rowHeight = 8;
+        const gap = 16;
+        const cards = container.querySelectorAll('.project-group');
+        cards.forEach(card => {
+            card.style.gridRowEnd = '';
+            const contentHeight = card.offsetHeight;
+            const span = Math.ceil((contentHeight + gap) / (rowHeight + gap));
+            card.style.gridRowEnd = `span ${span}`;
+        });
+    };
+
     window.toggleProject = function(headerEl, projectId) {
         const container = headerEl.nextElementSibling;
         if (!container) return;
@@ -1722,6 +1730,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         const arrow = headerEl.querySelector('.project-collapse-arrow');
         if (arrow) arrow.innerText = isNowCollapsed ? '◀' : '▼';
+        requestAnimationFrame(() => {
+            if (typeof window.updateProjectGridSpans === 'function') {
+                window.updateProjectGridSpans();
+            }
+        });
     };
     const chkShowArchivedEl = document.getElementById('chkShowArchived');
     if(chkShowArchivedEl) chkShowArchivedEl.addEventListener('change', () => renderDashboard());
@@ -2065,16 +2078,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             let projHTML = `<div class="project-group" draggable="true" data-project-id="${proj._id}">
                 <div class="project-header" onclick="toggleProject(this, '${proj._id}')">
-                    <div style="display:flex; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">
                         <span class="project-drag-handle" title="نگه‌داشتن یا کشیدن جهت تغییر چیدمان" onclick="event.stopPropagation();">⠿</span>
-                        <span class="project-collapse-arrow" style="display:inline-block; font-size:0.75rem; margin-left:8px; color:var(--text-muted);">${isCollapsed ? '◀' : '▼'}</span>
-                        <button class="btn-quick-add" onclick="event.stopPropagation(); window.quickAddTask('${proj._id}', '${proj.title}')" title="افزودن تسک به این پروژه">
+                        <span class="project-collapse-arrow" style="display:inline-block; font-size:0.75rem; margin-left:4px; color:var(--text-muted); flex-shrink:0;">${isCollapsed ? '◀' : '▼'}</span>
+                        <button class="btn-quick-add" onclick="event.stopPropagation(); window.quickAddTask('${proj._id}', '${proj.title}')" title="افزودن تسک به این پروژه" style="flex-shrink:0;">
                             <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
                             </svg>
                         </button>
-                        📁 ${proj.title} <span style="font-size:0.8rem; color: var(--primary); margin-right:5px;">(${projTasks.length})</span> ${unreadBadgeInHeader}
+                        <span style="font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${proj.title}">📁 ${proj.title}</span>
+                        <span style="font-size:0.8rem; color: var(--primary); flex-shrink:0;">(${projTasks.length})</span>
+                        ${unreadBadgeInHeader}
                     </div>
                     ${projectActionBtns}
                 </div>
@@ -2157,7 +2172,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         setupProjectDragAndDrop(container);
+
+        requestAnimationFrame(() => {
+            if (typeof window.updateProjectGridSpans === 'function') {
+                window.updateProjectGridSpans();
+            }
+        });
     }
+
+    window.addEventListener('resize', () => {
+        if (typeof window.updateProjectGridSpans === 'function') {
+            window.updateProjectGridSpans();
+        }
+    });
 
     window.archiveProject = async function(id) {
         let isConfirmed = await showCustomModal({ title: 'آرشیو پروژه', message: 'پروژه به آرشیو منتقل شود؟', type: 'confirm' });

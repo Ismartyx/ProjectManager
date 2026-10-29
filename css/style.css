@@ -520,6 +520,9 @@ input:focus, textarea:focus {
 .project-tasks-container {
     padding: 12px;
     background: var(--bg-card);
+    max-height: 70vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .project-tasks-container.collapsed {
@@ -705,13 +708,16 @@ input:focus, textarea:focus {
     color: #0b1120;
     font-size: 0.72rem;
     font-weight: bold;
-    padding: 2px 7px;
+    padding: 2px 8px;
     border-radius: 10px;
     margin-right: 6px;
     vertical-align: middle;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    line-height: 1.4;
 }
 
 .task-card-inner {
@@ -1124,10 +1130,22 @@ input:focus, textarea:focus {
 .task-detail-header-buttons {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     flex-shrink: 0;
     flex-wrap: wrap;
     justify-content: flex-end;
+}
+
+.td-header-group-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.td-header-group-system {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .td-btn-action {
@@ -1205,8 +1223,21 @@ input:focus, textarea:focus {
     }
     .task-detail-header-buttons {
         width: 100%;
-        justify-content: flex-start;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 8px;
+    }
+    .td-header-group-actions {
+        display: inline-flex;
+        align-items: center;
         gap: 6px;
+    }
+    .td-header-group-system {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-right: auto; /* در چیدمان راست به چپ (RTL)، این خاصیت دکمه‌های تاریخچه و ضربدر را کاملاً به منتهی‌الیه سمت چپ هدایت می‌کند */
     }
 }
 
@@ -1433,8 +1464,10 @@ input:focus, textarea:focus {
    ========================================== */
 #tasks-list-container {
     display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)) !important;
-    gap: 18px !important;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)) !important;
+    grid-auto-rows: 8px !important;
+    grid-auto-flow: dense !important;
+    gap: 16px !important;
     align-items: start !important;
     min-height: 400px;
     padding-bottom: 50px;
@@ -1450,6 +1483,7 @@ input:focus, textarea:focus {
     display: flex !important;
     flex-direction: column !important;
     break-inside: auto !important;
+    align-self: start !important;
 }
 
 @media (min-width: 992px) {
