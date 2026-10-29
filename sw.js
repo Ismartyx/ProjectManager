@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mecav-offline-v32';
+const CACHE_NAME = 'mecav-offline-v33';
 const FILES_TO_CACHE = [
   '/',
   '/index.html',

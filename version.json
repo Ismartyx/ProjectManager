@@ -1,8 +1,8 @@
 {
-  "version": "1.0.19",
-  "versionCode": 10019,
+  "version": "1.0.20",
+  "versionCode": 10020,
   "releaseDate": "1405/08/08",
-  "changelog": "اصلاح چیدمان مستقل ستون‌های پروژه در گرید ۲ بعدی و درگ به فضاهای خالی، تفکیک دکمه‌های هدر تسک و رفع تداخل دکمه حذف، و تصحیح جهت فلش ارجاع به سمت چپ (از سازنده به مسئول)",
+  "changelog": "حل بنیادین خطای parse package در اندروید، پشتیبانی از نسخه 5.0 به بالا، ذخیره امن در پوشه اکسترنال و افزودن دانلود سیستمی در اعلان‌ها",
   "apkUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk",
   "winUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS-Setup.exe"
 }

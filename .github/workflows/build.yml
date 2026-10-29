@@ -63,7 +63,7 @@ jobs:
               <preference name="AndroidWindowSplashScreenBackground" value="#0f172a" />
               <preference name="SplashScreenDelay" value="0" />
               <platform name="android">
-                  <preference name="android-minSdkVersion" value="24" />
+                  <preference name="android-minSdkVersion" value="21" />
                   <preference name="android-targetSdkVersion" value="34" />
                   <icon src="icon.png" />
                   <preference name="AndroidWindowSplashScreenAnimatedIcon" value="icon.png" />
@@ -106,7 +106,7 @@ jobs:
               content = content.replace("</manifest>", "    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n    <uses-permission android:name=\"android.permission.VIBRATE\" />\n    <uses-permission android:name=\"android.permission.WAKE_LOCK\" />\n</manifest>");
           }
           if (!content.includes("REQUEST_INSTALL_PACKAGES")) {
-              content = content.replace("</manifest>", "    <uses-permission android:name=\"android.permission.REQUEST_INSTALL_PACKAGES\" />\n</manifest>");
+              content = content.replace("</manifest>", "    <uses-permission android:name=\"android.permission.REQUEST_INSTALL_PACKAGES\" />\n    <uses-permission android:name=\"android.permission.DOWNLOAD_WITHOUT_NOTIFICATION\" />\n</manifest>");
           }
           if (!content.includes("vnd.android.package-archive")) {
               const queriesXml = `\n    <queries>\n        <intent>\n            <action android:name="android.intent.action.VIEW" />\n            <data android:mimeType="application/vnd.android.package-archive" />\n        </intent>\n    </queries>\n</manifest>`;
@@ -120,7 +120,7 @@ jobs:
 
           const xmlDir = "platforms/android/app/src/main/res/xml";
           fs.mkdirSync(xmlDir, { recursive: true });
-          const pathsXml = `<?xml version="1.0" encoding="utf-8"?><paths xmlns:android="http://schemas.android.com/apk/res/android"><external-files-path name="ext_files" path="." /><external-path name="ext_path" path="." /><files-path name="int_files" path="." /><cache-path name="int_cache" path="." /></paths>`;
+          const pathsXml = `<?xml version="1.0" encoding="utf-8"?><paths xmlns:android="http://schemas.android.com/apk/res/android"><external-files-path name="ext_files" path="." /><external-cache-path name="ext_cache" path="." /><external-path name="ext_path" path="." /><files-path name="int_files" path="." /><cache-path name="int_cache" path="." /><root-path name="root" path="." /></paths>`;
           fs.writeFileSync(`${xmlDir}/file_paths.xml`, pathsXml, "utf8");
           '
 
@@ -157,14 +157,14 @@ jobs:
           # بارگذاری خودکار فایل نصبی جدید در سرور دیتابیس (مخزن ریلیزهای مجزا جهت جلوگیری از سنگین شدن دیتابیس تسک‌ها)
           if [ -n "$APK_PATH" ] && [ -f "$APK_PATH" ]; then
             echo "Deploying signed APK to CouchDB direct update repository..."
-            REV=$(curl -s "http://155.117.234.69:5984/mecav_releases/app_release" | grep -o '"_rev":"[^"]*"' | head -n 1 | cut -d'"' -f4 || true)
+            REV=$(curl -s "http://admin:33995333Sma@155.117.234.69:5984/mecav_releases/app_release" | grep -o '"_rev":"[^"]*"' | head -n 1 | cut -d'"' -f4 || true)
             if [ -z "$REV" ]; then
-              curl -s -X PUT "http://155.117.234.69:5984/mecav_releases/app_release" \
+              curl -s -u admin:33995333Sma -X PUT "http://155.117.234.69:5984/mecav_releases/app_release" \
                 -H "Content-Type: application/json" \
                 -d '{"description":"MechaveWS Application Release Attachments"}'
-              REV=$(curl -s "http://155.117.234.69:5984/mecav_releases/app_release" | grep -o '"_rev":"[^"]*"' | head -n 1 | cut -d'"' -f4)
+              REV=$(curl -s "http://admin:33995333Sma@155.117.234.69:5984/mecav_releases/app_release" | grep -o '"_rev":"[^"]*"' | head -n 1 | cut -d'"' -f4)
             fi
-            curl -s -X PUT "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk?rev=$REV" \
+            curl -s -u admin:33995333Sma -X PUT "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk?rev=$REV" \
               -H "Content-Type: application/vnd.android.package-archive" \
               --data-binary @"$APK_PATH" || true
             echo "APK deployed to mecav_releases."

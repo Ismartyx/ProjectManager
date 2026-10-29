@@ -1,7 +1,7 @@
 // سیستم مدیریت نسخه و بررسی خودکار بروزرسانی
 const VersionManager = {
-    CURRENT_VERSION: "1.0.19",
-    CURRENT_VERSION_CODE: 10019,
+    CURRENT_VERSION: "1.0.20",
+    CURRENT_VERSION_CODE: 10020,
 
     init: function() {
         const verEl = document.getElementById('app-current-version-text');
@@ -83,6 +83,28 @@ const VersionManager = {
                 statusEl.style.color = 'var(--danger)';
             }
         }
+    },
+
+    downloadViaSystem: function(targetUrl) {
+        if (!targetUrl) return;
+        if (window.MecavNotification && typeof window.MecavNotification.downloadWithDownloadManager === 'function') {
+            window.MecavNotification.downloadWithDownloadManager(
+                targetUrl,
+                function(res) {
+                    if (typeof NotificationManager !== 'undefined' && NotificationManager.showToast) {
+                        NotificationManager.showToast('📥 دانلود سیستمی آغاز شد. وضعیت دانلود را در نوار بالای گوشی مشاهده فرمایید.');
+                    } else {
+                        alert('📥 دانلود سیستمی آغاز شد. وضعیت دانلود در نوار بالای گوشی قابل مشاهده است.');
+                    }
+                },
+                function(err) {
+                    console.warn('[VersionManager] خطا در دانلود سیستمی:', err);
+                    VersionManager.openInBrowser(targetUrl);
+                }
+            );
+            return;
+        }
+        VersionManager.openInBrowser(targetUrl);
     },
 
     openInBrowser: function(targetUrl) {
@@ -213,10 +235,15 @@ const VersionManager = {
                 statusText.innerHTML = `
                     <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
                         <span style="color:#ef4444; font-weight:bold;">❌ خطا در دانلود یا نصب: ${msg || 'عدم دسترسی به فایل'}</span>
-                        <div style="font-size:0.8rem; color:var(--text-muted);">جهت نصب مطمئن، می‌توانید مستقیماً با مرورگر گوشی دانلود کنید:</div>
-                        <button onclick="VersionManager.openInBrowser('${targetUrl}');" class="btn btn-primary btn-small" style="padding:6px 12px; font-size:0.82rem; margin-top:4px;">
-                            🌐 دانلود مستقیم از طریق مرورگر
-                        </button>
+                        <div style="font-size:0.8rem; color:var(--text-muted);">می‌توانید از روش‌های جایگزین زیر استفاده کنید:</div>
+                        <div style="display:flex; gap:6px; margin-top:4px;">
+                            <button onclick="VersionManager.downloadViaSystem('${targetUrl}');" class="btn btn-secondary btn-small" style="flex:1; padding:6px 10px; font-size:0.82rem;">
+                                ⚡ دانلود در اعلان‌ها
+                            </button>
+                            <button onclick="VersionManager.openInBrowser('${targetUrl}');" class="btn btn-primary btn-small" style="flex:1; padding:6px 10px; font-size:0.82rem;">
+                                🌐 دانلود با مرورگر
+                            </button>
+                        </div>
                     </div>
                 `;
             }
@@ -359,13 +386,16 @@ const VersionManager = {
             </div>
             <div style="font-size:0.85rem; color:var(--text-muted); line-height:1.5;">${info.changelog || 'بهبودها و رفع باگ‌های جدید در این نسخه اعمال شده است.'}</div>
             <div style="display:flex; gap:8px; margin-top:6px; flex-wrap:wrap;">
-                <button onclick="VersionManager.startDirectUpdate('${targetUrl}');" class="btn btn-primary btn-small" style="flex:1; min-width:140px; text-align:center; margin:0; padding:8px 12px; font-weight:bold; cursor:pointer;">
+                <button onclick="VersionManager.startDirectUpdate('${targetUrl}');" class="btn btn-primary btn-small" style="flex:1; min-width:130px; text-align:center; margin:0; padding:8px 10px; font-weight:bold; cursor:pointer;">
                     📥 دانلود و نصب خودکار
                 </button>
-                <button onclick="VersionManager.openInBrowser('${targetUrl}');" class="btn btn-secondary btn-small" style="flex:1; min-width:140px; text-align:center; margin:0; padding:8px 12px; font-weight:bold; cursor:pointer; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2);" title="دانلود مستقیم فایل نصبی با مرورگر">
-                    🌐 دانلود با مرورگر
+                <button onclick="VersionManager.downloadViaSystem('${targetUrl}');" class="btn btn-secondary btn-small" style="flex:1; min-width:130px; text-align:center; margin:0; padding:8px 10px; font-weight:bold; cursor:pointer; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2);" title="دانلود با دانلود منیجر بومی سیستم عامل و نوار بالای گوشی">
+                    ⚡ دانلود در اعلان‌ها
                 </button>
-                <button onclick="this.closest('#app-update-banner').remove()" class="btn btn-secondary btn-small" style="margin:0; padding:8px 12px; cursor:pointer;">
+                <button onclick="VersionManager.openInBrowser('${targetUrl}');" class="btn btn-secondary btn-small" style="margin:0; padding:8px 10px; cursor:pointer; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2);" title="دانلود از طریق مرورگر">
+                    🌐 مرورگر
+                </button>
+                <button onclick="this.closest('#app-update-banner').remove()" class="btn btn-secondary btn-small" style="margin:0; padding:8px 10px; cursor:pointer;">
                     بعداً
                 </button>
             </div>

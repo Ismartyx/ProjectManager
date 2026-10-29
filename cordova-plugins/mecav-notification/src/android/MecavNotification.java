@@ -7,11 +7,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.app.DownloadManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
@@ -92,6 +95,14 @@ public class MecavNotification extends CordovaPlugin {
                 return true;
             }
             downloadAndInstallApk(apkUrl, callbackContext);
+            return true;
+        } else if ("downloadWithDownloadManager".equals(action)) {
+            final String apkUrl = args.optString(0, "");
+            if (apkUrl == null || apkUrl.isEmpty()) {
+                callbackContext.error("آدرس فایل معتبر نیست.");
+                return true;
+            }
+            downloadWithDownloadManager(apkUrl, callbackContext);
             return true;
         } else if ("openUrl".equals(action)) {
             final String url = args.optString(0, "");
@@ -275,6 +286,21 @@ public class MecavNotification extends CordovaPlugin {
         manager.notify(reqCode, builder.build());
     }
 
+    private File getUpdateApkFile(Context context) {
+        // ذخیره در پوشه اکسترنال برنامه برای جلوگیری از خطای دسترسی سیستم و خطای parse package
+        File dir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+        if (dir == null) {
+            dir = context.getExternalCacheDir();
+        }
+        if (dir == null) {
+            dir = new File(context.getFilesDir(), "updates");
+        }
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        return new File(dir, "MechaveWS-update.apk");
+    }
+
     private void downloadAndInstallApk(final String apkUrl, final CallbackContext callbackContext) {
         final Context context = cordova.getActivity().getApplicationContext();
 
@@ -285,7 +311,9 @@ public class MecavNotification extends CordovaPlugin {
                     Intent permIntent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                         Uri.parse("package:" + context.getPackageName()));
                     permIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    context.startActivity(permIntent);
+                    cordova.getActivity().startActivity(permIntent);
+                    callbackContext.error("لطفاً اجازه نصب برنامه از این منبع را فعال کرده و سپس مجدداً دکمه نصب را بزنید.");
+                    return;
                 } catch (Exception ignored) {}
             }
         }
@@ -297,34 +325,26 @@ public class MecavNotification extends CordovaPlugin {
                     URL url = new URL(apkUrl);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("GET");
-                    conn.setConnectTimeout(25000);
-                    conn.setReadTimeout(60000);
+                    conn.setConnectTimeout(30000);
+                    conn.setReadTimeout(90000);
                     conn.setRequestProperty("Accept-Encoding", "identity");
                     conn.connect();
 
                     int responseCode = conn.getResponseCode();
                     if (responseCode != HttpURLConnection.HTTP_OK) {
-                        callbackContext.error("خطای دریافت فایل از سرور: " + responseCode);
+                        callbackContext.error("خطای دریافت فایل از سرور (کد " + responseCode + ")");
                         return;
                     }
 
                     int fileLength = conn.getContentLength();
-                    File outputDir = new File(context.getCacheDir(), "updates");
-                    if (!outputDir.exists()) {
-                        if (!outputDir.mkdirs()) {
-                            outputDir = new File(context.getFilesDir(), "updates");
-                            if (!outputDir.exists()) outputDir.mkdirs();
-                        }
-                    }
-
-                    File outputFile = new File(outputDir, "MechaveWS-update.apk");
+                    File outputFile = getUpdateApkFile(context);
                     if (outputFile.exists()) {
                         outputFile.delete();
                     }
 
-                    InputStream is = new BufferedInputStream(conn.getInputStream(), 8192);
+                    InputStream is = new BufferedInputStream(conn.getInputStream(), 16384);
                     OutputStream os = new FileOutputStream(outputFile);
-                    byte[] buffer = new byte[8192];
+                    byte[] buffer = new byte[16384];
                     long total = 0;
                     int count;
                     int lastPercent = -1;
@@ -353,6 +373,19 @@ public class MecavNotification extends CordovaPlugin {
                     os.close();
                     is.close();
 
+                    // اطمینان از کامل بودن فایل دانلود شده و عدم قطعی اینترنت حین دانلود
+                    if (fileLength > 0 && total < fileLength) {
+                        outputFile.delete();
+                        callbackContext.error("دانلود فایل ناقص بود (دریافت " + total + " از " + fileLength + " بایت). لطفاً مجدداً امتحان کنید.");
+                        return;
+                    }
+
+                    if (outputFile.length() < 100000) {
+                        outputFile.delete();
+                        callbackContext.error("حجم فایل دانلود شده نامعتبر است.");
+                        return;
+                    }
+
                     installApk(outputFile, callbackContext);
 
                 } catch (Exception e) {
@@ -362,15 +395,87 @@ public class MecavNotification extends CordovaPlugin {
         });
     }
 
+    private void downloadWithDownloadManager(final String apkUrl, final CallbackContext callbackContext) {
+        final Context context = cordova.getActivity().getApplicationContext();
+        try {
+            DownloadManager downloadManager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
+            if (downloadManager == null) {
+                callbackContext.error("سرویس DownloadManager در دسترس نیست");
+                return;
+            }
+
+            Uri uri = Uri.parse(apkUrl);
+            DownloadManager.Request request = new DownloadManager.Request(uri);
+            request.setTitle("دریافت نسخه جدید مکاو (MechaveWS)");
+            request.setDescription("دانلود بسته بروزرسانی اپلیکیشن مکاو");
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setMimeType("application/vnd.android.package-archive");
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "MechaveWS.apk");
+
+            final long downloadId = downloadManager.enqueue(request);
+
+            BroadcastReceiver onComplete = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context c, Intent intent) {
+                    long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+                    if (id == downloadId) {
+                        try {
+                            context.unregisterReceiver(this);
+                        } catch (Exception ignored) {}
+
+                        DownloadManager dm = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
+                        Uri downloadedUri = dm.getUriForDownloadedFile(downloadId);
+                        if (downloadedUri != null) {
+                            Intent installIntent = new Intent(Intent.ACTION_VIEW);
+                            installIntent.setDataAndType(downloadedUri, "application/vnd.android.package-archive");
+                            installIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            try {
+                                cordova.getActivity().startActivity(installIntent);
+                            } catch (Exception e) {
+                                Intent openDownloads = new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS);
+                                openDownloads.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                try {
+                                    cordova.getActivity().startActivity(openDownloads);
+                                } catch (Exception ignored) {}
+                            }
+                        }
+                    }
+                }
+            };
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_EXPORTED);
+            } else {
+                context.registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+            }
+
+            JSONObject res = new JSONObject();
+            res.put("status", "enqueued");
+            res.put("downloadId", downloadId);
+            callbackContext.success(res);
+        } catch (Exception e) {
+            callbackContext.error("خطا در ایجاد دانلود سیستمی: " + e.getMessage());
+        }
+    }
+
     private void installApk(File apkFile, CallbackContext callbackContext) {
         Context context = cordova.getActivity().getApplicationContext();
         try {
+            if (!apkFile.exists() || apkFile.length() == 0) {
+                callbackContext.error("فایل نصبی یافت نشد یا خالی است.");
+                return;
+            }
+
             apkFile.setReadable(true, false);
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            Uri apkUri;
+            intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            intent.putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true);
 
+            Uri apkUri;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 apkUri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", apkFile);
             } else {
@@ -380,16 +485,31 @@ public class MecavNotification extends CordovaPlugin {
             intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                int flags = PackageManager.MATCH_DEFAULT_ONLY;
-                List<ResolveInfo> resInfoList = context.getPackageManager().queryIntentActivities(intent, flags);
+                List<ResolveInfo> resInfoList = context.getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
                 if (resInfoList == null || resInfoList.isEmpty()) {
                     resInfoList = context.getPackageManager().queryIntentActivities(intent, 0);
                 }
                 if (resInfoList != null) {
                     for (ResolveInfo resolveInfo : resInfoList) {
                         String packageName = resolveInfo.activityInfo.packageName;
-                        context.grantUriPermission(packageName, apkUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        context.grantUriPermission(packageName, apkUri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                     }
+                }
+
+                String[] installerPackages = {
+                    "com.google.android.packageinstaller",
+                    "com.android.packageinstaller",
+                    "com.miui.packageinstaller",
+                    "com.samsung.android.packageinstaller",
+                    "com.huawei.android.packageinstaller",
+                    "com.coloros.packageinstaller",
+                    "com.oppo.packageinstaller",
+                    "com.vivo.packageinstaller"
+                };
+                for (String pkg : installerPackages) {
+                    try {
+                        context.grantUriPermission(pkg, apkUri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    } catch (Exception ignored) {}
                 }
             }
 
