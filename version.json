@@ -1,8 +1,8 @@
 {
-  "version": "1.0.26",
-  "versionCode": 10026,
+  "version": "1.0.27",
+  "versionCode": 10027,
   "releaseDate": "1405/08/08",
-  "changelog": "رفع کامل و قطعی مشکل ارسال دوتایی اعلان‌ها (هماهنگ‌سازی و لایه‌بندی ضدتکرار میان سرور اعلان پوش و همگام‌سازی دیتابیس CouchDB)",
+  "changelog": "مدیریت هوشمند دکمه بازگشت (Back) در اندروید و وب با خروج دومرحله‌ای امن، اصلاح و فشرده‌سازی فاصله ارقام ساعت زنده هدر",
   "apkUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk",
   "winUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS-Setup.exe"
 }

@@ -14,6 +14,7 @@ function showToast(message, type = 'success') {
 window.showCustomModal = function(options) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
+        overlay.className = 'custom-modal-overlay';
         overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.2s ease;';
         
         const box = document.createElement('div');
@@ -52,7 +53,7 @@ window.showCustomModal = function(options) {
         btnWrap.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;';
 
         const btnCancel = document.createElement('button');
-        btnCancel.className = 'btn btn-secondary';
+        btnCancel.className = 'btn btn-secondary btn-custom-modal-cancel';
         btnCancel.innerText = 'انصراف';
         btnCancel.style.padding = '8px 16px';
         btnCancel.style.fontSize = '0.85rem';
@@ -91,6 +92,10 @@ window.showCustomModal = function(options) {
             }, 200);
         }
 
+        if (typeof NavigationBackManager !== 'undefined') {
+            NavigationBackManager.pushNavState('customModal');
+        }
+
         function close() {
             overlay.style.opacity = '0';
             box.style.transform = 'translateY(20px)';
@@ -98,6 +103,165 @@ window.showCustomModal = function(options) {
         }
     });
 }
+
+// ==========================================
+// مدیریت پیشرفته دکمه بازگشت (Back Button) در اندروید، موبایل و مرورگر
+// ==========================================
+const NavigationBackManager = {
+    _lastBackPressTime: 0,
+    _historyDepth: 0,
+    _inited: false,
+
+    init: function() {
+        if (this._inited) return;
+        this._inited = true;
+
+        const onHardwareBack = (e) => {
+            if (e) {
+                try { e.preventDefault(); } catch (err) {}
+                try { e.stopPropagation(); } catch (err) {}
+            }
+            this.handleBack(false);
+        };
+
+        // ۱. پشتیبانی بومی کلید بازگشت در اندروید (Cordova BackButton)
+        document.addEventListener('backbutton', onHardwareBack, false);
+        document.addEventListener('deviceready', () => {
+            document.addEventListener('backbutton', onHardwareBack, false);
+        }, false);
+
+        // ۲. پشتیبانی از مرورگر موبایل، ژست‌های حرکتی (Swipe Back) و PWA
+        window.addEventListener('popstate', (e) => {
+            this.handleBack(true);
+        });
+
+        // ۳. پشتیبانی از کلید Escape در نسخه دسکتاپ و کیبورد فیزیکی
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.handleBack(false);
+            }
+        });
+
+        try {
+            history.replaceState({ appRoot: true }, '');
+        } catch (e) {}
+    },
+
+    pushNavState: function(contextName = 'modal') {
+        try {
+            this._historyDepth++;
+            history.pushState({ appNav: true, depth: this._historyDepth, context: contextName }, '');
+        } catch (e) {}
+    },
+
+    handleBack: function(fromPopstate = false) {
+        // اولویت ۱: پاپ‌آپ‌ها یا مودال‌های تأیید داینامیک showCustomModal
+        const customModalOverlay = document.querySelector('.custom-modal-overlay');
+        if (customModalOverlay) {
+            const cancelBtn = customModalOverlay.querySelector('.btn-custom-modal-cancel') || 
+                              customModalOverlay.querySelector('button.btn-secondary') ||
+                              customModalOverlay.querySelector('button');
+            if (cancelBtn) {
+                cancelBtn.click();
+            } else {
+                customModalOverlay.remove();
+            }
+            return true;
+        }
+
+        // اولویت ۲: پیش‌نمایش تمام‌صفحه تصاویر (Image Viewer)
+        const imageViewer = document.getElementById('imageViewer');
+        if (imageViewer && imageViewer.classList.contains('active')) {
+            imageViewer.classList.remove('active');
+            return true;
+        }
+
+        // اولویت ۳: مودال تاریخچه وقایع تسک (Task History Modal)
+        const taskHistoryModal = document.getElementById('taskHistoryModal');
+        if (taskHistoryModal && (taskHistoryModal.classList.contains('active') || taskHistoryModal.style.display !== 'none')) {
+            taskHistoryModal.classList.remove('active');
+            taskHistoryModal.style.display = 'none';
+            return true;
+        }
+
+        // اولویت ۳: مودال جزئیات و چت تسک (Task Detail Modal)
+        const taskDetailModal = document.getElementById('taskDetailModal');
+        if (taskDetailModal && taskDetailModal.classList.contains('active')) {
+            taskDetailModal.classList.remove('active');
+            return true;
+        }
+
+        // اولویت ۴: مودال ثبت تسک جدید (Add Modal)
+        const addModal = document.getElementById('addModal');
+        if (addModal && addModal.classList.contains('active')) {
+            addModal.classList.remove('active');
+            return true;
+        }
+
+        // اولویت ۵: پنجره اختصاصی درباره ما (About Modal)
+        const aboutModal = document.getElementById('aboutModal');
+        if (aboutModal && (aboutModal.classList.contains('active') || (aboutModal.style.display && aboutModal.style.display !== 'none'))) {
+            if (window.closeAboutModal) {
+                window.closeAboutModal();
+            } else {
+                aboutModal.classList.remove('active');
+                aboutModal.style.display = 'none';
+            }
+            return true;
+        }
+
+        // اولویت ۶: پالت‌ها و دراپ‌داون‌های باز در صفحه
+        const openPalettes = document.querySelectorAll('.palette-dropdown[style*="display: block"], .palette-dropdown[style*="display: flex"]');
+        if (openPalettes.length > 0) {
+            openPalettes.forEach(p => p.style.display = 'none');
+            return true;
+        }
+
+        // اولویت ۷: اگر کاربر در صفحه تنظیمات است -> بازگشت به داشبورد
+        const settingsView = document.getElementById('settings-view');
+        const dashboardView = document.getElementById('dashboard-view');
+        if (settingsView && settingsView.style.display !== 'none') {
+            const btnBack = document.getElementById('btnBackToDashboard');
+            if (btnBack) {
+                btnBack.click();
+            } else {
+                settingsView.style.display = 'none';
+                if (dashboardView) dashboardView.style.display = 'block';
+            }
+            return true;
+        }
+
+        // اولویت ۸: پاک کردن متن جستجوی داشبورد در صورت وجود
+        const searchInput = document.getElementById('dashboardSearchInput');
+        if (searchInput && searchInput.value.trim() !== '') {
+            searchInput.value = '';
+            if (typeof renderDashboard === 'function') renderDashboard();
+            return true;
+        }
+
+        // اولویت ۹: صفحه اصلی داشبورد (خروج دومرحله‌ای برای جلوگیری از خروج ناخواسته)
+        const now = Date.now();
+        if (now - this._lastBackPressTime < 2200) {
+            // تایید خروج با کلیک دوم
+            if (window.navigator && window.navigator.app && typeof window.navigator.app.exitApp === 'function') {
+                window.navigator.app.exitApp();
+            } else if (window.electronAPI && typeof window.electronAPI.closeWindow === 'function') {
+                window.electronAPI.closeWindow();
+            }
+        } else {
+            this._lastBackPressTime = now;
+            if (typeof showToast === 'function') {
+                showToast('برای خروج از برنامه، یک بار دیگر دکمه بازگشت را بزنید.', 'info');
+            }
+            try {
+                history.pushState({ appRoot: true }, '');
+            } catch (e) {}
+        }
+        return false;
+    }
+};
+window.NavigationBackManager = NavigationBackManager;
+try { NavigationBackManager.init(); } catch (e) {}
 
 // ==========================================
 // تزریق استایل و رنگ‌بندی یکپارچه مکاو
@@ -188,11 +352,11 @@ function initLiveClock() {
     function update() {
         const now = new Date();
         try {
-            // ساعت دیجیتال واضح و درشت به فرمت HH : MM : SS
+            // ساعت دیجیتال استاندارد و نزدیک به هم: HH:MM:SS
             const h = String(now.getHours()).padStart(2, '0');
             const m = String(now.getMinutes()).padStart(2, '0');
             const s = String(now.getSeconds()).padStart(2, '0');
-            timeEl.innerText = `${h} : ${m} : ${s}`;
+            timeEl.innerText = `${h}:${m}:${s}`;
 
             // فرمت استاندارد تاریخ شمسی: روز، ماه، سال (مثلاً: پنجشنبه، ۷ آبان ۱۴۰۵)
             const formatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
@@ -504,6 +668,7 @@ const BackupManager = {
 document.addEventListener('DOMContentLoaded', async () => {
     try { applyBrandingAndIcons(); } catch (e) { console.warn(e); }
     try { if (typeof VersionManager !== 'undefined') VersionManager.init(); } catch (e) {}
+    try { if (typeof NavigationBackManager !== 'undefined') NavigationBackManager.init(); } catch (e) {}
 
     if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
         Notification.requestPermission();
@@ -1175,7 +1340,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(document.getElementById('btnCloseViewer')) {
         document.getElementById('btnCloseViewer').onclick = () => imageViewer.classList.remove('active');
     }
-    window.openImage = (src) => { viewerImage.src = src; imageViewer.classList.add('active'); };
+    window.openImage = (src) => { 
+        if (typeof NavigationBackManager !== 'undefined') {
+            NavigationBackManager.pushNavState('imageViewer');
+        }
+        viewerImage.src = src; 
+        imageViewer.classList.add('active'); 
+    };
 
     const loginView = document.getElementById('login-view');
     const dashboardView = document.getElementById('dashboard-view');
@@ -1433,6 +1604,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (phoneRow) phoneRow.style.display = aboutInfo.phone ? 'flex' : 'none';
         if (socialRow) socialRow.style.display = aboutInfo.social ? 'flex' : 'none';
 
+        if (typeof NavigationBackManager !== 'undefined') {
+            NavigationBackManager.pushNavState('about');
+        }
+
         modal.style.display = 'flex';
         requestAnimationFrame(() => {
             modal.classList.add('active');
@@ -1519,6 +1694,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnSettingsEl = document.getElementById('btnSettings');
     if(btnSettingsEl) {
         btnSettingsEl.addEventListener('click', () => { 
+            if (typeof NavigationBackManager !== 'undefined') {
+                NavigationBackManager.pushNavState('settings');
+            }
             dashboardView.style.display = 'none'; 
             document.getElementById('settings-view').style.display = 'block'; 
             updateBackupStatsText();
@@ -1658,6 +1836,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     fabAdd.addEventListener('click', async () => {
+        if (typeof NavigationBackManager !== 'undefined') {
+            NavigationBackManager.pushNavState('addModal');
+        }
         document.getElementById('addModal').classList.add('active');
         let user = AuthManager.getCurrentUser();
         let hasPower = user.role === 'admin' || Boolean(user.canAssignTasks);
@@ -2751,6 +2932,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         document.getElementById('btnSubmitComment').onclick = () => saveActivity('comment', false);
 
+        if (typeof NavigationBackManager !== 'undefined') {
+            NavigationBackManager.pushNavState('taskDetail');
+        }
+
         document.getElementById('taskDetailModal').classList.add('active');
     }
     
@@ -2992,6 +3177,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         html += '</div>';
 
         timelineEl.innerHTML = html;
+        if (typeof NavigationBackManager !== 'undefined') {
+            NavigationBackManager.pushNavState('taskHistory');
+        }
         modal.classList.add('active');
         modal.style.display = 'flex';
     };

@@ -1,6 +1,6 @@
 {
   "name": "mechave-ws",
-  "version": "1.0.26",
+  "version": "1.0.27",
   "description": "Mecav Workshop Project Management System",
   "main": "electron-main.js",
   "scripts": {
