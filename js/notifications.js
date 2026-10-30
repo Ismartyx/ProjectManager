@@ -5,7 +5,38 @@ const NotificationManager = {
     _activeUserId: null,
     _lastTasksMap: null,
     _recentSelfTriggered: new Set(),
+    _recentHandledNotifs: new Map(),
     _inAppNotifs: [],
+
+    isDuplicateNotification: function(title, body, taskId = null) {
+        if (!title && !body) return true;
+        const cleanTitle = (title || '').trim();
+        const cleanBody = (body || '').trim();
+        const keyExact = `${taskId || ''}_${cleanTitle}_${cleanBody}`;
+        const keyGeneral = `${cleanTitle}_${cleanBody}`;
+        const now = Date.now();
+
+        // پاکسازی رکوردهای قدیمی‌تر از ۳۰ ثانیه
+        if (this._recentHandledNotifs.size > 100) {
+            for (const [k, time] of this._recentHandledNotifs.entries()) {
+                if (now - time > 30000) this._recentHandledNotifs.delete(k);
+            }
+        }
+
+        // اگر همین اعلان در بازه زمانی ۱۲ ثانیه گذشته یک‌بار پردازش شده باشد
+        if (this._recentHandledNotifs.has(keyExact)) {
+            const lastTime = this._recentHandledNotifs.get(keyExact);
+            if (now - lastTime < 12000) return true;
+        }
+        if (this._recentHandledNotifs.has(keyGeneral)) {
+            const lastTime = this._recentHandledNotifs.get(keyGeneral);
+            if (now - lastTime < 12000) return true;
+        }
+
+        this._recentHandledNotifs.set(keyExact, now);
+        this._recentHandledNotifs.set(keyGeneral, now);
+        return false;
+    },
 
     initInAppNotifs: function() {
         try {
@@ -32,6 +63,18 @@ const NotificationManager = {
         if (!resolvedTaskId && clickUrl && clickUrl.includes('#task=')) {
             try { resolvedTaskId = clickUrl.split('#task=')[1].split('&')[0]; } catch(e){}
         }
+
+        // جلوگیری قطعی از اضافه شدن کارت تکراری به لیست اعلان‌ها
+        const cleanTitle = (title || '').trim();
+        const cleanBody = (body || '').trim();
+        const isDuplicateInList = this._inAppNotifs.slice(0, 5).some(existing => {
+            const sameTask = resolvedTaskId && existing.taskId && String(resolvedTaskId) === String(existing.taskId);
+            const sameTitle = existing.title && existing.title.trim() === cleanTitle;
+            const sameBody = existing.body && existing.body.trim() === cleanBody;
+            return (sameTitle && sameBody) || (sameTask && sameTitle);
+        });
+        if (isDuplicateInList) return;
+
         const item = {
             id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
             title: title || 'اعلان جدید',
@@ -361,6 +404,13 @@ const NotificationManager = {
 
     // نمایش اعلان سیستمی واقعی در ویندوز (Action Center) یا اندروید (Notification Bar) + ثبت در پیام‌های بالای برنامه
     showLocalSystemNotification: function(title, body, clickUrl = '', taskId = null) {
+        if (!title && !body) return;
+
+        // جلوگیری ۱۰۰٪ قطعی از ارسال دوتایی اعلان (همزمانی دریافت از سرور پوش و همگام‌سازی دیتابیس)
+        if (this.isDuplicateNotification(title, body, taskId)) {
+            return;
+        }
+
         // ۱. ثبت فوری در بخش پیام‌ها و اعلان‌های بالای برنامه
         this.addInAppNotification({
             title: title,

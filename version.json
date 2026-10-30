@@ -1,8 +1,8 @@
 {
-  "version": "1.0.25",
-  "versionCode": 10025,
+  "version": "1.0.26",
+  "versionCode": 10026,
   "releaseDate": "1405/08/08",
-  "changelog": "قابلیت باز شدن مستقیم و آنی تسک با کلیک روی هر پیام یا اعلان در برنامه (شامل اعلان نظرات و گزارش‌های جدید، ارجاعات و تغییر وضعیت)",
+  "changelog": "رفع کامل و قطعی مشکل ارسال دوتایی اعلان‌ها (هماهنگ‌سازی و لایه‌بندی ضدتکرار میان سرور اعلان پوش و همگام‌سازی دیتابیس CouchDB)",
   "apkUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk",
   "winUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS-Setup.exe"
 }

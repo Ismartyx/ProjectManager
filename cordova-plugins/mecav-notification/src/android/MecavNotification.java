@@ -214,7 +214,28 @@ public class MecavNotification extends CordovaPlugin {
         }
     }
 
+    private static final java.util.concurrent.ConcurrentHashMap<String, Long> recentNotifsJava = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static boolean isDuplicateNotification(String title, String body) {
+        String key = (title != null ? title.trim() : "") + "|||" + (body != null ? body.trim() : "");
+        long now = System.currentTimeMillis();
+        Long lastTime = recentNotifsJava.get(key);
+        if (lastTime != null && (now - lastTime < 12000)) {
+            return true;
+        }
+        recentNotifsJava.put(key, now);
+        if (recentNotifsJava.size() > 50) {
+            for (java.util.Map.Entry<String, Long> entry : recentNotifsJava.entrySet()) {
+                if (now - entry.getValue() > 30000) {
+                    recentNotifsJava.remove(entry.getKey());
+                }
+            }
+        }
+        return false;
+    }
+
     private static void showNotificationFromService(Context context, Class<?> activityClass, String title, String body) {
+        if (isDuplicateNotification(title, body)) return;
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;
 
@@ -255,6 +276,7 @@ public class MecavNotification extends CordovaPlugin {
     }
 
     private void showNotification(String title, String body) {
+        if (isDuplicateNotification(title, body)) return;
         Context context = cordova.getActivity().getApplicationContext();
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;
