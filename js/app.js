@@ -1063,7 +1063,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (window.electronAPI && window.electronAPI.isElectron) {
         document.body.classList.add('is-electron');
         setTimeout(syncElectronTitlebarTheme, 200);
+
+        if (typeof window.electronAPI.onOpenTask === 'function') {
+            window.electronAPI.onOpenTask((taskId) => {
+                if (taskId && typeof window.openTaskById === 'function') {
+                    window.openTaskById(taskId);
+                }
+            });
+        }
     }
+
+    function checkUrlTaskHash() {
+        try {
+            if (window.location.hash && window.location.hash.includes('task=')) {
+                const parts = window.location.hash.split('task=');
+                if (parts[1]) {
+                    const taskId = parts[1].split('&')[0];
+                    if (taskId && typeof window.openTaskById === 'function') {
+                        setTimeout(() => window.openTaskById(taskId), 350);
+                    }
+                }
+            }
+        } catch (e) {}
+    }
+    window.addEventListener('hashchange', checkUrlTaskHash);
 
     const btnThemeToggle = document.getElementById('btnThemeToggle');
     let currentTheme = localStorage.getItem('pm_theme') || 'dark';
@@ -1209,6 +1232,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             try {
                 renderDashboard();
+                setTimeout(checkUrlTaskHash, 400);
             } catch (e) {
                 console.error("خطا در بارگذاری داشبورد:", e);
             }
@@ -1750,7 +1774,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     title: '📌 تسک جدید برای شما',
                     body: `تسک "${newTask.title}" توسط ${user.name} به شما ارجاع شد.`,
                     priority: newTask.isImportant ? 'urgent' : 'high',
-                    tags: ['pushpin', newTask.isImportant ? 'warning' : 'memo']
+                    tags: ['pushpin', newTask.isImportant ? 'warning' : 'memo'],
+                    taskId: newTask._id
                 });
             }
 
@@ -1762,7 +1787,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         title: '👀 ناظر در تسک جدید',
                         body: `شما به عنوان ناظر در تسک "${newTask.title}" تعیین شدید.`,
                         priority: 'default',
-                        tags: ['eyes', 'pushpin']
+                        tags: ['eyes', 'pushpin'],
+                        taskId: newTask._id
                     });
                 }
             }
@@ -2788,7 +2814,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 title: '🔄 درخواست ارجاع تسک',
                 body: `درخواست ارجاع تسک "${currentOpenedTask.title}" توسط ${user.name} به همراه گزارش ثبت شد.`,
                 priority: 'high',
-                tags: ['repeat', 'memo']
+                tags: ['repeat', 'memo'],
+                taskId: currentOpenedTask._id
             });
 
             showToast('گزارش ثبت شد و درخواست ارجاع برای مدیر ارسال گردید.');
@@ -2801,7 +2828,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 title: '📋 تسک منتظر تایید نهایی',
                 body: `تسک "${currentOpenedTask.title}" توسط ${user.name} تکمیل شد و منتظر تایید نهایی است.`,
                 priority: 'high',
-                tags: ['clipboard', 'hourglass_flowing_sand']
+                tags: ['clipboard', 'hourglass_flowing_sand'],
+                taskId: currentOpenedTask._id
             });
         } else {
             // ارسال نوتیفیکیشن ثبت گزارش یا نظر جدید به سایر افراد درگیر در تسک
@@ -2818,7 +2846,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     title: isReport ? `📝 گزارش جدید در "${currentOpenedTask.title}"` : `💬 نظر جدید در "${currentOpenedTask.title}"`,
                     body: `${user.name}: ${preview}`,
                     priority: 'default',
-                    tags: isReport ? ['memo'] : ['speech_balloon']
+                    tags: isReport ? ['memo'] : ['speech_balloon'],
+                    taskId: currentOpenedTask._id
                 });
             }
         }
@@ -2991,7 +3020,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 title: '✅ تایید نهایی تسک',
                 body: `تسک "${currentOpenedTask.title}" توسط مدیر تایید شد و پرونده بسته شد.`,
                 priority: 'high',
-                tags: ['white_check_mark', 'tada']
+                tags: ['white_check_mark', 'tada'],
+                taskId: currentOpenedTask._id
             });
         }
 
@@ -3011,7 +3041,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 title: '⚠️ بازگشت تسک جهت اصلاح',
                 body: `تسک "${currentOpenedTask.title}" تایید نشد و جهت اصلاح به شما برگشت داده شد.`,
                 priority: 'urgent',
-                tags: ['warning', 'recycle']
+                tags: ['warning', 'recycle'],
+                taskId: currentOpenedTask._id
             });
         }
 
@@ -3032,7 +3063,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 title: '🔄 درخواست ارجاع تسک',
                 body: `درخواست ارجاع تسک "${currentOpenedTask.title}" توسط ${AuthManager.getCurrentUser().name} ارسال شد.`,
                 priority: 'default',
-                tags: ['repeat']
+                tags: ['repeat'],
+                taskId: currentOpenedTask._id
             });
 
             showToast('درخواست ارسال شد.'); document.getElementById('taskDetailModal').classList.remove('active'); renderDashboard();
@@ -3053,7 +3085,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         title: '📌 ارجاع تسک جدید به شما',
                         body: `تسک "${task.title}" با تایید مدیر به شما ارجاع داده شد.`,
                         priority: 'high',
-                        tags: ['pushpin', 'repeat']
+                        tags: ['pushpin', 'repeat'],
+                        taskId: task._id
                     });
                 }
             } else {

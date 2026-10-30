@@ -169,7 +169,8 @@
                 title: '🛒 فروش جدید در دیجی‌کالا!',
                 message: `${task.title}\nمهلت ارسال: ${task.deadlineLabel}`,
                 priority: 4,
-                tags: ['shopping_cart', 'package']
+                tags: ['shopping_cart', 'package'],
+                click: `http://155.117.234.69:5984/#task=${task._id}`
             };
 
             chrome.runtime.sendMessage({ action: 'SEND_PUSH', payload });

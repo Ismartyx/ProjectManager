@@ -145,7 +145,7 @@ if (!gotTheLock) {
     });
 
     // شنود اعلان‌های نیتیو ویندوز از صفحه برنامه
-    ipcMain.on('mecav-show-notification', (event, { title, body }) => {
+    ipcMain.on('mecav-show-notification', (event, { title, body, taskId }) => {
         try {
             if (Notification.isSupported()) {
                 const notif = new Notification({
@@ -159,6 +159,9 @@ if (!gotTheLock) {
                         if (mainWindow.isMinimized()) mainWindow.restore();
                         mainWindow.show();
                         mainWindow.focus();
+                        if (taskId) {
+                            mainWindow.webContents.send('open-task-from-notification', taskId);
+                        }
                     }
                 });
                 notif.show();

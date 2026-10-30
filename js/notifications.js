@@ -28,11 +28,15 @@ const NotificationManager = {
 
     addInAppNotification: function({ title, body, taskId = null, clickUrl = '', type = 'info' }) {
         if (!title && !body) return;
+        let resolvedTaskId = taskId;
+        if (!resolvedTaskId && clickUrl && clickUrl.includes('#task=')) {
+            try { resolvedTaskId = clickUrl.split('#task=')[1].split('&')[0]; } catch(e){}
+        }
         const item = {
             id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
             title: title || 'اعلان جدید',
             body: body || '',
-            taskId: taskId,
+            taskId: resolvedTaskId,
             clickUrl: clickUrl,
             type: type,
             time: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })
@@ -73,23 +77,158 @@ const NotificationManager = {
 
         let html = '';
         this._inAppNotifs.forEach(n => {
-            const clickAttr = n.taskId ? `onclick="window.openTaskById && window.openTaskById('${n.taskId}')"` : '';
-            const cursorStyle = n.taskId ? 'cursor: pointer;' : '';
             html += `
-                <div class="inapp-notif-item" style="padding: 10px 12px; background: rgba(255,255,255,0.05); border-right: 3px solid var(--primary); border-radius: 6px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; ${cursorStyle}" ${clickAttr}>
-                    <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px;">
-                            <b style="font-size: 0.85rem; color: var(--text-main);">${n.title}</b>
-                            <span style="font-size: 0.7rem; color: var(--text-muted); direction: ltr;">${n.time}</span>
+                <div class="inapp-notif-item" onclick="NotificationManager.openNotificationItem('${n.id}')" title="برای باز کردن تسک کلیک کنید">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px;">
+                            <b style="font-size: 0.88rem; color: var(--text-main);">${n.title}</b>
+                            <span style="font-size: 0.7rem; color: var(--text-muted); direction: ltr; flex-shrink: 0;">${n.time}</span>
                         </div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">${n.body}</div>
+                        <div style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.4; word-break: break-word;">${n.body}</div>
+                        <div class="inapp-notif-action-hint">
+                            <span>🔍 برای باز کردن و پاسخ به تسک کلیک کنید</span>
+                        </div>
                     </div>
-                    <button onclick="event.stopPropagation(); NotificationManager.removeInAppNotification('${n.id}')" style="background:none; border:none; color:var(--text-muted); font-size: 1.1rem; cursor: pointer; padding: 0 4px; line-height: 1;" title="حذف">&times;</button>
+                    <button class="inapp-notif-delete-btn" onclick="event.stopPropagation(); NotificationManager.removeInAppNotification('${n.id}')" title="حذف اعلان">&times;</button>
                 </div>
             `;
         });
 
         list.innerHTML = html;
+    },
+
+    openNotificationItem: async function(notifId) {
+        const notif = this._inAppNotifs.find(n => n.id === notifId);
+        if (!notif) return;
+
+        let targetTaskId = notif.taskId;
+
+        if (!targetTaskId && notif.clickUrl && notif.clickUrl.includes('#task=')) {
+            try {
+                targetTaskId = notif.clickUrl.split('#task=')[1].split('&')[0];
+            } catch (e) {}
+        }
+
+        // اگر شناسه تسک صریحاً نبود، تلاش برای پیدا کردن تسک از عنوان یا متن داخل گیومه
+        if (!targetTaskId && typeof DBManager !== 'undefined') {
+            try {
+                const allTasks = await DBManager.getTasks();
+                const match = (notif.title || '').match(/["'«»]([^"'«»]+)["'«»]/) || (notif.body || '').match(/["'«»]([^"'«»]+)["'«»]/);
+                if (match && match[1]) {
+                    const extractedTitle = match[1].trim().toLowerCase();
+                    const found = allTasks.find(t => t.title && t.title.trim().toLowerCase() === extractedTitle);
+                    if (found) targetTaskId = found._id;
+                }
+                if (!targetTaskId) {
+                    const found = allTasks.find(t => t.title && t.title.trim().length > 3 && ((notif.title && notif.title.includes(t.title)) || (notif.body && notif.body.includes(t.title))));
+                    if (found) targetTaskId = found._id;
+                }
+            } catch (e) {
+                console.warn('[Notification] خطا در تطبیق تسک:', e);
+            }
+        }
+
+        if (targetTaskId) {
+            notif.taskId = targetTaskId;
+            this.saveInAppNotifs();
+            if (typeof window.openTaskById === 'function') {
+                window.openTaskById(targetTaskId);
+            }
+        } else {
+            if (typeof showToast === 'function') {
+                showToast('تسک مرتبط با این اعلان یافت نشد یا ممکن است حذف شده باشد.', 'info');
+            }
+        }
+    },
+
+    showInAppFloatingBanner: function({ title, body, taskId = null }) {
+        if (!title && !body) return;
+        let container = document.getElementById('inapp-floating-notifs');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'inapp-floating-notifs';
+            container.style.cssText = `
+                position: fixed;
+                top: 40px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 999999;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                max-width: 92%;
+                width: 440px;
+                pointer-events: none;
+                direction: rtl;
+                font-family: inherit;
+            `;
+            document.body.appendChild(container);
+        }
+
+        const banner = document.createElement('div');
+        banner.className = 'inapp-floating-toast';
+        banner.style.cssText = `
+            background: var(--bg-card, #1e293b);
+            color: var(--text-main, #f8fafc);
+            border: 1px solid var(--accent, #38bdf8);
+            border-right: 4px solid var(--primary, #38bdf8);
+            border-radius: 12px;
+            padding: 12px 14px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.55);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            cursor: pointer;
+            pointer-events: auto;
+            animation: slideDownToast 0.25s ease-out;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        `;
+        banner.innerHTML = `
+            <div style="font-size: 1.3rem; line-height: 1; flex-shrink: 0; margin-top: 2px;">🔔</div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: bold; font-size: 0.9rem; color: var(--text-main); margin-bottom: 2px;">
+                    ${title}
+                </div>
+                <div style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.4; max-height: 44px; overflow: hidden; text-overflow: ellipsis;">
+                    ${body}
+                </div>
+                <div style="margin-top: 6px; font-size: 0.75rem; color: var(--accent); font-weight: bold; display: flex; align-items: center; gap: 4px;">
+                    👉 برای باز کردن تسک کلیک کنید
+                </div>
+            </div>
+            <button onclick="event.stopPropagation(); this.closest('.inapp-floating-toast').remove();" style="background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer; line-height: 1; padding: 0 4px;" title="بستن">&times;</button>
+        `;
+
+        banner.addEventListener('click', async () => {
+            banner.remove();
+            let targetId = taskId;
+            if (!targetId && typeof DBManager !== 'undefined') {
+                try {
+                    const allTasks = await DBManager.getTasks();
+                    const match = (title || '').match(/["'«»]([^"'«»]+)["'«»]/) || (body || '').match(/["'«»]([^"'«»]+)["'«»]/);
+                    if (match && match[1]) {
+                        const found = allTasks.find(t => t.title && t.title.trim().toLowerCase() === match[1].trim().toLowerCase());
+                        if (found) targetId = found._id;
+                    }
+                    if (!targetId) {
+                        const found = allTasks.find(t => t.title && ((title && title.includes(t.title)) || (body && body.includes(t.title))));
+                        if (found) targetId = found._id;
+                    }
+                } catch (e) {}
+            }
+            if (targetId && typeof window.openTaskById === 'function') {
+                window.openTaskById(targetId);
+            }
+        });
+
+        container.appendChild(banner);
+        setTimeout(() => {
+            if (banner.parentElement) {
+                banner.style.opacity = '0';
+                banner.style.transform = 'translateY(-10px)';
+                setTimeout(() => banner.remove(), 300);
+            }
+        }, 7000);
     },
 
     requestSystemPermission: function(onSuccess) {
@@ -234,46 +373,55 @@ const NotificationManager = {
         this.playAlertSound();
         this.vibrateDevice();
 
-        // ۳. ارسال مستقیم به نوتیفیکیشن سیستمی Action Center ویندوز (در نسخه نرم‌افزار ویندوز)
+        // ۳. نمایش بنر شناور تعاملی درون برنامه برای دسترسی آنی با یک کلیک
+        this.showInAppFloatingBanner({
+            title: title,
+            body: body,
+            taskId: taskId
+        });
+
+        // ۴. ارسال مستقیم به نوتیفیکیشن سیستمی Action Center ویندوز (در نسخه نرم‌افزار ویندوز)
         if (window.electronAPI && typeof window.electronAPI.showNotification === 'function') {
             try {
-                window.electronAPI.showNotification(title, body);
+                window.electronAPI.showNotification(title, body, taskId);
             } catch (err) {
                 console.warn("[Notification] خطا در ارسال به اعلان ویندوز:", err);
             }
             return;
         }
 
-        // ۴. ارسال مستقیم به نوار وضعیت (Status Bar) اندروید از طریق پلاگین بومی بدون نیاز به هیچ برنامه جانبی
+        // ۵. ارسال مستقیم به نوار وضعیت (Status Bar) اندروید از طریق پلاگین بومی بدون نیاز به هیچ برنامه جانبی
         if (window.MecavNotification && typeof window.MecavNotification.show === 'function') {
             try {
-                window.MecavNotification.show(title, body);
+                window.MecavNotification.show(title, body, taskId);
             } catch (err) {}
             return;
         } else if (window.cordova && typeof window.cordova.exec === 'function') {
             try {
-                window.cordova.exec(null, null, "MecavNotification", "show", [title, body]);
+                window.cordova.exec(null, null, "MecavNotification", "show", [title, body, taskId]);
             } catch (err) {
                 console.warn("[Notification] خطا در ارسال به نوار وضعیت اندروید:", err);
             }
             return;
         }
 
-        // ۴. نمایش نوتیفیکیشن سیستمی مرورگر (ویندوز / وب)
+        // ۶. نمایش نوتیفیکیشن سیستمی مرورگر (ویندوز / وب)
         if (!("Notification" in window)) return;
 
+        const effectiveClickUrl = clickUrl || (taskId ? `${window.location.origin}${window.location.pathname}#task=${taskId}` : '');
+
         if (Notification.permission === "granted") {
-            this._displayNotification(title, body, clickUrl);
+            this._displayNotification(title, body, effectiveClickUrl, taskId);
         } else if (Notification.permission === "default") {
             Notification.requestPermission().then(perm => {
                 if (perm === "granted") {
-                    this._displayNotification(title, body, clickUrl);
+                    this._displayNotification(title, body, effectiveClickUrl, taskId);
                 }
             });
         }
     },
 
-    _displayNotification: function(title, body, clickUrl) {
+    _displayNotification: function(title, body, clickUrl, taskId = null) {
         // تلاش اول با Service Worker (بهترین پشتیبانی در اندروید، PWA و ویندوز)
         if (navigator.serviceWorker && navigator.serviceWorker.ready) {
             navigator.serviceWorker.ready.then(reg => {
@@ -283,19 +431,19 @@ const NotificationManager = {
                         icon: 'icon-192.png',
                         badge: 'icon-192.png',
                         vibrate: [200, 100, 200],
-                        data: { clickUrl: clickUrl || window.location.href }
+                        data: { clickUrl: clickUrl || window.location.href, taskId: taskId }
                     });
                 }
-                this._fallbackNotification(title, body, clickUrl);
+                this._fallbackNotification(title, body, clickUrl, taskId);
             }).catch(() => {
-                this._fallbackNotification(title, body, clickUrl);
+                this._fallbackNotification(title, body, clickUrl, taskId);
             });
         } else {
-            this._fallbackNotification(title, body, clickUrl);
+            this._fallbackNotification(title, body, clickUrl, taskId);
         }
     },
 
-    _fallbackNotification: function(title, body, clickUrl) {
+    _fallbackNotification: function(title, body, clickUrl, taskId = null) {
         try {
             const notif = new Notification(title, {
                 body: body,
@@ -303,7 +451,11 @@ const NotificationManager = {
             });
             notif.onclick = function() {
                 window.focus();
-                if (clickUrl) window.location.href = clickUrl;
+                if (taskId && typeof window.openTaskById === 'function') {
+                    window.openTaskById(taskId);
+                } else if (clickUrl) {
+                    window.location.href = clickUrl;
+                }
                 notif.close();
             };
         } catch (e) {}
@@ -346,10 +498,21 @@ const NotificationManager = {
                         const notifKey = (data.title || '') + '_' + (data.message || '');
                         if (this._recentSelfTriggered.has(notifKey)) return;
 
+                        let extractedTaskId = null;
+                        if (data.click && data.click.includes('#task=')) {
+                            extractedTaskId = data.click.split('#task=')[1].split('&')[0];
+                        } else if (data.actions && Array.isArray(data.actions)) {
+                            const viewAction = data.actions.find(a => a.url && a.url.includes('#task='));
+                            if (viewAction) {
+                                extractedTaskId = viewAction.url.split('#task=')[1].split('&')[0];
+                            }
+                        }
+
                         this.showLocalSystemNotification(
                             data.title || 'اعلان جدید مکاو',
                             data.message || '',
-                            data.click || ''
+                            data.click || '',
+                            extractedTaskId
                         );
                     } catch (err) {}
                 };
@@ -380,7 +543,7 @@ const NotificationManager = {
     },
 
     // ارسال پوش به سرور VPS (برای سایر همکاران خارج از کارگاه یا در محیط‌های دیگر)
-    sendPush: async function(targetUserIds, { title, body, priority = 'default', tags = ['pushpin'], clickUrl = '' }) {
+    sendPush: async function(targetUserIds, { title, body, priority = 'default', tags = ['pushpin'], clickUrl = '', taskId = null }) {
         if (!targetUserIds) return;
         const ids = Array.isArray(targetUserIds) ? targetUserIds : [targetUserIds];
         const uniqueIds = [...new Set(ids.filter(id => id !== undefined && id !== null && id !== ''))];
@@ -396,7 +559,7 @@ const NotificationManager = {
 
         const priorityMap = { 'min': 1, 'low': 2, 'default': 3, 'high': 4, 'urgent': 5 };
         const numericPriority = priorityMap[priority] || 3;
-        const targetClickUrl = clickUrl || window.location.origin + window.location.pathname;
+        const targetClickUrl = clickUrl || (taskId ? `${window.location.origin}${window.location.pathname}#task=${taskId}` : (window.location.origin + window.location.pathname));
 
         for (const userId of uniqueIds) {
             const topic = this.getUserTopic(userId);
@@ -406,7 +569,10 @@ const NotificationManager = {
                 message: body,
                 priority: numericPriority,
                 tags: Array.isArray(tags) ? tags : [tags],
-                click: targetClickUrl
+                click: targetClickUrl,
+                actions: taskId ? [
+                    { action: 'view', label: 'مشاهده تسک', url: targetClickUrl }
+                ] : []
             };
 
             fetch(serverUrl, {

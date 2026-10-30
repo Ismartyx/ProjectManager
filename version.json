@@ -1,8 +1,8 @@
 {
-  "version": "1.0.24",
-  "versionCode": 10024,
+  "version": "1.0.25",
+  "versionCode": 10025,
   "releaseDate": "1405/08/08",
-  "changelog": "تثبیت کامل نوار بالای برنامه در ویندوز حین اسکرول (رفع مشکل پنهان شدن یا نصفه بریده شدن هدر زیر تایتل‌بار الکترون)",
+  "changelog": "قابلیت باز شدن مستقیم و آنی تسک با کلیک روی هر پیام یا اعلان در برنامه (شامل اعلان نظرات و گزارش‌های جدید، ارجاعات و تغییر وضعیت)",
   "apkUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk",
   "winUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS-Setup.exe"
 }

@@ -2,11 +2,16 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
     isElectron: true,
-    showNotification: (title, body) => {
+    showNotification: (title, body, taskId = null) => {
         try {
-            ipcRenderer.send('mecav-show-notification', { title, body });
+            ipcRenderer.send('mecav-show-notification', { title, body, taskId });
         } catch (e) {
             console.error('IPC notification error:', e);
+        }
+    },
+    onOpenTask: (callback) => {
+        if (typeof callback === 'function') {
+            ipcRenderer.on('open-task-from-notification', (event, taskId) => callback(taskId));
         }
     },
     openExternal: (url) => {
