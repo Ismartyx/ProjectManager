@@ -365,6 +365,11 @@
             loadMecavSettings();
             checkDigikalaOrders();
             setInterval(checkDigikalaOrders, 60000);
+
+            // رفرش خودکار صفحه هر ۳ دقیقه برای به‌روزرسانی زنده اطلاعات پنل بدون نیاز به دخالت دست
+            setInterval(() => {
+                window.location.reload();
+            }, 180000);
         }, 2000);
     });
 
