@@ -2489,6 +2489,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 let statusTxt = isDk ? '🛒' : (t.status === 'completed' ? '✅' : (t.status === 'pending_approval' ? '⏳' : (overdue ? '🚨' : '🔥')));
+                let cleanTitle = (t.title || '').trim();
+                if (cleanTitle.startsWith('🛒')) {
+                    cleanTitle = cleanTitle.replace(/^🛒+\s*/, '').trim();
+                }
                 
                 let badgesHTML = '';
                 if (isDk) badgesHTML += `<span class="badge-digikala">🔴 سفارش دیجی‌کالا</span>`;
@@ -2520,7 +2524,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="${cardClasses}" onclick="window.openTaskById('${t._id}')">
                         <div class="task-card-inner">
                             <div class="task-card-title" style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; width:100%;">
-                                <h3 style="flex:1; min-width:0; margin:0; word-break:break-word;">${statusTxt} ${t.title}</h3>
+                                <h3 style="flex:1; min-width:0; margin:0; word-break:break-word;">${statusTxt} ${cleanTitle}</h3>
                                 <button class="task-card-history-btn" onclick="event.stopPropagation(); window.openTaskHistoryModal('${t._id}')" title="تاریخچه وقایع، ارجاعات و مشاهده‌های تسک">📜</button>
                             </div>
                             ${t.description ? `<div class="task-card-desc">${escapeHtml(t.description)}</div>` : ''}
@@ -2529,7 +2533,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 ${seenBadge}
                             </div>
                             <div class="task-latest-activity">${activitySnippet}</div>
-                            <div class="task-card-meta" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; width:100%; border-top:1px dashed rgba(255,255,255,0.06); padding-top:6px; margin-top:6px;">
+                            <div class="task-card-meta" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; width:100%; border-top:1px dashed var(--border-color); padding-top:6px; margin-top:6px;">
                                 <div style="font-size: 0.75rem; color: var(--text-muted); display:inline-flex; align-items:center; gap: 6px; flex-wrap: wrap;">
                                     <span style="opacity:0.75; font-size:0.7rem;">از:</span>
                                     <span style="display:inline-flex; align-items:center; gap:3px;" title="ایجادکننده تسک">${getUserAvatarHtml(t.creatorId, 16)} <span style="opacity:0.9;">${findUserName(t.creatorId)}</span></span>
@@ -2925,7 +2929,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div>
                             <div style="color:#ef394e; font-weight:800; font-size:0.95rem;">سفارش مستقیم فروش دیجی‌کالا</div>
                             <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">
-                                ${task.dkpc ? `<span>کد تنوع: <b style="color:#fca5a5; direction:ltr; display:inline-block;">DKPC-${task.dkpc}</b></span> &bull; ` : ''}
+                                ${task.dkpc ? `<span>کد تنوع: <b class="badge-dkpc" style="display:inline-block; font-size:0.75rem;">DKPC-${task.dkpc}</b></span> &bull; ` : ''}
                                 <span>مهلت تعهد ارسال: <b style="color:var(--text-main);">${task.deadlineLabel || 'بر اساس پنل'}</b></span>
                             </div>
                         </div>

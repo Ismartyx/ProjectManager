@@ -2312,11 +2312,12 @@ input:focus, textarea:focus {
 /* ============================================================
    استایل فوق‌العاده اختصاصی و متمایز تسک‌های فروش دیجی‌کالا
    ============================================================ */
+/* استایل حالت تاریک (پیش‌فرض) */
 .task-card.task-card-digikala {
-    background: linear-gradient(135deg, rgba(239, 57, 78, 0.14) 0%, rgba(26, 32, 53, 0.95) 100%) !important;
+    background: linear-gradient(135deg, rgba(239, 57, 78, 0.16) 0%, rgba(26, 32, 53, 0.96) 100%) !important;
     border: 1.5px solid rgba(239, 57, 78, 0.55) !important;
     border-right: 5px solid #ef394e !important;
-    box-shadow: 0 4px 18px rgba(239, 57, 78, 0.18) !important;
+    box-shadow: 0 4px 18px rgba(239, 57, 78, 0.2) !important;
     position: relative;
     overflow: hidden;
 }
@@ -2338,6 +2339,74 @@ input:focus, textarea:focus {
     transform: translateY(-2px);
 }
 
+.task-card.task-card-digikala .task-card-desc {
+    color: #cbd5e1 !important;
+}
+
+.task-card.task-card-digikala .task-card-meta {
+    border-top-color: rgba(239, 57, 78, 0.25) !important;
+}
+
+.task-card.task-card-digikala .task-card-meta div {
+    color: #94a3b8;
+}
+
+.task-card.task-card-digikala .task-card-meta b {
+    color: #f1f5f9 !important;
+}
+
+.task-card.task-card-digikala .task-latest-activity {
+    background: rgba(15, 23, 42, 0.65) !important;
+    border-color: rgba(239, 57, 78, 0.3) !important;
+    color: #e2e8f0 !important;
+}
+
+/* استایل حالت روشن (کاملاً خوانا، باکلاس و تفکیک‌شده) */
+[data-theme="light"] .task-card.task-card-digikala {
+    background: linear-gradient(135deg, #fff5f5 0%, #ffffff 45%, #fff1f2 100%) !important;
+    border: 1.5px solid #fecdd3 !important;
+    border-right: 5px solid #ef394e !important;
+    box-shadow: 0 4px 14px rgba(239, 57, 78, 0.1) !important;
+}
+
+[data-theme="light"] .task-card.task-card-digikala::before {
+    background: radial-gradient(circle at top right, rgba(239, 57, 78, 0.12), transparent 70%);
+}
+
+[data-theme="light"] .task-card.task-card-digikala:hover {
+    border-color: #ef394e !important;
+    box-shadow: 0 6px 22px rgba(239, 57, 78, 0.18) !important;
+    transform: translateY(-2px);
+}
+
+[data-theme="light"] .task-card.task-card-digikala h3 {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .task-card.task-card-digikala .task-card-desc {
+    color: #334155 !important;
+    font-weight: 500;
+}
+
+[data-theme="light"] .task-card.task-card-digikala .task-card-meta {
+    border-top-color: #fecdd3 !important;
+}
+
+[data-theme="light"] .task-card.task-card-digikala .task-card-meta div {
+    color: #475569 !important;
+}
+
+[data-theme="light"] .task-card.task-card-digikala .task-card-meta b {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .task-card.task-card-digikala .task-latest-activity {
+    background: #ffffff !important;
+    border: 1px solid #fecdd3 !important;
+    color: #1e293b !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
 .badge-digikala {
     background: #ef394e !important;
     color: #ffffff !important;
@@ -2353,8 +2422,8 @@ input:focus, textarea:focus {
 }
 
 .badge-dkpc {
-    background: rgba(239, 57, 78, 0.12) !important;
-    border: 1px solid rgba(239, 57, 78, 0.4) !important;
+    background: rgba(239, 57, 78, 0.15) !important;
+    border: 1px solid rgba(239, 57, 78, 0.45) !important;
     color: #fca5a5 !important;
     font-size: 0.72rem !important;
     font-weight: bold;
@@ -2362,6 +2431,13 @@ input:focus, textarea:focus {
     border-radius: 6px !important;
     direction: ltr !important;
     font-family: 'Consolas', monospace !important;
+}
+
+[data-theme="light"] .badge-dkpc {
+    background: #fee2e2 !important;
+    border: 1px solid #fca5a5 !important;
+    color: #b91c1c !important;
+    font-weight: 800;
 }
 
 .digikala-detail-banner {
@@ -2375,6 +2451,14 @@ input:focus, textarea:focus {
     flex-direction: column;
     gap: 8px;
     box-shadow: 0 4px 15px rgba(239, 57, 78, 0.12);
+}
+
+[data-theme="light"] .digikala-detail-banner {
+    background: linear-gradient(135deg, #fff1f2 0%, #ffffff 100%) !important;
+    border: 1.5px solid #fecdd3 !important;
+    border-right: 5px solid #ef394e !important;
+    color: #0f172a !important;
+    box-shadow: 0 3px 12px rgba(239, 57, 78, 0.08);
 }
 
 .digikala-detail-btn {

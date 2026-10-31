@@ -1,8 +1,8 @@
 {
-  "version": "1.0.29",
-  "versionCode": 10029,
+  "version": "1.0.30",
+  "versionCode": 10030,
   "releaseDate": "1405/08/09",
-  "changelog": "اصلاح چیدمان و نمایش کامل عنوان پروژه در ستون‌ها، جلوگیری از فشرده شدن و نقطه‌چین شدن نام پروژه‌ها در موبایل و کارت‌های فشرده",
+  "changelog": "ارتقای کنتراست و خوانایی کامل کارت‌های دیجی‌کالا در حالت روز/روشن، حذف آیکون سبد خرید تکراری، بهینه‌سازی استایل‌های تم",
   "apkUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk",
   "winUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS-Setup.exe"
 }
