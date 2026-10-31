@@ -508,17 +508,75 @@ input:focus, textarea:focus {
 
 .project-header {
     background: var(--bg-card);
-    padding: 12px 18px;
-    font-size: 1rem;
+    padding: 10px 14px;
+    font-size: 0.95rem;
     font-weight: bold;
     color: var(--primary);
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 10px;
     user-select: none;
     border-bottom: 1px solid var(--border-color);
     transition: background-color 0.2s;
+}
+
+.project-header-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+}
+
+.project-title-text {
+    font-weight: 800;
+    font-size: 0.98rem;
+    color: var(--primary);
+    line-height: 1.4;
+    word-break: break-word;
+    display: inline-block;
+}
+
+.project-count-badge {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 7px;
+    border-radius: 8px;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.project-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.btn-proj-archive {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    border-radius: 8px;
+}
+
+.btn-proj-delete {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+}
+
+.btn-proj-delete:hover {
+    background: #ef4444;
+    color: #ffffff;
 }
 
 .project-header:hover {
@@ -1584,8 +1642,11 @@ input:focus, textarea:focus {
         border-radius: 14px;
     }
     .project-header {
-        padding: 9px 10px;
-        font-size: 0.88rem;
+        padding: 8px 10px;
+        gap: 6px 8px;
+    }
+    .project-title-text {
+        font-size: 0.92rem;
     }
     .filter-tabs-wrapper {
         gap: 5px;

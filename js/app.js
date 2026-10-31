@@ -2438,9 +2438,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             let projectActionBtns = '';
             if (isAdmin) {
                 projectActionBtns = `
-                    <div style="display:flex; gap:6px; align-items:center;">
-                        ${!showArchived ? `<button class="btn btn-small btn-secondary" onclick="event.stopPropagation(); window.archiveProject('${proj._id}')" style="padding:4px 8px; font-size:0.75rem;">آرشیو</button>` : ''}
-                        <button class="btn btn-small" onclick="event.stopPropagation(); window.deleteProjectById('${proj._id}', '${proj.title}')" style="padding:4px 8px; font-size:0.75rem; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); border-radius:8px;" title="حذف کامل این پروژه">🗑️ حذف</button>
+                    <div class="project-header-actions" onclick="event.stopPropagation();">
+                        ${!showArchived ? `<button class="btn btn-small btn-secondary btn-proj-archive" onclick="window.archiveProject('${proj._id}')" title="آرشیو پروژه">آرشیو</button>` : ''}
+                        <button class="btn btn-small btn-proj-delete" onclick="window.deleteProjectById('${proj._id}', '${proj.title}')" title="حذف کامل این پروژه">🗑️ حذف</button>
                     </div>
                 `;
             }
@@ -2449,17 +2449,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             let projHTML = `<div class="project-group" draggable="true" data-project-id="${proj._id}">
                 <div class="project-header" onclick="toggleProject(this, '${proj._id}')">
-                    <div style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow:hidden;">
+                    <div class="project-header-info">
                         <span class="project-drag-handle" title="نگه‌داشتن یا کشیدن جهت تغییر چیدمان" onclick="event.stopPropagation();">⠿</span>
-                        <span class="project-collapse-arrow" style="display:inline-block; font-size:0.75rem; margin-left:4px; color:var(--text-muted); flex-shrink:0;">${isCollapsed ? '◀' : '▼'}</span>
+                        <span class="project-collapse-arrow" style="display:inline-block; font-size:0.75rem; color:var(--text-muted); flex-shrink:0;">${isCollapsed ? '◀' : '▼'}</span>
                         <button class="btn-quick-add" onclick="event.stopPropagation(); window.quickAddTask('${proj._id}', '${proj.title}')" title="افزودن تسک به این پروژه" style="flex-shrink:0;">
-                            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
                             </svg>
                         </button>
-                        <span style="font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${proj.title}">📁 ${proj.title}</span>
-                        <span style="font-size:0.8rem; color: var(--primary); flex-shrink:0;">(${projTasks.length})</span>
+                        <span class="project-title-text" title="${escapeHtml(proj.title)}">📁 ${escapeHtml(proj.title)}</span>
+                        <span class="project-count-badge">(${projTasks.length})</span>
                         ${unreadBadgeInHeader}
                     </div>
                     ${projectActionBtns}
