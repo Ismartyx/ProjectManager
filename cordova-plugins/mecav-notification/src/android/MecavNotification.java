@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MecavNotification extends CordovaPlugin {
-    private static final String CHANNEL_ID = "mecav_alerts_channel_v2";
+    public static final String CHANNEL_ID = "mecav_alerts_channel_v2";
     private static final AtomicInteger notifCounter = new AtomicInteger(1000);
 
     @Override
@@ -134,83 +134,67 @@ public class MecavNotification extends CordovaPlugin {
             stopNativeListener();
             callbackContext.success();
             return true;
+        } else if ("requestBatteryExemption".equals(action)) {
+            requestBatteryExemption(callbackContext);
+            return true;
         }
         return false;
     }
 
     private synchronized void startNativeListener(final String serverUrl, final String topic) {
         if (topic == null || topic.isEmpty()) return;
-        if (isWorkerRunning && topic.equals(activeTopic) && bgWorkerThread != null && bgWorkerThread.isAlive()) {
-            return;
-        }
+        final Context context = cordova.getActivity().getApplicationContext();
 
-        stopNativeListener();
-        isWorkerRunning = true;
-        activeTopic = topic;
+        // ۱. ذخیره اطلاعات سرور و تاپیک در SharedPreferences جهت بازیابی خودکار با ریستارت گوشی
+        android.content.SharedPreferences prefs = context.getSharedPreferences(MecavBackgroundService.PREFS_NAME, Context.MODE_PRIVATE);
+        prefs.edit()
+            .putString(MecavBackgroundService.PREF_KEY_SERVER_URL, serverUrl)
+            .putString(MecavBackgroundService.PREF_KEY_TOPIC, topic)
+            .apply();
 
-        final Context appContext = cordova.getActivity().getApplicationContext();
-        final Class<?> activityClass = cordova.getActivity().getClass();
-
-        bgWorkerThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (isWorkerRunning) {
-                    HttpURLConnection conn = null;
-                    java.io.BufferedReader reader = null;
-                    try {
-                        String cleanUrl = serverUrl.replaceAll("/+$", "") + "/" + topic + "/sse";
-                        URL url = new URL(cleanUrl);
-                        conn = (HttpURLConnection) url.openConnection();
-                        conn.setRequestMethod("GET");
-                        conn.setRequestProperty("Accept", "text/event-stream");
-                        conn.setRequestProperty("Cache-Control", "no-cache");
-                        conn.setConnectTimeout(20000);
-                        conn.setReadTimeout(0); // بی‌نهایت برای گوش دادن زنده در پس‌زمینه
-                        conn.connect();
-
-                        reader = new java.io.BufferedReader(new java.io.InputStreamReader(conn.getInputStream(), "UTF-8"));
-                        String line;
-                        while (isWorkerRunning && (line = reader.readLine()) != null) {
-                            if (line.startsWith("data:")) {
-                                String jsonStr = line.substring(5).trim();
-                                if (!jsonStr.isEmpty()) {
-                                    try {
-                                        JSONObject obj = new JSONObject(jsonStr);
-                                        String eventType = obj.optString("event");
-                                        if (!"keepalive".equals(eventType) && !"open".equals(eventType)) {
-                                            String title = obj.optString("title", "اعلان جدید مکاو");
-                                            String message = obj.optString("message", "");
-                                            showNotificationFromService(appContext, activityClass, title, message);
-                                        }
-                                    } catch (Exception ignored) {}
-                                }
-                            }
-                        }
-                    } catch (Exception e) {
-                        // در صورت قطعی اینترنت، ۳ ثانیه صبر کرده و مجدد وصل می‌شود
-                    } finally {
-                        try { if (reader != null) reader.close(); } catch (Exception ignored) {}
-                        try { if (conn != null) conn.disconnect(); } catch (Exception ignored) {}
-                    }
-
-                    try {
-                        Thread.sleep(3000);
-                    } catch (InterruptedException ie) {
-                        break;
-                    }
-                }
+        // ۲. راه‌اندازی Foreground Service ماندگار که حتی با بستن کامل برنامه قطع نمی‌شود
+        try {
+            Intent serviceIntent = new Intent(context, MecavBackgroundService.class);
+            serviceIntent.putExtra("serverUrl", serverUrl);
+            serviceIntent.putExtra("topic", topic);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent);
+            } else {
+                context.startService(serviceIntent);
             }
-        }, "MecavNativeNtfyWorker");
-        bgWorkerThread.setDaemon(true);
-        bgWorkerThread.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private synchronized void stopNativeListener() {
-        isWorkerRunning = false;
-        activeTopic = null;
-        if (bgWorkerThread != null) {
-            bgWorkerThread.interrupt();
-            bgWorkerThread = null;
+        Context context = cordova.getActivity().getApplicationContext();
+        try {
+            Intent serviceIntent = new Intent(context, MecavBackgroundService.class);
+            serviceIntent.setAction("ACTION_STOP");
+            context.stopService(serviceIntent);
+        } catch (Exception ignored) {}
+    }
+
+    private void requestBatteryExemption(CallbackContext callbackContext) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                Context context = cordova.getActivity().getApplicationContext();
+                String packageName = context.getPackageName();
+                android.os.PowerManager pm = (android.os.PowerManager) context.getSystemService(Context.POWER_SERVICE);
+                if (pm != null && !pm.isIgnoringBatteryOptimizations(packageName)) {
+                    Intent intent = new Intent();
+                    intent.setAction(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                    intent.setData(Uri.parse("package:" + packageName));
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(intent);
+                }
+                if (callbackContext != null) callbackContext.success();
+            } catch (Exception e) {
+                if (callbackContext != null) callbackContext.error(e.getMessage());
+            }
+        } else {
+            if (callbackContext != null) callbackContext.success();
         }
     }
 
@@ -234,7 +218,7 @@ public class MecavNotification extends CordovaPlugin {
         return false;
     }
 
-    private static void showNotificationFromService(Context context, Class<?> activityClass, String title, String body) {
+    public static void showNotificationFromService(Context context, Class<?> activityClass, String title, String body) {
         if (isDuplicateNotification(title, body)) return;
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;

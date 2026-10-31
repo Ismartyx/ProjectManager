@@ -32,5 +32,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
         try {
             ipcRenderer.send('mecav-update-titlebar-overlay', { color, symbolColor });
         } catch (e) {}
+    },
+    quitApp: () => {
+        try {
+            ipcRenderer.send('mecav-quit-app');
+        } catch (e) {}
     }
 });

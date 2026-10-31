@@ -2247,3 +2247,94 @@ input:focus, textarea:focus {
     transform: translateY(-2px);
     box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65) !important;
 }
+
+/* ============================================================
+   استایل فوق‌العاده اختصاصی و متمایز تسک‌های فروش دیجی‌کالا
+   ============================================================ */
+.task-card.task-card-digikala {
+    background: linear-gradient(135deg, rgba(239, 57, 78, 0.14) 0%, rgba(26, 32, 53, 0.95) 100%) !important;
+    border: 1.5px solid rgba(239, 57, 78, 0.55) !important;
+    border-right: 5px solid #ef394e !important;
+    box-shadow: 0 4px 18px rgba(239, 57, 78, 0.18) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.task-card.task-card-digikala::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 65px;
+    height: 65px;
+    background: radial-gradient(circle at top right, rgba(239, 57, 78, 0.35), transparent 70%);
+    pointer-events: none;
+}
+
+.task-card.task-card-digikala:hover {
+    border-color: #ef394e !important;
+    box-shadow: 0 6px 26px rgba(239, 57, 78, 0.36) !important;
+    transform: translateY(-2px);
+}
+
+.badge-digikala {
+    background: #ef394e !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    font-size: 0.74rem !important;
+    padding: 3px 8px !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    box-shadow: 0 2px 8px rgba(239, 57, 78, 0.45) !important;
+    letter-spacing: 0.1px;
+}
+
+.badge-dkpc {
+    background: rgba(239, 57, 78, 0.12) !important;
+    border: 1px solid rgba(239, 57, 78, 0.4) !important;
+    color: #fca5a5 !important;
+    font-size: 0.72rem !important;
+    font-weight: bold;
+    padding: 2px 7px !important;
+    border-radius: 6px !important;
+    direction: ltr !important;
+    font-family: 'Consolas', monospace !important;
+}
+
+.digikala-detail-banner {
+    background: linear-gradient(135deg, rgba(239, 57, 78, 0.18) 0%, rgba(239, 57, 78, 0.05) 100%);
+    border: 1.5px solid rgba(239, 57, 78, 0.5);
+    border-right: 5px solid #ef394e;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(239, 57, 78, 0.12);
+}
+
+.digikala-detail-btn {
+    background: #ef394e;
+    color: #ffffff !important;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s;
+    box-shadow: 0 2px 8px rgba(239, 57, 78, 0.35);
+}
+
+.digikala-detail-btn:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+

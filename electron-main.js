@@ -1,6 +1,10 @@
-const { app, BrowserWindow, shell, ipcMain, Notification } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, Notification, Tray, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
+
+let tray = null;
+let isQuitting = false;
+let hasShownTrayNotice = false;
 
 // تنظیم نام رسمی برنامه در ویندوز جهت دریافت پایدار نوتیفیکیشن‌های Action Center
 if (process.platform === 'win32') {
@@ -81,7 +85,8 @@ if (!gotTheLock) {
                 nodeIntegration: false,
                 contextIsolation: true,
                 webSecurity: false, // دسترسی مستقیم به شبکه محلی و اینترنت بدون محدودیت CORS
-                allowRunningInsecureContent: true
+                allowRunningInsecureContent: true,
+                backgroundThrottling: false // اجرای زنده و بدون وقفه تایمرها و اتصال پوش در پس‌زمینه
             }
         };
 
@@ -114,7 +119,26 @@ if (!gotTheLock) {
         };
         mainWindow.on('resize', triggerSave);
         mainWindow.on('move', triggerSave);
-        mainWindow.on('close', () => saveWindowState(mainWindow));
+
+        // هنگام زدن ضربدر پنجره، به جای بسته شدن کامل به تسک‌بار (System Tray) منتقل می‌شود تا اعلان‌ها از دست نروند
+        mainWindow.on('close', (event) => {
+            if (!isQuitting) {
+                event.preventDefault();
+                saveWindowState(mainWindow);
+                mainWindow.hide();
+                if (tray && !hasShownTrayNotice) {
+                    hasShownTrayNotice = true;
+                    try {
+                        tray.displayBalloon({
+                            title: 'مدیریت کارگاه مکاو',
+                            content: 'برنامه در بخش اعلان‌های ویندوز (کنار ساعت) در حال اجراست تا اعلان‌های وظایف را به‌صورت زنده دریافت کنید.'
+                        });
+                    } catch (e) {}
+                }
+            } else {
+                saveWindowState(mainWindow);
+            }
+        });
 
         // باز کردن لینک‌های خارجی در مرورگر اصلی سیستم
         mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -221,16 +245,100 @@ if (!gotTheLock) {
         }
     });
 
+    // درخواست خروج کامل از درون برنامه یا کلیک روی خروج در منوی تسک‌بار
+    ipcMain.on('mecav-quit-app', () => {
+        isQuitting = true;
+        app.quit();
+    });
+
+    function createTray() {
+        if (tray) return;
+        const iconPath = path.join(__dirname, 'icon.ico');
+        try {
+            tray = new Tray(iconPath);
+            tray.setToolTip('مدیریت کارگاه مکاو (در حال اجرا در پس‌زمینه)');
+
+            const contextMenu = Menu.buildFromTemplate([
+                {
+                    label: 'نمایش مدیریت کارگاه مکاو',
+                    click: () => {
+                        if (mainWindow) {
+                            if (mainWindow.isMinimized()) mainWindow.restore();
+                            mainWindow.show();
+                            mainWindow.focus();
+                        }
+                    }
+                },
+                {
+                    label: 'اجرای خودکار با روشن شدن ویندوز',
+                    type: 'checkbox',
+                    checked: app.getLoginItemSettings().openAtLogin,
+                    click: (item) => {
+                        app.setLoginItemSettings({
+                            openAtLogin: item.checked,
+                            openAsHidden: true
+                        });
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: 'خروج کامل از برنامه',
+                    click: () => {
+                        isQuitting = true;
+                        app.quit();
+                    }
+                }
+            ]);
+
+            tray.setContextMenu(contextMenu);
+
+            tray.on('double-click', () => {
+                if (mainWindow) {
+                    if (mainWindow.isVisible()) {
+                        if (mainWindow.isMinimized()) mainWindow.restore();
+                        mainWindow.focus();
+                    } else {
+                        mainWindow.show();
+                        mainWindow.focus();
+                    }
+                }
+            });
+
+            tray.on('click', () => {
+                if (mainWindow) {
+                    if (!mainWindow.isVisible()) {
+                        mainWindow.show();
+                        mainWindow.focus();
+                    } else {
+                        mainWindow.focus();
+                    }
+                }
+            });
+        } catch (err) {
+            console.warn('[Electron] خطا در ساخت آیکون System Tray:', err);
+        }
+    }
+
     app.whenReady().then(() => {
         createWindow();
+        createTray();
 
         app.on('activate', () => {
-            if (BrowserWindow.getAllWindows().length === 0) createWindow();
+            if (mainWindow) {
+                mainWindow.show();
+                mainWindow.focus();
+            } else if (BrowserWindow.getAllWindows().length === 0) {
+                createWindow();
+            }
         });
     });
 
+    app.on('before-quit', () => {
+        isQuitting = true;
+    });
+
     app.on('window-all-closed', () => {
-        if (process.platform !== 'darwin') {
+        if (process.platform !== 'win32' && process.platform !== 'darwin') {
             app.quit();
         }
     });

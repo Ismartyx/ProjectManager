@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         id="cordova-plugin-mecav-notification"
-        version="1.0.0">
+        version="1.1.0">
     <name>MecavNotification</name>
-    <description>Native Android Notification and In-App Updater plugin for MecavWS</description>
+    <description>Native Android Notification and Persistent Background Service plugin for MecavWS</description>
     <license>MIT</license>
 
     <js-module src="www/MecavNotification.js" name="MecavNotification">
@@ -22,9 +22,26 @@
             <uses-permission android:name="android.permission.VIBRATE" />
             <uses-permission android:name="android.permission.WAKE_LOCK" />
             <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+            <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+            <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
         </config-file>
 
         <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <service
+                android:name="com.mechave.ws.MecavBackgroundService"
+                android:foregroundServiceType="dataSync"
+                android:exported="false" />
+            <receiver
+                android:name="com.mechave.ws.MecavBootReceiver"
+                android:exported="true">
+                <intent-filter>
+                    <action android:name="android.intent.action.BOOT_COMPLETED" />
+                    <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                    <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                </intent-filter>
+            </receiver>
             <provider
                 android:name="androidx.core.content.FileProvider"
                 android:authorities="${applicationId}.fileprovider"
@@ -38,5 +55,7 @@
 
         <resource-file src="src/android/res/xml/file_paths.xml" target="res/xml/file_paths.xml" />
         <source-file src="src/android/MecavNotification.java" target-dir="src/com/mechave/ws" />
+        <source-file src="src/android/MecavBackgroundService.java" target-dir="src/com/mechave/ws" />
+        <source-file src="src/android/MecavBootReceiver.java" target-dir="src/com/mechave/ws" />
     </platform>
 </plugin>

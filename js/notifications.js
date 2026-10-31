@@ -329,6 +329,19 @@ const NotificationManager = {
         }
     },
 
+    requestBatteryExemption: function() {
+        if (window.MecavNotification && typeof window.MecavNotification.requestBatteryExemption === 'function') {
+            window.MecavNotification.requestBatteryExemption(
+                function() { if (typeof showToast === 'function') showToast('درخواست لغو محدودیت باتری ارسال شد.'); },
+                function(err) { console.warn('[Notification] خطا در درخواست لغو محدودیت باتری:', err); }
+            );
+        } else if (window.cordova && typeof window.cordova.exec === 'function') {
+            window.cordova.exec(null, null, "MecavNotification", "requestBatteryExemption", []);
+        } else {
+            if (typeof showToast === 'function') showToast('این قابلیت مختص اپلیکیشن اندروید است.', 'info');
+        }
+    },
+
     // آدرس سرور پوش نوتیفیکیشن روی سرور مجازی (پیش‌فرض سرور فعال)
     getServerUrl: function() {
         return localStorage.getItem('pm_push_server_url') || 'http://155.117.234.69:8080';
@@ -660,19 +673,24 @@ const NotificationManager = {
 
             const prev = this._lastTasksMap.get(task._id);
 
-            // ۱. تسک جدید که قبلاً نبود و به کاربر فعلی ارجاع شده است
+            // ۱. تسک جدید که قبلاً نبود و به کاربر فعلی ارجاع یا به عنوان ناظر تعیین شده است
             if (!prev) {
-                if (String(task.assigneeId) === String(currentUser.id) && String(task.creatorId) !== String(currentUser.id)) {
+                let isDk = (typeof isDigikalaTask === 'function') && isDigikalaTask(task);
+                let isObs = (task.observers || []).some(o => (typeof isSameUser === 'function') ? isSameUser(o, currentUser.id) : String(o) === String(currentUser.id)) ||
+                            (isDk && window._cachedDkSettings && Array.isArray(window._cachedDkSettings.observers) && window._cachedDkSettings.observers.some(o => (typeof isSameUser === 'function') ? isSameUser(o, currentUser.id) : String(o) === String(currentUser.id)));
+
+                if ((typeof isSameUser === 'function' ? isSameUser(task.assigneeId, currentUser.id) : String(task.assigneeId) === String(currentUser.id)) && 
+                    (typeof isSameUser === 'function' ? !isSameUser(task.creatorId, currentUser.id) : String(task.creatorId) !== String(currentUser.id))) {
                     this.showLocalSystemNotification(
-                        '📌 تسک جدید برای شما',
-                        `تسک "${task.title}" توسط ${task.creatorName || 'همکار'} به شما ارجاع شد.`,
+                        isDk ? '🛒 سفارش جدید دیجی‌کالا' : '📌 تسک جدید برای شما',
+                        isDk ? `سفارش جدید دیجی‌کالا: "${task.title}" برای انجام به شما ارجاع شد.` : `تسک "${task.title}" توسط ${task.creatorName || 'همکار'} به شما ارجاع شد.`,
                         '',
                         task._id
                     );
-                } else if ((task.observers || []).some(o => String(o) === String(currentUser.id))) {
+                } else if (isObs) {
                     this.showLocalSystemNotification(
-                        '👀 ناظر در تسک جدید',
-                        `شما به عنوان ناظر در تسک "${task.title}" تعیین شدید.`,
+                        isDk ? '🛒 ثبت سفارش فروش دیجی‌کالا' : '👀 ناظر در تسک جدید',
+                        isDk ? `سفارش جدید دیجی‌کالا ثبت شد: "${task.title}"` : `شما به عنوان ناظر در تسک "${task.title}" تعیین شدید.`,
                         '',
                         task._id
                     );
@@ -681,10 +699,12 @@ const NotificationManager = {
                 // ۲. ثبت پیام، گزارش یا نظر جدید توسط همکار دیگر
                 if (actCount > prev.activitiesCount) {
                     const lastAct = task.activities[actCount - 1];
-                    if (lastAct && String(lastAct.userId) !== String(currentUser.id)) {
-                        const isRelevant = String(task.assigneeId) === String(currentUser.id) ||
-                                          String(task.creatorId) === String(currentUser.id) ||
-                                          (task.observers || []).some(o => String(o) === String(currentUser.id));
+                    if (lastAct && (typeof isSameUser === 'function' ? !isSameUser(lastAct.userId, currentUser.id) : String(lastAct.userId) !== String(currentUser.id))) {
+                        let isDk = (typeof isDigikalaTask === 'function') && isDigikalaTask(task);
+                        const isRelevant = (typeof isSameUser === 'function' ? isSameUser(task.assigneeId, currentUser.id) : String(task.assigneeId) === String(currentUser.id)) ||
+                                          (typeof isSameUser === 'function' ? isSameUser(task.creatorId, currentUser.id) : String(task.creatorId) === String(currentUser.id)) ||
+                                          (task.observers || []).some(o => (typeof isSameUser === 'function') ? isSameUser(o, currentUser.id) : String(o) === String(currentUser.id)) ||
+                                          (isDk && window._cachedDkSettings && Array.isArray(window._cachedDkSettings.observers) && window._cachedDkSettings.observers.some(o => (typeof isSameUser === 'function') ? isSameUser(o, currentUser.id) : String(o) === String(currentUser.id)));
                         if (isRelevant) {
                             const isReport = lastAct.type === 'report';
                             this.showLocalSystemNotification(

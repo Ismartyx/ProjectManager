@@ -23,6 +23,7 @@ window.showCustomModal = function(options) {
 
         if(options.title) box.innerHTML += `<h3 style="margin-top: 0; color: var(--primary); font-size: 1.1rem; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">${options.title}</h3>`;
         if(options.message) box.innerHTML += `<div style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 15px; line-height: 1.6;">${options.message}</div>`;
+        if(options.html) box.innerHTML += `<div style="margin-bottom: 15px; line-height: 1.5;">${options.html}</div>`;
 
         let inputEl = null;
         let checkEl = null;
@@ -453,6 +454,64 @@ function isSameUser(id1, id2) {
 }
 window.isSameUser = isSameUser;
 
+// تشخیص تسک‌های سفارش فروش دیجی‌کالا
+function isDigikalaTask(t) {
+    if (!t) return false;
+    return Boolean(
+        t.isDigikala || 
+        t.dkpc || 
+        t.creatorId === 'digikala_bot' || 
+        (t.tag && t.tag.includes('دیجی‌کالا')) ||
+        (t.title && t.title.includes('دیجی‌کالا'))
+    );
+}
+window.isDigikalaTask = isDigikalaTask;
+
+// بررسی امن عضویت ناظر در تسک با تطبیق رشته و عدد
+function isUserObserver(task, userId) {
+    if (!task || !task.observers || !Array.isArray(task.observers)) return false;
+    return task.observers.some(o => isSameUser(o, userId));
+}
+window.isUserObserver = isUserObserver;
+
+// بررسی کامل و دقیق سطح دسترسی کاربر برای مشاهده تسک در داشبورد
+function isUserAllowedToViewTask(t, u) {
+    if (!t || !u) return false;
+    if (u.role === 'admin' || isSameUser(u.id, '100')) return true;
+    if (isSameUser(t.assigneeId, u.id)) return true;
+    if (isSameUser(t.finalizerId, u.id)) return true;
+    if (isSameUser(t.creatorId, u.id)) return true;
+    if (t.isPublic) return true;
+    if (isUserObserver(t, u.id)) return true;
+
+    // اگر تسک سفارش دیجی‌کالا باشد، افراد انتخاب‌شده در تنظیمات دیجی‌کالا نیز اجازه دسترسی دارند
+    if (isDigikalaTask(t)) {
+        let dkSettings = window._cachedDkSettings;
+        if (!dkSettings) {
+            try {
+                const raw = localStorage.getItem('pm_digikala_settings');
+                if (raw) dkSettings = JSON.parse(raw);
+            } catch (e) {}
+        }
+        if (dkSettings && Array.isArray(dkSettings.observers)) {
+            if (dkSettings.observers.some(o => isSameUser(o, u.id))) return true;
+        }
+    }
+
+    return false;
+}
+window.isUserAllowedToViewTask = isUserAllowedToViewTask;
+
+window.openDigikalaPanel = function(url) {
+    if (window.electronAPI && typeof window.electronAPI.openExternal === 'function') {
+        window.electronAPI.openExternal(url);
+    } else if (window.MecavNotification && typeof window.MecavNotification.openUrl === 'function') {
+        window.MecavNotification.openUrl(url);
+    } else {
+        window.open(url, '_blank');
+    }
+};
+
 function findUserName(id) {
     if (!id) return '';
     if (id === 'digikala_bot') return 'ربات دیجی‌کالا';
@@ -669,6 +728,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     try { applyBrandingAndIcons(); } catch (e) { console.warn(e); }
     try { if (typeof VersionManager !== 'undefined') VersionManager.init(); } catch (e) {}
     try { if (typeof NavigationBackManager !== 'undefined') NavigationBackManager.init(); } catch (e) {}
+
+    // نمایش دکمه بهینه‌سازی باتری در اندروید
+    const checkAndroidBatteryBtn = () => {
+        if (window.cordova || navigator.userAgent.toLowerCase().includes('android')) {
+            const b = document.getElementById('btnBatteryExemption');
+            if (b) b.style.display = 'inline-flex';
+        }
+    };
+    checkAndroidBatteryBtn();
+    document.addEventListener('deviceready', checkAndroidBatteryBtn);
+
+    // پیش‌بارگذاری تنظیمات دیجی‌کالا برای هماهنگی سطح دسترسی ناظران
+    try {
+        let storedDk = localStorage.getItem('pm_digikala_settings');
+        if (storedDk) window._cachedDkSettings = JSON.parse(storedDk);
+        if (typeof DBManager !== 'undefined' && DBManager.getDigikalaSettings) {
+            DBManager.getDigikalaSettings().then(s => { if (s) window._cachedDkSettings = s; });
+        }
+    } catch(e) {}
 
     if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
         Notification.requestPermission();
@@ -2280,10 +2358,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(!container) return;
         container.innerHTML = '';
         
-        let myTasks = currentUser.role === 'admin' ? allTasks : allTasks.filter(t => isSameUser(t.assigneeId, currentUser.id) || isSameUser(t.finalizerId, currentUser.id) || isSameUser(t.creatorId, currentUser.id) || t.isPublic || (t.observers && t.observers.includes(currentUser.id)));
+        let myTasks = currentUser.role === 'admin' ? allTasks : allTasks.filter(t => isUserAllowedToViewTask(t, currentUser));
 
         // شمارش و نمایش تعداد کل تسک‌های جدید/خوانده‌نشده
-        let totalUnreadCount = allTasks.filter(t => (!t.viewedBy || !t.viewedBy.includes(currentUser.id)) && t.status !== 'completed' && (isSameUser(t.assigneeId, currentUser.id) || isSameUser(t.creatorId, currentUser.id) || (t.observers && t.observers.includes(currentUser.id)))).length;
+        let totalUnreadCount = allTasks.filter(t => 
+            isUserAllowedToViewTask(t, currentUser) && 
+            t.status !== 'completed' && 
+            (!t.viewedBy || !t.viewedBy.some(v => isSameUser(v, currentUser.id)))
+        ).length;
         const totalUnreadBadge = document.getElementById('unreadTotalCountBadge');
         if (totalUnreadBadge) {
             if (totalUnreadCount > 0) {
@@ -2297,11 +2379,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         // اعمال تب فیلتر سریع
         window.currentDashboardTab = window.currentDashboardTab || 'all';
         if (window.currentDashboardTab === 'unread') {
-            myTasks = myTasks.filter(t => (!t.viewedBy || !t.viewedBy.includes(currentUser.id)) && t.status !== 'completed');
+            myTasks = myTasks.filter(t => (!t.viewedBy || !t.viewedBy.some(v => isSameUser(v, currentUser.id))) && t.status !== 'completed');
         } else if (window.currentDashboardTab === 'mine') {
             myTasks = myTasks.filter(t => isSameUser(t.assigneeId, currentUser.id));
         } else if (window.currentDashboardTab === 'important') {
             myTasks = myTasks.filter(t => t.isImportant && t.status !== 'completed');
+        } else if (window.currentDashboardTab === 'digikala') {
+            myTasks = myTasks.filter(t => isDigikalaTask(t) && t.status !== 'completed');
         }
 
         if (searchTerm) {
@@ -2391,9 +2475,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             projTasks.forEach(t => {
                 let overdue = isTaskOverdue(t);
-                let isUnread = (!t.viewedBy || !t.viewedBy.includes(currentUser.id)) && t.status !== 'completed';
+                let isUnread = (!t.viewedBy || !t.viewedBy.some(v => isSameUser(v, currentUser.id))) && t.status !== 'completed';
+                let isDk = isDigikalaTask(t);
 
                 let cardClasses = 'task-card';
+                if (isDk) cardClasses += ' task-card-digikala';
                 if (t.status === 'completed') {
                     cardClasses += ' task-done';
                 } else {
@@ -2402,11 +2488,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     else if (t.isImportant) cardClasses += ' task-important';
                 }
 
-                let statusTxt = t.status === 'completed' ? '✅' : (t.status === 'pending_approval' ? '⏳' : (overdue ? '🚨' : '🔥'));
+                let statusTxt = isDk ? '🛒' : (t.status === 'completed' ? '✅' : (t.status === 'pending_approval' ? '⏳' : (overdue ? '🚨' : '🔥')));
                 
                 let badgesHTML = '';
+                if (isDk) badgesHTML += `<span class="badge-digikala">🔴 سفارش دیجی‌کالا</span>`;
+                if (isDk && t.dkpc) badgesHTML += `<span class="badge-dkpc">DKPC-${t.dkpc}</span>`;
                 if (isUnread) badgesHTML += `<span class="badge-unread"><span class="unread-dot"></span>جدید</span>`;
-                if (t.tag) badgesHTML += `<span class="tag">${t.tag}</span>`;
+                if (t.tag && (!isDk || !t.tag.includes('دیجی‌کالا'))) badgesHTML += `<span class="tag">${t.tag}</span>`;
                 if (t.isImportant) badgesHTML += `<span class="badge-important">⭐ مهم</span>`;
                 if (t.deadlineLabel) badgesHTML += `<span class="badge-deadline ${overdue ? 'overdue' : ''}">📅 ${t.deadlineLabel}</span>`;
 
@@ -2547,6 +2635,54 @@ document.addEventListener('DOMContentLoaded', async () => {
             await PouchAdapter.deleteItem(currentOpenedTask._id);
             document.getElementById('taskDetailModal').classList.remove('active');
             renderDashboard(); showToast('تسک با موفقیت حذف شد.');
+        }
+    };
+
+    window.editTaskObservers = async function() {
+        if (!currentOpenedTask) return;
+        let user = AuthManager.getCurrentUser();
+        let canEdit = user.role === 'admin' || isSameUser(currentOpenedTask.creatorId, user.id);
+        if (!canEdit) return showToast('فقط مدیر یا ثبت‌کننده تسک می‌تواند ناظران را ویرایش کند.', 'error');
+
+        let currentObs = Array.isArray(currentOpenedTask.observers) ? currentOpenedTask.observers.map(String) : [];
+        let allUsers = AuthManager.usersList || [];
+
+        let checkboxesHtml = allUsers.map(u => {
+            let isChecked = currentObs.includes(String(u.id)) ? 'checked' : '';
+            return `
+                <label style="display:flex; align-items:center; gap:8px; padding:7px 10px; background:rgba(255,255,255,0.04); border-radius:8px; cursor:pointer; font-size:0.86rem; border:1px solid rgba(255,255,255,0.06);">
+                    <input type="checkbox" class="task-obs-chk" value="${u.id}" ${isChecked} style="accent-color:var(--primary); width:16px; height:16px;" />
+                    <span>${getUserAvatarHtml(u.id, 18)} ${u.name}</span>
+                </label>
+            `;
+        }).join('');
+
+        let modalWrap = document.createElement('div');
+        modalWrap.innerHTML = `
+            <div style="font-size:0.86rem; margin-bottom:12px; color:var(--text-muted); line-height:1.5;">
+                افرادی که تیک می‌خورند، می‌توانند این تسک را در کارتابل خود مشاهده کرده و در گفتگوها شرکت کنند:
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; max-height:240px; overflow-y:auto; padding:4px;" id="taskObsEditBox">
+                ${checkboxesHtml}
+            </div>
+        `;
+
+        let isConfirmed = await showCustomModal({
+            title: '👥 ویرایش و انتصاب ناظران تسک',
+            html: modalWrap.innerHTML,
+            type: 'confirm',
+            okText: 'ذخیره ناظران',
+            cancelText: 'انصراف'
+        });
+
+        if (isConfirmed) {
+            let chks = document.querySelectorAll('.task-obs-chk:checked');
+            let newObs = Array.from(chks).map(c => c.value);
+            currentOpenedTask.observers = newObs;
+            await DBManager.saveTask(currentOpenedTask);
+            openTaskDetail(currentOpenedTask);
+            renderDashboard();
+            showToast('✅ لیست ناظران تسک با موفقیت به‌روزرسانی شد.');
         }
     };
 
@@ -2767,15 +2903,58 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.getElementById('td-status').innerHTML = statStr;
 
+        // بنر اختصاصی و لینک مستقیم سفارش در سلر سنتر دیجی‌کالا
+        let dkBanner = document.getElementById('td-digikala-banner');
+        if (!dkBanner) {
+            dkBanner = document.createElement('div');
+            dkBanner.id = 'td-digikala-banner';
+            const statusBox = document.getElementById('td-status');
+            if (statusBox && statusBox.parentNode) {
+                statusBox.parentNode.insertBefore(dkBanner, statusBox.nextSibling);
+            }
+        }
+        if (isDigikalaTask(task)) {
+            dkBanner.style.display = 'block';
+            dkBanner.className = 'digikala-detail-banner';
+            const cleanDkpc = task.dkpc || (task.title.match(/(\d{6,})/) ? task.title.match(/(\d{6,})/)[1] : '');
+            const panelUrl = cleanDkpc ? `https://seller.digikala.com/pwa/orders/ship-by-digikala/${cleanDkpc}` : 'https://seller.digikala.com/pwa/orders';
+            dkBanner.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:1.5rem;">🛍️</span>
+                        <div>
+                            <div style="color:#ef394e; font-weight:800; font-size:0.95rem;">سفارش مستقیم فروش دیجی‌کالا</div>
+                            <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">
+                                ${task.dkpc ? `<span>کد تنوع: <b style="color:#fca5a5; direction:ltr; display:inline-block;">DKPC-${task.dkpc}</b></span> &bull; ` : ''}
+                                <span>مهلت تعهد ارسال: <b style="color:var(--text-main);">${task.deadlineLabel || 'بر اساس پنل'}</b></span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="digikala-detail-btn" onclick="window.openDigikalaPanel('${panelUrl}')">
+                        <span>🔗 باز کردن سفارش در پنل دیجی‌کالا</span>
+                    </button>
+                </div>
+            `;
+        } else {
+            dkBanner.style.display = 'none';
+        }
+
         // نمایش افراد درگیر و وضعیت دیده‌شده
         const metaPeople = document.getElementById('td-meta-people');
         if (metaPeople) {
             let seenCount = task.seenList ? task.seenList.length : (task.viewedBy ? task.viewedBy.length : 1);
             let seenTooltip = task.seenList ? task.seenList.map(s => `${s.userName} (${s.dateStr || ''})`).join(' ، ') : '';
+            let obsCount = (task.observers && Array.isArray(task.observers)) ? task.observers.length : 0;
+            let obsTooltip = (task.observers && Array.isArray(task.observers)) ? task.observers.map(findUserName).join(' ، ') : 'بدون ناظر';
+            let editObsBtn = (user.role === 'admin' || isSameUser(task.creatorId, user.id))
+                ? `<span style="cursor:pointer; margin-right:3px; opacity:0.8;" onclick="window.editTaskObservers()" title="ویرایش لیست ناظران">✏️</span>`
+                : '';
+
             metaPeople.innerHTML = `
                 <span style="display:inline-flex; align-items:center; gap:4px;" title="ایجادکننده تسک">${getUserAvatarHtml(task.creatorId, 18)} <span>ایجاد: <b>${findUserName(task.creatorId)}</b></span></span>
                 <span style="display:inline-flex; align-items:center; gap:4px;" title="مسئول انجام">${getUserAvatarHtml(task.assigneeId, 18)} <span>مسئول: <b style="color:var(--text-main);">${findUserName(task.assigneeId)}</b></span></span>
                 <span style="display:inline-flex; align-items:center; gap:3px; cursor:pointer;" title="${seenTooltip}" onclick="window.openTaskHistoryModal('${task._id}')" class="badge-seen">👁️ ${seenCount} نفر دیده‌اند</span>
+                <span style="display:inline-flex; align-items:center; gap:3px; cursor:pointer;" title="${obsTooltip}" onclick="window.editTaskObservers()" class="badge-seen" style="background:rgba(56,189,248,0.1); color:#38bdf8;">👥 ${obsCount} ناظر ${editObsBtn}</span>
             `;
         }
 

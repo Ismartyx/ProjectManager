@@ -147,6 +147,7 @@
                 <button class="filter-tab-btn" data-filter="unread" id="btnFilterUnread">📌 جدیدها <span id="unreadTotalCountBadge" style="display:none;" class="badge-unread-count">0</span></button>
                 <button class="filter-tab-btn" data-filter="mine">👤 کارهای من</button>
                 <button class="filter-tab-btn" data-filter="important">⭐ مهم‌ها</button>
+                <button class="filter-tab-btn" data-filter="digikala" id="btnFilterDigikala" style="border-color: rgba(239, 57, 78, 0.45); color: #fca5a5;">🛒 سفارش‌های دیجی‌کالا</button>
             </div>
             <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
                 <input type="text" id="dashboardSearchInput" class="dashboard-search-input" placeholder="🔍 جستجو در عنوان، مسئول، تگ..." style="flex: 1;">
@@ -227,6 +228,7 @@
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                         <button id="btnEnableNotif" class="btn btn-primary btn-small" style="flex: 1; margin:0;">🔔 فعال‌سازی اعلان‌ها روی این دستگاه</button>
                         <button id="btnTestMyNotif" class="btn btn-secondary btn-small" style="margin:0;">🧪 تست زنگ و پیام</button>
+                        <button id="btnBatteryExemption" class="btn btn-secondary btn-small" style="margin:0; display:none;" onclick="if(window.NotificationManager) NotificationManager.requestBatteryExemption();" title="لغو بهینه‌سازی باتری برای فعال ماندن دائمی نوتیفیکیشن در پس‌زمینه اندروید">🔋 لغو محدودیت باتری (No Restriction)</button>
                     </div>
                     <div id="notifStatusText" style="font-size: 0.8rem; margin-top: 8px; color: var(--text-muted);"></div>
                 </div>

@@ -152,6 +152,7 @@
         const taskDoc = {
             _id: `task_dk_${cleanDkpc || nowTs}`,
             dkpc: cleanDkpc,
+            isDigikala: true,
             type: 'task',
             projectId: s.targetProjectId,
             title: `🛒 سفارش دیجی‌کالا: ${title} (${count} عدد)`,

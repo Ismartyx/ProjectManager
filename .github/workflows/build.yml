@@ -105,6 +105,13 @@ jobs:
           if (!content.includes("POST_NOTIFICATIONS")) {
               content = content.replace("</manifest>", "    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n    <uses-permission android:name=\"android.permission.VIBRATE\" />\n    <uses-permission android:name=\"android.permission.WAKE_LOCK\" />\n</manifest>");
           }
+          if (!content.includes("FOREGROUND_SERVICE")) {
+              content = content.replace("</manifest>", "    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE\" />\n    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE_DATA_SYNC\" />\n    <uses-permission android:name=\"android.permission.RECEIVE_BOOT_COMPLETED\" />\n    <uses-permission android:name=\"android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS\" />\n</manifest>");
+          }
+          if (!content.includes("MecavBackgroundService")) {
+              const serviceXml = `\n        <service android:name="com.mechave.ws.MecavBackgroundService" android:foregroundServiceType="dataSync" android:exported="false" />\n        <receiver android:name="com.mechave.ws.MecavBootReceiver" android:exported="true"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /><action android:name="android.intent.action.QUICKBOOT_POWERON" /></intent-filter></receiver>\n    </application>`;
+              content = content.replace("</application>", serviceXml);
+          }
           if (!content.includes("REQUEST_INSTALL_PACKAGES")) {
               content = content.replace("</manifest>", "    <uses-permission android:name=\"android.permission.REQUEST_INSTALL_PACKAGES\" />\n    <uses-permission android:name=\"android.permission.DOWNLOAD_WITHOUT_NOTIFICATION\" />\n</manifest>");
           }
