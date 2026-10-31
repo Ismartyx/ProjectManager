@@ -264,6 +264,41 @@ const NavigationBackManager = {
 window.NavigationBackManager = NavigationBackManager;
 try { NavigationBackManager.init(); } catch (e) {}
 
+// ============================================================
+// بستن ایمن کلیه مودال‌ها و پنجره‌های شناور (هنگام قفل یا خروج)
+// ============================================================
+function closeAllModals() {
+    try {
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.classList.remove('active');
+            if (modal.id === 'taskHistoryModal' || modal.id === 'aboutModal') {
+                modal.style.display = 'none';
+            }
+        });
+        const tdModal = document.getElementById('taskDetailModal');
+        if (tdModal) tdModal.classList.remove('active');
+        const addModal = document.getElementById('addModal');
+        if (addModal) addModal.classList.remove('active');
+        const imgViewer = document.getElementById('imageViewer');
+        if (imgViewer) imgViewer.classList.remove('active');
+
+        // حذف تمام مودال‌های داینامیک و تایید
+        document.querySelectorAll('.custom-modal-overlay').forEach(m => m.remove());
+        document.querySelectorAll('.task-obs-modal-wrap').forEach(m => m.remove());
+
+        if (typeof currentOpenedTask !== 'undefined') {
+            currentOpenedTask = null;
+        }
+
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+            document.activeElement.blur();
+        }
+    } catch (e) {
+        console.error('خطا در بستن مودال‌ها:', e);
+    }
+}
+window.closeAllModals = closeAllModals;
+
 // ==========================================
 // تزریق استایل و رنگ‌بندی یکپارچه مکاو
 // ==========================================
@@ -864,8 +899,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (btnLockAppNow && !btnLockAppNow.dataset.bound) {
             btnLockAppNow.dataset.bound = "true";
             btnLockAppNow.addEventListener('click', () => {
+                if (typeof window.closeAllModals === 'function') window.closeAllModals();
                 if (typeof AutoLockManager !== 'undefined') {
-                    AutoLockManager.lock();
+                    AutoLockManager.lock(true);
                 }
             });
         }
@@ -1489,6 +1525,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (typeof NotificationManager !== 'undefined') {
                 NotificationManager.stopListening();
             }
+            if (typeof window.closeAllModals === 'function') {
+                window.closeAllModals();
+            }
             loginView.style.display = 'block'; 
             if (typeof AutoLockManager !== 'undefined') {
                 AutoLockManager.applyLockedUI();
@@ -1616,12 +1655,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
     
-    document.getElementById('btnLogout').addEventListener('click', () => { AuthManager.logout(); checkLoginStatus(); });
+    document.getElementById('btnLogout').addEventListener('click', () => { 
+        if (typeof window.closeAllModals === 'function') window.closeAllModals();
+        AuthManager.logout(); 
+        checkLoginStatus(); 
+    });
 
     const btnLockApp = document.getElementById('btnLockApp');
     if (btnLockApp && !btnLockApp.dataset.bound) {
         btnLockApp.dataset.bound = "true";
         btnLockApp.addEventListener('click', () => {
+            if (typeof window.closeAllModals === 'function') window.closeAllModals();
             if (typeof AutoLockManager !== 'undefined') {
                 AutoLockManager.lock(true);
             }
@@ -2610,6 +2654,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     window.archiveProject = async function(id) {
+        let user = AuthManager.getCurrentUser();
+        let isAdmin = user && (user.role === 'admin' || isSameUser(user.id, '100'));
+        if (!isAdmin) {
+            return showToast('فقط مدیر سیستم می‌تواند پروژه را آرشیو کند.', 'error');
+        }
         let isConfirmed = await showCustomModal({ title: 'آرشیو پروژه', message: 'پروژه به آرشیو منتقل شود؟', type: 'confirm' });
         if(isConfirmed) {
             let p = (await DBManager.getProjects()).find(x => x._id === id);
@@ -2618,6 +2667,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     window.deleteProjectById = async function(id, title) {
+        let user = AuthManager.getCurrentUser();
+        let isAdmin = user && (user.role === 'admin' || isSameUser(user.id, '100'));
+        if (!isAdmin) {
+            return showToast('فقط مدیر سیستم می‌تواند پروژه را حذف کند.', 'error');
+        }
         let isConfirmed = await showCustomModal({ 
             title: 'حذف کامل پروژه', 
             message: `آیا از حذف کامل پروژه «${title}» مطمئن هستید؟ با حذف این پروژه، تسک‌های داخل آن نیز از داشبورد خارج می‌شوند.`, 
@@ -2627,17 +2681,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (isConfirmed) {
             await DBManager.deleteProject(id);
             showToast('پروژه با موفقیت حذف شد.');
-            let user = AuthManager.getCurrentUser();
             if (user) window.reloadProjectsInDropdown(user);
             renderDashboard();
         }
     };
 
     window.deleteCurrentTask = async function() {
+        if (!currentOpenedTask) return;
+        let user = AuthManager.getCurrentUser();
+        let isAdmin = user && (user.role === 'admin' || isSameUser(user.id, '100'));
+        let isCreator = user && isSameUser(currentOpenedTask.creatorId, user.id);
+        let canDelete = Boolean(isAdmin || isCreator);
+        if (!canDelete) {
+            return showToast('شما مجاز به حذف این تسک نیستید. فقط ایجادکننده تسک یا مدیر سیستم می‌توانند آن را حذف کنند.', 'error');
+        }
         let isConfirmed = await showCustomModal({ title: 'حذف تسک', message: 'آیا از حذف این تسک مطمئن هستید؟ این عمل غیرقابل بازگشت است.', type: 'confirm', okText: 'بله، حذف شود' });
         if(isConfirmed && currentOpenedTask) {
             await PouchAdapter.deleteItem(currentOpenedTask._id);
-            document.getElementById('taskDetailModal').classList.remove('active');
+            if (typeof window.closeAllModals === 'function') {
+                window.closeAllModals();
+            } else {
+                document.getElementById('taskDetailModal').classList.remove('active');
+            }
             renderDashboard(); showToast('تسک با موفقیت حذف شد.');
         }
     };
@@ -2692,6 +2757,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.editTaskTitle = async function() {
         if (!currentOpenedTask) return;
+        let user = AuthManager.getCurrentUser();
+        let isAdmin = user && (user.role === 'admin' || isSameUser(user.id, '100'));
+        let isCreator = user && isSameUser(currentOpenedTask.creatorId, user.id);
+        let canEdit = Boolean(isAdmin || isCreator);
+        if (!canEdit) {
+            return showToast('شما مجاز به ویرایش عنوان این تسک نیستید. فقط سازنده تسک یا مدیر سیستم اجازه دارند.', 'error');
+        }
         let newTitle = await showCustomModal({ title: 'ویرایش عنوان تسک', type: 'prompt', placeholder: currentOpenedTask.title, okText: 'ذخیره' });
         if(newTitle && newTitle.trim() && newTitle.trim() !== currentOpenedTask.title) {
             currentOpenedTask.title = newTitle.trim();
@@ -2855,7 +2927,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentOpenedTask = task;
         let user = AuthManager.getCurrentUser();
         let overdue = isTaskOverdue(task);
-        let canDelete = user.role === 'admin' || isSameUser(task.creatorId, user.id);
+        let isAdmin = user && (user.role === 'admin' || isSameUser(user.id, '100'));
+        let isCreator = user && isSameUser(task.creatorId, user.id);
+        let canDelete = Boolean(isAdmin || isCreator);
         
         const titleEl = document.getElementById('td-title');
         if (titleEl) {

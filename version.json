@@ -1,8 +1,8 @@
 {
-  "version": "1.0.30",
-  "versionCode": 10030,
+  "version": "1.0.31",
+  "versionCode": 10031,
   "releaseDate": "1405/08/09",
-  "changelog": "ارتقای کنتراست و خوانایی کامل کارت‌های دیجی‌کالا در حالت روز/روشن، حذف آیکون سبد خرید تکراری، بهینه‌سازی استایل‌های تم",
+  "changelog": "اصلاح دسترسی دکمه حذف تسک فقط برای سازنده و مدیر سیستم، بستن خودکار و ایمن کلیه مودال‌ها و تسک‌های باز هنگام قفل کردن برنامه",
   "apkUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS.apk",
   "winUrl": "http://155.117.234.69:5984/mecav_releases/app_release/MechaveWS-Setup.exe"
 }

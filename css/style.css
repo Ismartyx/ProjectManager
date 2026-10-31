@@ -1145,12 +1145,14 @@ input:focus, textarea:focus {
     padding: 16px;
     opacity: 0;
     visibility: hidden;
+    pointer-events: none;
     transition: opacity 0.25s ease, visibility 0.25s ease;
 }
 
 .modal-overlay.active {
     opacity: 1;
     visibility: visible;
+    pointer-events: auto;
 }
 
 .modal-content {
@@ -1224,7 +1226,7 @@ input:focus, textarea:focus {
     font-size: 0.8rem !important;
     border-radius: 8px !important;
     white-space: nowrap !important;
-    display: inline-flex !important;
+    display: inline-flex;
     align-items: center !important;
     gap: 4px !important;
     box-sizing: border-box !important;

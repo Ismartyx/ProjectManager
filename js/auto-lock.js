@@ -81,6 +81,14 @@ const AutoLockManager = {
             name: user.name
         }));
 
+        // بستن آنی و قطعی تمام مودال‌ها، پنجره‌های تسک باز و فرم‌ها جهت جلوگیری از دسترسی غیرمجاز
+        if (typeof window.closeAllModals === 'function') {
+            window.closeAllModals();
+        } else {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+            document.querySelectorAll('.custom-modal-overlay').forEach(m => m.remove());
+        }
+
         // خروج کاربر از سشن فعال
         if (typeof AuthManager !== 'undefined') {
             AuthManager.logout();
